@@ -1,0 +1,239 @@
+'use client';
+
+import React, { useState } from 'react';
+import Image from 'next/image';
+
+const personas = [
+  {
+    id: 'casual',
+    title: 'Casual Player',
+    description: 'Play for fun and improvement',
+    features: ['Basic building tips', 'Weapon recommendations', 'Survival strategies', 'Fun gameplay focus'],
+    icon: '🎮',
+    color: 'white',
+    difficulty: 'Beginner',
+    timeCommitment: '1-2 hours/week',
+    bestFor: 'New players, casual gamers'
+  },
+  {
+    id: 'creative',
+    title: 'Creative Warrior',
+    description: 'Master the art of building',
+    features: ['Advanced building techniques', 'Edit training', 'Creative mode strategies', 'Building speed drills'],
+    icon: '🏗️',
+    color: 'white',
+    difficulty: 'Intermediate',
+    timeCommitment: '3-5 hours/week',
+    bestFor: 'Building enthusiasts, creative players'
+  },
+  {
+    id: 'competitive',
+    title: 'Competitive Player',
+    description: 'Dominate tournaments and cash cups',
+    features: ['Pro-level strategies', 'Meta analysis', 'Tournament preparation', 'Advanced mechanics'],
+    icon: '🏆',
+    color: 'white',
+    difficulty: 'Advanced',
+    timeCommitment: '5+ hours/week',
+    bestFor: 'Tournament players, pros'
+  }
+];
+
+const additionalFeatures = [
+  {
+    title: 'Personalized Training Plans',
+    description: 'AI-generated routines based on your skill level',
+    icon: '📊'
+  },
+  {
+    title: 'Progress Tracking',
+    description: 'Monitor your improvement with detailed analytics',
+    icon: '📈'
+  },
+  {
+    title: 'Community Challenges',
+    description: 'Compete with other players in weekly events',
+    icon: '🏁'
+  },
+  {
+    title: 'Expert Mentorship',
+    description: 'Get tips from top Fortnite professionals',
+    icon: '👨‍🏫'
+  }
+];
+
+export default function PersonaSelector() {
+  const [selectedPersona, setSelectedPersona] = useState('casual');
+  const [showFeatures, setShowFeatures] = useState(false);
+
+  return (
+    <section className="section bg-gradient-dark relative overflow-hidden py-20">
+      {/* Enhanced animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-20 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-1/4 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-white/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/3 right-1/3 w-20 h-20 bg-white/3 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        {/* Logo Section at Top */}
+        <div className="flex justify-center mb-16 animate-fade-in">
+          <div className="flex items-center space-x-3">
+            {/* White curved corner cube with logo */}
+            <div className="relative w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative w-12 h-12">
+                <Image
+                  src="/Black PathGen logo.png"
+                  alt="PathGen AI Logo"
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+            <span className="text-3xl font-bold text-primary-text">PathGen AI</span>
+          </div>
+        </div>
+
+        {/* Enhanced Header with more spacing */}
+        <div className="animate-fade-in mb-20">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
+            <span className="text-primary-text">Choose Your</span>
+            <br />
+            <span className="text-gradient">Playstyle</span>
+          </h2>
+          
+          <p className="text-xl md:text-2xl text-secondary-text mb-12 max-w-3xl mx-auto leading-relaxed">
+            Select your Fortnite persona and get personalized coaching tailored to your goals and skill level.
+          </p>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-20">
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="text-3xl font-bold text-white mb-2">10K+</div>
+              <div className="text-secondary-text">Active Players</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="text-3xl font-bold text-white mb-2">95%</div>
+              <div className="text-secondary-text">Success Rate</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+              <div className="text-3xl font-bold text-white mb-2">24/7</div>
+              <div className="text-secondary-text">AI Support</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Persona Cards with more spacing */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-20">
+          {personas.map((persona, index) => (
+            <div
+              key={persona.id}
+              className={`glass-card cursor-pointer transition-all duration-500 hover:scale-105 ${
+                selectedPersona === persona.id 
+                  ? 'ring-2 ring-white ring-opacity-50 scale-105 shadow-2xl' 
+                  : 'hover:ring-2 hover:ring-white/30 hover:shadow-xl'
+              } animate-slide-up`}
+              style={{ animationDelay: `${index * 0.2}s` }}
+              onClick={() => setSelectedPersona(persona.id)}
+            >
+              {/* Enhanced Icon */}
+              <div className="text-6xl mb-6 animate-bounce" style={{ animationDelay: `${index * 0.1}s` }}>
+                {persona.icon}
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-2xl font-bold text-primary-text mb-3">
+                {persona.title}
+              </h3>
+              
+              {/* Description */}
+              <p className="text-secondary-text mb-4 leading-relaxed">
+                {persona.description}
+              </p>
+
+              {/* Difficulty & Time */}
+              <div className="flex justify-between items-center mb-4 text-sm">
+                <span className="bg-white/10 px-3 py-1 rounded-full text-white">
+                  {persona.difficulty}
+                </span>
+                <span className="text-secondary-text">
+                  {persona.timeCommitment}
+                </span>
+              </div>
+
+              {/* Best For */}
+              <p className="text-secondary-text text-sm mb-6 italic">
+                Best for: {persona.bestFor}
+              </p>
+              
+              {/* Features */}
+              <ul className="space-y-3 mb-6 text-left">
+                {persona.features.map((feature, featureIndex) => (
+                  <li key={featureIndex} className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-white rounded-full flex-shrink-0 animate-pulse" style={{ animationDelay: `${featureIndex * 0.1}s` }}></div>
+                    <span className="text-secondary-text text-sm">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              {/* Selection indicator */}
+              <div className={`w-full h-2 rounded-full transition-all duration-500 ${
+                selectedPersona === persona.id 
+                  ? 'bg-gradient-to-r from-white to-gray-200' 
+                  : 'bg-white/20'
+              }`}></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Enhanced CTA Section with more spacing */}
+        <div className="animate-fade-in-up mb-20" style={{ animationDelay: '0.8s' }}>
+          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
+            <h3 className="text-2xl font-bold text-white mb-4">
+              Ready to Start Your Journey?
+            </h3>
+            <p className="text-secondary-text mb-6">
+              Join thousands of players who have already improved their Fortnite skills with PathGen AI.
+            </p>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <button className="btn-primary text-lg px-8 py-4 group">
+                <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
+                  Start Coaching with {personas.find(p => p.id === selectedPersona)?.title}
+                </span>
+              </button>
+              
+              <button 
+                className="btn-secondary text-lg px-8 py-4"
+                onClick={() => setShowFeatures(!showFeatures)}
+              >
+                {showFeatures ? 'Hide' : 'Show'} All Features
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Features Grid with more spacing */}
+        {showFeatures && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto animate-fade-in-up mb-20">
+            {additionalFeatures.map((feature, index) => (
+              <div 
+                key={index}
+                className="glass-card text-center p-6 hover:scale-105 transition-transform duration-300"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="text-4xl mb-4">{feature.icon}</div>
+                <h4 className="text-lg font-semibold text-white mb-2">{feature.title}</h4>
+                <p className="text-secondary-text text-sm">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Enhanced bottom accent line with more spacing */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-60 animate-pulse"></div>
+    </section>
+  );
+}
