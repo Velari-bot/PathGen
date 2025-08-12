@@ -13,10 +13,10 @@ import {
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
-interface User {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
+interface User extends FirebaseUser {
+  epicId?: string;
+  discordId?: string;
+  persona?: string;
   subscriptionStatus: 'active' | 'inactive';
   subscriptionTier: string | null;
   createdAt: any;
@@ -30,6 +30,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
   logout: () => Promise<void>;
+  updateUserProfile: (profile: { displayName: string; epicId: string; discordId: string; persona: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -155,6 +156,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (profile: { displayName: string; epicId: string; discordId: string; persona: string }): Promise<void> => {
+    if (!auth || !db) {
+      throw new Error('Firebase not initialized');
+    }
+
+    try {
+      const userDocRef = doc(db, 'users', auth.currentUser!.uid);
+      await updateDoc(userDocRef, {
+        displayName: profile.displayName,
+        epicId: profile.epicId,
+        discordId: profile.discordId,
+        persona: profile.persona,
+      });
+    } catch (error: any) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -162,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signInWithGoogle,
     logout,
+    updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

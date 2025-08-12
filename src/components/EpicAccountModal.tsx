@@ -192,7 +192,6 @@ export default function EpicAccountModal({ isOpen, onClose, onAccountLinked }: E
               <h3 className="text-green-400 font-semibold mb-2">Account Found!</h3>
               <div className="text-sm text-secondary-text space-y-1">
                 <p><span className="text-white">Username:</span> {verificationResult.displayName}</p>
-                <p><span className="text-white">Platform:</span> {verificationResult.platform}</p>
                 <p><span className="text-white">Account ID:</span> {verificationResult.id}</p>
               </div>
             </div>

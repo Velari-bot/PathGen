@@ -22,16 +22,6 @@ export default function HomePage() {
     const lenis = new Lenis({
       duration: 1.8,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      direction: 'vertical',
-      gestureDirection: 'vertical',
-      smooth: true,
-      mouseMultiplier: 0.8,
-      smoothTouch: false,
-      touchMultiplier: 1.5,
-      infinite: false,
-      lerp: 0.1,
-      syncTouch: true,
-      syncTouchLerp: 0.1,
     });
 
     // Connect Lenis to GSAP ScrollTrigger for perfect synchronization
@@ -50,7 +40,7 @@ export default function HomePage() {
     smoothScrollLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        const target = document.querySelector(link.getAttribute('href') || '');
+        const target = document.querySelector(link.getAttribute('href') || '') as HTMLElement;
         if (target) {
           lenis.scrollTo(target, { duration: 2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
         }

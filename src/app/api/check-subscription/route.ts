@@ -12,8 +12,8 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app;
-let db;
+let app: any;
+let db: any;
 
 if (firebaseConfig.apiKey) {
   app = initializeApp(firebaseConfig);
