@@ -831,14 +831,32 @@ export default function AIPage() {
           <div className="text-center mt-12">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => router.push('/dashboard')}
-                className="btn-secondary"
+                onClick={() => {
+                  console.log('Back to Dashboard clicked!');
+                  try {
+                    router.push('/dashboard');
+                  } catch (error) {
+                    console.error('Router error:', error);
+                    // Fallback to window.location if router fails
+                    window.location.href = '/dashboard';
+                  }
+                }}
+                className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all duration-300"
               >
                 ← Back to Dashboard
               </button>
               <button
-                onClick={() => router.push('/')}
-                className="btn-primary"
+                onClick={() => {
+                  console.log('Back to Home clicked!');
+                  try {
+                    router.push('/');
+                  } catch (error) {
+                    console.error('Router error:', error);
+                    // Fallback to window.location if router fails
+                    window.location.href = '/';
+                  }
+                }}
+                className="px-6 py-3 bg-white text-dark-charcoal rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300"
               >
                 Back to Home
               </button>
