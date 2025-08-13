@@ -8,6 +8,8 @@ import { epicService, EpicAccount } from '@/lib/epic';
 import EpicAccountModal from '@/components/EpicAccountModal';
 import { useAuth } from '@/contexts/AuthContext';
 import SmoothScroll from '@/components/SmoothScroll';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Message {
   id: string;
@@ -25,6 +27,7 @@ interface Conversation {
 
 export default function AIPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([
     {
       id: '1',
@@ -494,12 +497,37 @@ export default function AIPage() {
 
                       {/* Epic Account Method */}
                       {inputMethod === 'epic' && (
-                        <button
-                          onClick={() => setShowEpicModal(true)}
-                          className="w-full px-4 py-2 bg-white text-dark-charcoal hover:bg-gray-100 rounded-lg font-semibold transition-colors"
-                        >
-                          Connect Epic Account
-                        </button>
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => setShowEpicModal(true)}
+                            className="px-4 py-2 bg-white text-dark-charcoal hover:bg-gray-100 rounded-lg font-semibold transition-colors"
+                          >
+                            Connect Epic Account
+                          </button>
+                          
+                          {/* Status aligned with button */}
+                          <div className="text-center">
+                            <p className="text-xs text-secondary-text mb-1">Status</p>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              (linkedEpicAccount || manualUsername)
+                                ? isLoadingStats
+                                  ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
+                                  : fortniteStats
+                                    ? 'bg-green-500/20 text-green-400 border border-green-400/30'
+                                    : 'bg-red-500/20 text-red-400 border border-red-400/30'
+                                : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
+                            }`}>
+                              {(linkedEpicAccount || manualUsername)
+                                ? isLoadingStats
+                                  ? 'Loading...'
+                                  : fortniteStats
+                                    ? 'Connected'
+                                    : 'Not Found'
+                                : 'Not Connected'
+                              }
+                            </span>
+                          </div>
+                        </div>
                       )}
 
                       {/* Manual Username Method */}
@@ -543,27 +571,6 @@ export default function AIPage() {
                       )}
                     </div>
                   )}
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-secondary-text mb-1">Status</p>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    (linkedEpicAccount || manualUsername)
-                      ? isLoadingStats
-                        ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                        : fortniteStats
-                          ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                          : 'bg-red-500/20 text-red-400 border border-red-400/30'
-                      : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                  }`}>
-                    {(linkedEpicAccount || manualUsername)
-                      ? isLoadingStats
-                        ? 'Loading...'
-                        : fortniteStats
-                          ? 'Connected'
-                          : 'Not Found'
-                      : 'Not Connected'
-                    }
-                  </span>
                 </div>
               </div>
 
@@ -824,13 +831,13 @@ export default function AIPage() {
           <div className="text-center mt-12">
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => router.push('/dashboard')}
                 className="btn-secondary"
               >
                 ← Back to Dashboard
               </button>
               <button
-                onClick={() => window.location.href = '/'}
+                onClick={() => router.push('/')}
                 className="btn-primary"
               >
                 Back to Home
