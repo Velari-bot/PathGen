@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fortniteService } from '@/lib/fortnite';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,15 +20,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Fortnite stats and generate personalized context
+    // Generate enhanced context based on available information
     let enhancedContext = context || 'You are PathGen AI, a helpful Fortnite improvement coach. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.';
     
     if (fortniteUsername) {
-      const fortniteStats = await fortniteService.getPlayerStats(fortniteUsername);
-      if (fortniteStats) {
-        enhancedContext = fortniteService.generateAIContext(fortniteStats);
-      }
+      enhancedContext = `You are PathGen AI, a helpful Fortnite improvement coach. The user's Fortnite username is ${fortniteUsername}. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.`;
     }
+
+    console.log('Calling OpenAI with context:', enhancedContext);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -63,6 +61,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
     const aiResponse = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
 
+    console.log('OpenAI response generated successfully');
     return NextResponse.json({ response: aiResponse });
   } catch (error: any) {
     console.error('Chat API error:', error);

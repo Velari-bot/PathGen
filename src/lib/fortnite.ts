@@ -55,11 +55,21 @@ export interface FortniteStats {
     bestWeapon: string;
     avgSurvivalTime: number;
   };
+  fallback?: {
+    manualCheckUrl: string;
+    instructions: string[];
+    manualStatsForm: {
+      kd: number;
+      winRate: number;
+      matches: number;
+      avgPlace: number;
+    };
+  };
 }
 
 export class FortniteService {
   private apiKey: string;
-  private baseUrl = 'https://fortniteapi.io/v1';
+  private baseUrl = 'https://api.fortnitetracker.com/v1';
 
   constructor() {
     this.apiKey = process.env.FORTNITE_TRACKER_KEY || '';
@@ -68,33 +78,41 @@ export class FortniteService {
   async getPlayerStats(username: string): Promise<FortniteStats | null> {
     try {
       if (!this.apiKey) {
-        console.warn('Fortnite API key not configured');
+        console.warn('Fortnite Tracker API key not configured');
         return null;
       }
 
-      // Get player stats
+      console.log('Fetching stats for username:', username);
+      console.log('Using API key:', this.apiKey.substring(0, 8) + '...');
+
+      // Get player stats from Fortnite Tracker
       const statsResponse = await fetch(
-        `${this.baseUrl}/stats/br/v2?name=${encodeURIComponent(username)}`,
+        `${this.baseUrl}/profile/pc/${encodeURIComponent(username)}`,
         {
           headers: {
-            'Authorization': this.apiKey
+            'TRN-Api-Key': this.apiKey
           }
         }
       );
 
+      console.log('Stats response status:', statsResponse.status);
+      console.log('Stats response headers:', Object.fromEntries(statsResponse.headers.entries()));
+
       if (!statsResponse.ok) {
-        console.warn('Failed to fetch Fortnite stats');
+        const errorText = await statsResponse.text();
+        console.error('Failed to fetch Fortnite stats. Status:', statsResponse.status, 'Error:', errorText);
         return null;
       }
 
       const statsData = await statsResponse.json();
+      console.log('Raw stats data:', statsData);
       
       // Get recent matches
       const matchesResponse = await fetch(
-        `${this.baseUrl}/matches/br?name=${encodeURIComponent(username)}&limit=10`,
+        `${this.baseUrl}/profile/pc/${encodeURIComponent(username)}/matches`,
         {
           headers: {
-            'Authorization': this.apiKey
+            'TRN-Api-Key': this.apiKey
           }
         }
       );
@@ -102,22 +120,72 @@ export class FortniteService {
       let recentMatches: any[] = [];
       if (matchesResponse.ok) {
         const matchesData = await matchesResponse.json();
+        console.log('Raw matches data:', matchesData);
         recentMatches = matchesData.matches || [];
+      } else {
+        console.warn('Failed to fetch matches. Status:', matchesResponse.status);
       }
 
+      // Transform Fortnite Tracker data to our format
+      const transformedStats = this.transformTrackerData(statsData, recentMatches);
+      console.log('Transformed stats:', transformedStats);
+      
       // Analyze preferences based on recent matches
-      const preferences = this.analyzePreferences(statsData, recentMatches);
+      const preferences = this.analyzePreferences(transformedStats, recentMatches);
 
       return {
-        account: statsData.account,
-        stats: statsData.stats,
+        ...transformedStats,
         recentMatches,
         preferences
       };
     } catch (error) {
-      console.error('Error fetching Fortnite data:', error);
+      console.error('Error fetching Fortnite data from Fortnite Tracker:', error);
       return null;
     }
+  }
+
+  private transformTrackerData(trackerData: any, matches: any[]): any {
+    console.log('Transforming tracker data:', trackerData);
+    
+    // Extract stats from Fortnite Tracker format
+    const stats = trackerData.stats || {};
+    const allStats = stats.all || {};
+    
+    // Fortnite Tracker uses a different structure - stats are nested with 'value' properties
+    const transformed = {
+      account: {
+        id: trackerData.accountId || trackerData.account?.id || 'unknown',
+        name: trackerData.epicUserHandle || trackerData.account?.epicUserHandle || 'unknown',
+        platform: trackerData.platformId || trackerData.account?.platformId || 'pc'
+      },
+      stats: {
+        all: {
+          wins: this.extractStatValue(allStats.wins) || 0,
+          top10: this.extractStatValue(allStats.top10) || 0,
+          kills: this.extractStatValue(allStats.kills) || 0,
+          kd: this.extractStatValue(allStats.kd) || 0,
+          matches: this.extractStatValue(allStats.matches) || 0,
+          winRate: this.extractStatValue(allStats.winRate) || 0,
+          avgPlace: this.extractStatValue(allStats.avgPlace) || 0,
+          avgKills: this.extractStatValue(allStats.avgKills) || 0
+        }
+      }
+    };
+    
+    console.log('Transformed result:', transformed);
+    return transformed;
+  }
+
+  private extractStatValue(stat: any): number | null {
+    if (!stat) return null;
+    
+    // Fortnite Tracker stats can be in different formats
+    if (typeof stat === 'number') return stat;
+    if (typeof stat === 'string') return parseFloat(stat);
+    if (stat.value !== undefined) return parseFloat(stat.value);
+    if (stat.displayValue !== undefined) return parseFloat(stat.displayValue);
+    
+    return null;
   }
 
   private analyzePreferences(stats: any, matches: any[]): any {
@@ -130,12 +198,23 @@ export class FortniteService {
       };
     }
 
+    // Transform matches to our format
+    const transformedMatches = matches.map(match => ({
+      id: match.id || match.matchId || String(Math.random()),
+      date: match.date || match.timestamp || new Date().toISOString(),
+      placement: match.placement || match.rank || 100,
+      kills: match.kills || 0,
+      mode: match.mode || match.playlist || 'Unknown',
+      map: match.map || 'Unknown',
+      dropLocation: match.dropLocation || 'Unknown'
+    }));
+
     // Analyze drop locations
     const dropCounts: { [key: string]: number } = {};
     const placementByDrop: { [key: string]: number[] } = {};
     
-    matches.forEach(match => {
-      if (match.dropLocation) {
+    transformedMatches.forEach(match => {
+      if (match.dropLocation && match.dropLocation !== 'Unknown') {
         dropCounts[match.dropLocation] = (dropCounts[match.dropLocation] || 0) + 1;
         if (!placementByDrop[match.dropLocation]) {
           placementByDrop[match.dropLocation] = [];
@@ -157,16 +236,16 @@ export class FortniteService {
     });
 
     // Analyze weakest zone (late game vs early game)
-    const earlyGamePlacements = matches.filter(m => m.placement <= 25).length;
-    const lateGamePlacements = matches.filter(m => m.placement > 25).length;
+    const earlyGamePlacements = transformedMatches.filter(m => m.placement <= 25).length;
+    const lateGamePlacements = transformedMatches.filter(m => m.placement > 25).length;
     const weakestZone = earlyGamePlacements > lateGamePlacements ? 'late game rotations' : 'early game fights';
 
     // Calculate average survival time (rough estimate based on placement)
-    const avgSurvivalTime = matches.reduce((sum, match) => {
+    const avgSurvivalTime = transformedMatches.reduce((sum, match) => {
       // Rough estimate: 100 players, placement determines survival time
       const survivalPercent = (100 - match.placement) / 100;
       return sum + (survivalPercent * 20); // Assume 20 minute average game
-    }, 0) / matches.length;
+    }, 0) / transformedMatches.length;
 
     return {
       preferredDrop: preferredDrop || 'Unknown',

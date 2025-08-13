@@ -93,24 +93,24 @@ export default function Footer() {
             <h3 className="text-lg font-semibold text-primary-text mb-4">Support</h3>
             <ul className="space-y-3">
               <li>
-                <a href="#" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <Link href="/help" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Help Center
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <Link href="/contact" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Contact Us
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <Link href="/privacy" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <Link href="/terms" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Terms of Service
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
