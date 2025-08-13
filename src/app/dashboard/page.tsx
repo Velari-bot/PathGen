@@ -37,11 +37,25 @@ export default function DashboardPage() {
   }, [user]);
 
   const checkSubscription = async () => {
+    if (!user) return;
+    
     try {
-      const response = await fetch('/api/check-subscription');
+      const response = await fetch('/api/check-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+        }),
+      });
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Subscription check result:', data);
         setHasActiveSubscription(data.hasActiveSubscription);
+      } else {
+        console.error('Subscription check failed:', response.status);
       }
     } catch (error) {
       console.error('Error checking subscription:', error);
@@ -189,6 +203,13 @@ export default function DashboardPage() {
                   <Link href="/pricing" className="w-full btn-primary py-3 block">
                     Subscribe Now - $3.99/month
                   </Link>
+                  
+                  <button
+                    onClick={checkSubscription}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                  >
+                    🔄 Refresh Subscription Status
+                  </button>
                   
                   <button
                     onClick={() => router.push('/')}
