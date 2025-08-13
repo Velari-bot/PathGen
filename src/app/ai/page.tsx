@@ -66,8 +66,11 @@ export default function AIPage() {
   ];
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    // Only scroll to bottom when new messages are added, not on every render
+    if (messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length]); // Changed from [messages] to [messages.length]
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -421,9 +424,9 @@ export default function AIPage() {
         </div>
 
         {/* Chat Interface */}
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto space-y-8">
           {/* Fortnite Account Input */}
-          <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-xl">
+          <div className="p-6 bg-white/5 border border-white/10 rounded-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-white mb-2">
@@ -628,7 +631,7 @@ export default function AIPage() {
           </div>
 
           {/* Chat Controls */}
-          <div className="flex items-center justify-between mb-8 relative z-20">
+          <div className="flex items-center justify-between relative z-20">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => {
@@ -659,7 +662,7 @@ export default function AIPage() {
 
           {/* Chat Log Sidebar */}
           {showChatLog && (
-            <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-xl relative z-20">
+            <div className="p-6 bg-white/5 border border-white/10 rounded-xl relative z-20">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-white">Chat History</h3>
                 <span className="text-xs text-secondary-text">{conversations.length}/5 chats</span>
@@ -708,27 +711,8 @@ export default function AIPage() {
             </div>
           )}
 
-          {/* Quick Suggestions */}
-          <div className="mb-8 relative z-20">
-            <div className="flex flex-wrap gap-4 justify-center">
-              {quickSuggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    console.log(`Quick suggestion "${suggestion}" clicked!`);
-                    handleQuickSuggestion(suggestion);
-                  }}
-                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-full text-white hover:bg-white/20 transition-all duration-300 hover:scale-105"
-                  style={{ zIndex: 1000, position: 'relative' }}
-                >
-                  {suggestion}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Chat Container */}
-          <div className="glass-card p-8 h-80 overflow-y-auto mb-6">
+          <div className="glass-card p-8 h-96 overflow-y-auto mb-6">
             <div className="space-y-4">
               {messages.map((message) => (
                 <div
@@ -768,7 +752,7 @@ export default function AIPage() {
           </div>
 
           {/* Input Area */}
-          <div className="flex gap-4">
+          <div className="flex gap-4 mb-8">
             <input
               type="text"
               value={inputText}
@@ -793,16 +777,36 @@ export default function AIPage() {
             </button>
           </div>
 
+          {/* Quick Suggestions - Moved to bottom */}
+          <div className="relative z-20">
+            <h3 className="text-lg font-semibold text-white text-center mb-6">Quick Suggestions</h3>
+            <div className="flex flex-wrap gap-4 justify-center">
+              {quickSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    console.log(`Quick suggestion "${suggestion}" clicked!`);
+                    handleQuickSuggestion(suggestion);
+                  }}
+                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-full text-white hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                  style={{ zIndex: 1000, position: 'relative' }}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Model Tag */}
-          <div className="text-center mt-8">
+          <div className="text-center">
             <span className="text-xs text-secondary-text bg-white/5 px-4 py-2 rounded-full">
               Powered by GPT-4o-mini
             </span>
             {!process.env.NEXT_PUBLIC_OPENAI_API_KEY && (
               <div className="mt-2">
-                            <span className="text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/20">
-              ⚠️ Using Fallback Mode (No API Key)
-            </span>
+                <span className="text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/20">
+                  ⚠️ Using Fallback Mode (No API Key)
+                </span>
               </div>
             )}
           </div>
