@@ -22,6 +22,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [linkedEpicAccount, setLinkedEpicAccount] = useState<EpicAccount | null>(null);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [manualUsername, setManualUsername] = useState('');
+  const [inputMethod, setInputMethod] = useState<'epic' | 'manual' | 'tracker'>('epic');
 
   useEffect(() => {
     if (!loading && !user) {
@@ -33,6 +35,12 @@ export default function DashboardPage() {
     if (user) {
       checkSubscription();
       loadLinkedEpicAccount();
+      // Load manual username if it exists
+      const savedUsername = localStorage.getItem('pathgen_manual_username');
+      if (savedUsername) {
+        setManualUsername(savedUsername);
+        setInputMethod('manual');
+      }
     }
   }, [user]);
 
@@ -76,6 +84,13 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error loading linked Epic account:', error);
     }
+  };
+
+  const clearAccountInfo = () => {
+    setLinkedEpicAccount(null);
+    setManualUsername('');
+    setInputMethod('epic');
+    localStorage.removeItem('pathgen_manual_username');
   };
 
   // Check for success parameter from Stripe redirect
@@ -206,7 +221,7 @@ export default function DashboardPage() {
                   
                   <button
                     onClick={checkSubscription}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors"
+                    className="w-full bg-white text-dark-charcoal hover:bg-gray-100 py-3 rounded-lg font-semibold transition-colors"
                   >
                     🔄 Refresh Subscription Status
                   </button>
@@ -354,28 +369,37 @@ export default function DashboardPage() {
                 </Link>
               </div>
               
-              {/* Epic Account Status */}
-              <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-semibold text-white mb-1">🎮 Epic Account Status</h4>
-                    <p className="text-xs text-secondary-text">
-                      {linkedEpicAccount 
-                        ? `Connected: ${linkedEpicAccount.displayName}`
-                        : 'No Fortnite account linked'
-                      }
-                    </p>
-                  </div>
-                  {!linkedEpicAccount && (
-                    <Link 
-                      href="/ai" 
-                      className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors"
-                    >
-                      Link Account
-                    </Link>
-                  )}
-                </div>
-              </div>
+                             {/* Fortnite Account Status */}
+               <div className="mb-6 p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <h4 className="text-sm font-semibold text-white mb-1">🎮 Fortnite Account Status</h4>
+                     <p className="text-xs text-secondary-text">
+                       {(linkedEpicAccount || manualUsername)
+                         ? `Connected: ${linkedEpicAccount?.displayName || manualUsername}${inputMethod === 'manual' ? ' (Manual)' : inputMethod === 'tracker' ? ' (Tracker)' : ''}`
+                         : 'No Fortnite account linked'
+                       }
+                     </p>
+                   </div>
+                   <div className="flex gap-2">
+                     {!(linkedEpicAccount || manualUsername) ? (
+                       <Link 
+                         href="/ai" 
+                         className="px-3 py-2 bg-white text-dark-charcoal hover:bg-gray-100 rounded-lg text-xs font-semibold transition-colors"
+                       >
+                         Link Account
+                       </Link>
+                     ) : (
+                       <button
+                         onClick={clearAccountInfo}
+                         className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold transition-colors"
+                       >
+                         Clear
+                       </button>
+                     )}
+                   </div>
+                 </div>
+               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-lg">

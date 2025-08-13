@@ -47,6 +47,10 @@ export default function AIPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [showChatLog, setShowChatLog] = useState(false);
   const [showEpicModal, setShowEpicModal] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualUsername, setManualUsername] = useState('');
+  const [trackerLink, setTrackerLink] = useState('');
+  const [inputMethod, setInputMethod] = useState<'epic' | 'manual' | 'tracker'>('epic');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentConversation = conversations.find(c => c.id === currentConversationId);
@@ -148,17 +152,25 @@ export default function AIPage() {
   useEffect(() => {
     if (user) {
       loadLinkedEpicAccount();
+      // Load manual username if it exists
+      const savedUsername = localStorage.getItem('pathgen_manual_username');
+      if (savedUsername) {
+        setManualUsername(savedUsername);
+        setInputMethod('manual');
+      }
     }
   }, [user]);
 
-  // Fetch Fortnite stats when Epic account changes
+  // Fetch Fortnite stats when Epic account changes or manual input is provided
   useEffect(() => {
     if (linkedEpicAccount) {
       fetchFortniteStats(linkedEpicAccount.displayName);
+    } else if (manualUsername) {
+      fetchFortniteStats(manualUsername);
     } else {
       setFortniteStats(null);
     }
-  }, [linkedEpicAccount]);
+  }, [linkedEpicAccount, manualUsername]);
 
   const loadLinkedEpicAccount = async () => {
     if (!user) return;
@@ -190,6 +202,45 @@ export default function AIPage() {
   const handleEpicAccountLinked = (account: EpicAccount) => {
     setLinkedEpicAccount(account);
     setShowEpicModal(false);
+    setInputMethod('epic');
+  };
+
+  const handleManualUsernameSubmit = () => {
+    if (manualUsername.trim()) {
+      setLinkedEpicAccount(null);
+      setInputMethod('manual');
+      setShowManualInput(false);
+      // Save to localStorage for persistence
+      localStorage.setItem('pathgen_manual_username', manualUsername.trim());
+    }
+  };
+
+  const handleTrackerLinkSubmit = () => {
+    if (trackerLink.trim()) {
+      // Extract username from tracker link
+      const usernameMatch = trackerLink.match(/fortnitetracker\.com\/profile\/([^\/\?]+)/);
+      if (usernameMatch) {
+        const username = usernameMatch[1];
+        setManualUsername(username);
+        setLinkedEpicAccount(null);
+        setInputMethod('tracker');
+        setShowManualInput(false);
+        // Save to localStorage for persistence
+        localStorage.setItem('pathgen_manual_username', username);
+      } else {
+        alert('Please enter a valid Fortnite Tracker link (e.g., https://fortnitetracker.com/profile/username)');
+      }
+    }
+  };
+
+  const clearAccountInfo = () => {
+    setLinkedEpicAccount(null);
+    setManualUsername('');
+    setTrackerLink('');
+    setInputMethod('epic');
+    setFortniteStats(null);
+    // Clear from localStorage
+    localStorage.removeItem('pathgen_manual_username');
   };
 
   const switchConversation = (conversationId: string) => {
@@ -285,7 +336,7 @@ export default function AIPage() {
         body: JSON.stringify({
           message: userInput,
           context: 'You are PathGen AI, a Fortnite improvement coach. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.',
-          fortniteUsername: linkedEpicAccount?.displayName || undefined
+          fortniteUsername: linkedEpicAccount?.displayName || manualUsername || undefined
         }),
       });
 
@@ -371,38 +422,121 @@ export default function AIPage() {
 
         {/* Chat Interface */}
         <div className="max-w-5xl mx-auto">
-          {/* Fortnite Username Input */}
+          {/* Fortnite Account Input */}
           <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-xl">
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
                 <label className="block text-sm font-medium text-white mb-2">
                   Fortnite Account
                 </label>
-                {linkedEpicAccount ? (
+                
+                {/* Account Status Display */}
+                {(linkedEpicAccount || manualUsername) ? (
                   <div className="flex items-center gap-3">
                     <div className="px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm">
-                      ✓ {linkedEpicAccount.displayName}
+                      ✓ {linkedEpicAccount?.displayName || manualUsername}
+                      {inputMethod === 'manual' && ' (Manual)'}
+                      {inputMethod === 'tracker' && ' (Tracker)'}
                     </div>
                     <button
-                      onClick={() => setShowEpicModal(true)}
+                      onClick={clearAccountInfo}
                       className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
                     >
                       Change
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => setShowEpicModal(true)}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-                  >
-                    Connect Fortnite Account
-                  </button>
+                  <div className="space-y-3">
+                    {/* Input Method Selection */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setInputMethod('epic')}
+                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                          inputMethod === 'epic' 
+                            ? 'bg-white text-dark-charcoal' 
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        Epic Account
+                      </button>
+                      <button
+                        onClick={() => setInputMethod('manual')}
+                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                          inputMethod === 'manual' 
+                            ? 'bg-white text-dark-charcoal' 
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        Manual Input
+                      </button>
+                      <button
+                        onClick={() => setInputMethod('tracker')}
+                        className={`px-3 py-2 rounded-lg text-sm transition-colors ${
+                          inputMethod === 'tracker' 
+                            ? 'bg-white text-dark-charcoal' 
+                            : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        Tracker Link
+                      </button>
+                    </div>
+
+                    {/* Epic Account Method */}
+                    {inputMethod === 'epic' && (
+                      <button
+                        onClick={() => setShowEpicModal(true)}
+                        className="w-full px-4 py-2 bg-white text-dark-charcoal hover:bg-gray-100 rounded-lg font-semibold transition-colors"
+                      >
+                        Connect Epic Account
+                      </button>
+                    )}
+
+                    {/* Manual Username Method */}
+                    {inputMethod === 'manual' && (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={manualUsername}
+                          onChange={(e) => setManualUsername(e.target.value)}
+                          placeholder="Enter Fortnite username"
+                          className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        />
+                        <button
+                          onClick={handleManualUsernameSubmit}
+                          disabled={!manualUsername.trim()}
+                          className="px-4 py-2 bg-white text-dark-charcoal hover:bg-gray-100 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Tracker Link Method */}
+                    {inputMethod === 'tracker' && (
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={trackerLink}
+                          onChange={(e) => setTrackerLink(e.target.value)}
+                          placeholder="https://fortnitetracker.com/profile/username"
+                          className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50"
+                        />
+                        <button
+                          onClick={handleTrackerLinkSubmit}
+                          disabled={!trackerLink.trim()}
+                          className="px-4 py-2 bg-white text-dark-charcoal hover:bg-gray-100 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <div className="text-center">
                 <p className="text-xs text-secondary-text mb-1">Status</p>
                 <span className={`text-xs px-2 py-1 rounded-full ${
-                  linkedEpicAccount 
+                  (linkedEpicAccount || manualUsername)
                     ? isLoadingStats
                       ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
                       : fortniteStats
@@ -410,7 +544,7 @@ export default function AIPage() {
                         : 'bg-red-500/20 text-red-400 border border-red-400/30'
                     : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
                 }`}>
-                  {linkedEpicAccount 
+                  {(linkedEpicAccount || manualUsername)
                     ? isLoadingStats
                       ? 'Loading...'
                       : fortniteStats
@@ -480,13 +614,13 @@ export default function AIPage() {
               </div>
             )}
 
-            {linkedEpicAccount && !fortniteStats && !isLoadingStats && (
+            {(linkedEpicAccount || manualUsername) && !fortniteStats && !isLoadingStats && (
               <p className="text-xs text-red-400 mt-2">
                 Username not found. Please check the spelling or try a different username.
               </p>
             )}
 
-            {linkedEpicAccount && !fortniteStats && (
+            {(linkedEpicAccount || manualUsername) && !fortniteStats && (
               <p className="text-xs text-secondary-text mt-2">
                 AI will provide general Fortnite advice without personalized coaching.
               </p>
@@ -666,9 +800,9 @@ export default function AIPage() {
             </span>
             {!process.env.NEXT_PUBLIC_OPENAI_API_KEY && (
               <div className="mt-2">
-                <span className="text-xs text-yellow-400 bg-yellow-400/10 px-3 py-1 rounded-full border border-yellow-400/20">
-                  ⚠️ Using Fallback Mode (No API Key)
-                </span>
+                            <span className="text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/20">
+              ⚠️ Using Fallback Mode (No API Key)
+            </span>
               </div>
             )}
           </div>
