@@ -1,0 +1,21 @@
+{
+  "name": "PathGen - AI-Powered Fortnite Improvement",
+  "short_name": "PathGen",
+  "description": "Get personalized Fortnite coaching with AI analysis of your gameplay stats",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0f23",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/Black PathGen logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/Black PathGen logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

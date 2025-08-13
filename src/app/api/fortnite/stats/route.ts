@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false,
         error: 'Network error when contacting Fortnite Tracker',
-        details: fetchError.message,
+        details: (fetchError as Error).message,
         fallback: {
           manualCheckUrl: `https://fortnitetracker.com/profile/${platform}/${username}`,
           instructions: [
