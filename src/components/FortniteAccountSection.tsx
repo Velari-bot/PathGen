@@ -135,9 +135,8 @@ export default function FortniteAccountSection() {
             <div className="text-center space-y-4">
               <p className="text-white/60">Connect your Epic Games account to access personalized Fortnite coaching.</p>
               <EpicConnectButton 
-                onSuccess={handleEpicAccountLinked}
+                onAccountLinked={handleEpicAccountLinked}
                 onError={handleEpicAccountError}
-                className="mx-auto"
               />
             </div>
           )}

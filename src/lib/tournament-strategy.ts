@@ -74,6 +74,7 @@ export const C6S4_TOURNAMENT: TournamentInfo = {
       id: 3,
       name: "Division 3",
       description: "Intermediate competitive play",
+      qualifyingCriteria: "Top 1000-3000 in Trials (EU/NAC), Top 1000 in other regions",
       playerCount: 100,
       hasElo: true,
       surgeFrequency: "low",
