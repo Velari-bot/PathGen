@@ -14,17 +14,30 @@ export async function POST(request: NextRequest) {
     // Epic OAuth configuration
     const clientId = process.env.EPIC_CLIENT_ID;
     const clientSecret = process.env.EPIC_CLIENT_SECRET;
-    const redirectUri = process.env.EPIC_REDIRECT_URI || 'http://localhost:3000/auth/callback';
+    const redirectUri = process.env.EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback';
+
+    console.log('Epic OAuth Debug:', {
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      redirectUri,
+      codeLength: code?.length,
+      userId
+    });
 
     if (!clientId || !clientSecret) {
+      console.error('Missing Epic OAuth credentials');
       return NextResponse.json(
         { error: 'Epic OAuth not configured' },
         { status: 500 }
       );
     }
 
-    // Exchange authorization code for access token
-    const tokenResponse = await fetch('https://api.epicgames.dev/epic/oauth/v1/token', {
+    // Try the correct Epic OAuth endpoint
+    const tokenUrl = 'https://api.epicgames.com/oauth/token';
+    
+    console.log('Attempting token exchange with:', tokenUrl);
+
+    const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -37,28 +50,43 @@ export async function POST(request: NextRequest) {
       }),
     });
 
+    console.log('Token response status:', tokenResponse.status);
+    console.log('Token response headers:', Object.fromEntries(tokenResponse.headers.entries()));
+
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Epic token exchange failed:', errorData);
+      console.error('Epic token exchange failed:', {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        errorData
+      });
       return NextResponse.json(
-        { error: 'Failed to exchange authorization code' },
+        { error: `Failed to exchange authorization code: ${tokenResponse.status} ${tokenResponse.statusText}` },
         { status: 400 }
       );
     }
 
     const tokenData = await tokenResponse.json();
+    console.log('Token exchange successful, got access token');
+    
     const accessToken = tokenData.access_token;
 
     // Get Epic account information
-    const accountResponse = await fetch('https://api.epicgames.dev/epic/id/v1/accounts/me', {
+    const accountResponse = await fetch('https://api.epicgames.com/epic/id/v1/accounts/me', {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
     });
 
+    console.log('Account info response status:', accountResponse.status);
+
     if (!accountResponse.ok) {
       const errorData = await accountResponse.text();
-      console.error('Epic account info failed:', errorData);
+      console.error('Epic account info failed:', {
+        status: accountResponse.status,
+        statusText: accountResponse.statusText,
+        errorData
+      });
       return NextResponse.json(
         { error: 'Failed to get Epic account information' },
         { status: 400 }
@@ -66,6 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     const accountData = await accountResponse.json();
+    console.log('Got Epic account data:', accountData);
 
     // Store Epic account information in your database
     // This would typically go to Firebase or your preferred database
@@ -88,7 +117,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Epic OAuth callback error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     );
   }
