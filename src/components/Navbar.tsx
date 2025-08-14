@@ -69,9 +69,15 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Dashboard
                 </Link>
-                <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
-                  AI Coach
-                </Link>
+                                 <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
+                   AI Coach
+                 </Link>
+                                   <Link href="/poi-analysis" className="text-secondary-text hover:text-white transition-colors duration-300">
+                    POI Analysis
+                  </Link>
+                  <Link href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
+                    Tournament
+                  </Link>
                 <Link href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Settings
                 </Link>
@@ -123,9 +129,15 @@ export default function Navbar() {
                   <Link href="/dashboard" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
                     Dashboard
                   </Link>
-                  <Link href="/ai" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
-                    AI Coach
-                  </Link>
+                                     <Link href="/ai" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                     AI Coach
+                   </Link>
+                                       <Link href="/poi-analysis" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                      POI Analysis
+                    </Link>
+                    <Link href="/tournament-strategy" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                      Tournament
+                    </Link>
                   <Link href="/settings" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
                     Settings
                   </Link>

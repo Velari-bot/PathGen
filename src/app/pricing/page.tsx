@@ -7,13 +7,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { SUBSCRIPTION_TIERS } from '@/lib/osirion';
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
 
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (tier: 'paid' | 'pro') => {
     if (!user) {
       router.push('/login');
       return;
@@ -27,11 +28,12 @@ export default function PricingPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'user-email': user.email || 'customer@example.com', // Send user email
+          'user-email': user.email || 'customer@example.com',
         },
         body: JSON.stringify({
-          priceId: 'price_1RvNaoE1WEiMuZnCEjH3hnAp', // Updated Stripe Price ID
+          priceId: tier === 'paid' ? 'price_1RvsvqCitWuvPenEw9TefOig' : 'price_1RvsyxCitWuvPenEOtFzt5FC', // Standard and Pro tier price IDs
           userId: user.uid,
+          tier: tier
         }),
       });
 
@@ -76,147 +78,125 @@ export default function PricingPage() {
             <span className="text-gradient">PathGen Plan</span>
           </h1>
           <p className="text-xl md:text-2xl text-secondary-text max-w-3xl mx-auto leading-relaxed">
-            Select the perfect plan to accelerate your Fortnite journey and dominate the competition.
+            Select the perfect plan to accelerate your Fortnite journey with Osirion-powered analytics and AI coaching.
           </p>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12 max-w-5xl mx-auto">
-          {/* Pro Plan - Left (Most Popular) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 max-w-6xl mx-auto">
+          {/* Free Tier */}
+          <div className="glass-card p-6 text-center">
+            <h3 className="text-2xl font-bold text-primary-text mb-4">{SUBSCRIPTION_TIERS.free.name}</h3>
+            <div className="mb-6">
+              <span className="text-5xl font-bold text-white">${SUBSCRIPTION_TIERS.free.price}</span>
+              <span className="text-lg text-secondary-text">/month</span>
+            </div>
+            <div className="text-left space-y-3 mb-6">
+              {SUBSCRIPTION_TIERS.free.features.map((feature, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-white">{feature}</span>
+                </div>
+              ))}
+            </div>
+            <button className="w-full btn-secondary py-3">
+              Current Plan
+            </button>
+          </div>
+
+          {/* Standard Tier */}
           <div className="glass-card p-6 text-center relative border-2 border-white/20">
             {/* Popular Badge */}
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-white to-gray-200 text-dark-charcoal px-4 py-1 rounded-full font-semibold text-sm">
               MOST POPULAR
             </div>
             
-            <h3 className="text-2xl font-bold text-primary-text mb-4">PathGen Pro</h3>
+            <h3 className="text-2xl font-bold text-primary-text mb-4">{SUBSCRIPTION_TIERS.paid.name}</h3>
             <div className="mb-6">
-              <span className="text-5xl font-bold text-white">$3.99</span>
+              <span className="text-5xl font-bold text-white">${SUBSCRIPTION_TIERS.paid.price}</span>
               <span className="text-lg text-secondary-text">/month</span>
             </div>
             <div className="text-left space-y-3 mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+              {SUBSCRIPTION_TIERS.paid.features.map((feature, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-white">{feature}</span>
                 </div>
-                <span className="text-white">Unlimited AI coaching sessions</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Personalized training plans</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Real-time performance tracking</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Advanced analytics & insights</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Priority customer support</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Cancel anytime</span>
-              </div>
+              ))}
             </div>
             <button
-              onClick={handleSubscribe}
+              onClick={() => handleSubscribe('paid')}
               disabled={loading}
               className="w-full btn-primary text-lg py-3 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Processing...' : (user ? 'Subscribe Now' : 'Sign In to Subscribe')}
             </button>
-            <div className="text-secondary-text text-sm">
-              <p>✓ No setup fees or hidden charges</p>
-              <p>✓ Secure payment via Stripe</p>
-            </div>
           </div>
 
-          {/* Elite Plan - Right */}
+          {/* Pro Tier */}
           <div className="glass-card p-6 text-center">
-            <h3 className="text-2xl font-bold text-primary-text mb-4">PathGen Elite</h3>
+            <h3 className="text-2xl font-bold text-primary-text mb-4">{SUBSCRIPTION_TIERS.pro.name}</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold text-white">$7.99</span>
+              <span className="text-5xl font-bold text-white">${SUBSCRIPTION_TIERS.pro.price}</span>
               <span className="text-lg text-secondary-text">/month</span>
             </div>
             <div className="text-left space-y-3 mb-6">
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
+              {SUBSCRIPTION_TIERS.pro.features.map((feature, index) => (
+                <div key={index} className="flex items-center space-x-3">
+                  <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
+                    <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <span className="text-white">{feature}</span>
                 </div>
-                <span className="text-white">Everything in Pro</span>
+              ))}
+            </div>
+            <button
+              onClick={() => handleSubscribe('pro')}
+              disabled={loading}
+              className="w-full btn-primary text-lg py-3 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Processing...' : (user ? 'Subscribe Now' : 'Sign In to Subscribe')}
+            </button>
+          </div>
+        </div>
+
+        {/* Osirion Integration Section */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="glass-card p-8 text-center">
+            <h2 className="text-3xl font-bold text-primary-text mb-4">
+              Powered by Osirion
+            </h2>
+            <p className="text-lg text-secondary-text mb-6">
+              Advanced Fortnite analytics, match history, and replay analysis powered by the industry-leading Osirion API.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-3">Match Analytics</h3>
+                <ul className="text-secondary-text space-y-2">
+                  <li>• Detailed match history and statistics</li>
+                  <li>• Performance tracking and trends</li>
+                  <li>• Advanced event analysis</li>
+                </ul>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Custom crosshair & HUD</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Advanced game configurations</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Exclusive training maps</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">24/7 VIP support</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                  <svg className="w-3 h-3 text-dark-charcoal" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <span className="text-white">Early access to new features</span>
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-3">Replay Analysis</h3>
+                <ul className="text-secondary-text space-y-2">
+                  <li>• Upload and analyze replay files</li>
+                  <li>• Deep performance insights</li>
+                  <li>• AI-powered coaching recommendations</li>
+                </ul>
               </div>
             </div>
-            <button className="w-full btn-secondary py-3">
-              Coming Soon
-            </button>
           </div>
         </div>
 
@@ -242,27 +222,6 @@ export default function PricingPage() {
               <h3 className="text-lg font-semibold text-white mb-3">How does the AI coaching work?</h3>
               <p className="text-secondary-text">Our AI analyzes your gameplay and provides personalized training plans to improve your Fortnite skills.</p>
             </div>
-          </div>
-        </div>
-
-        {/* Back to Home */}
-        <div className="text-center mt-12">
-          <Link href="/" className="text-secondary-text hover:text-white transition-colors duration-300 text-lg">
-            ← Back to Home
-          </Link>
-        </div>
-
-        {/* Setup Note */}
-        <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-lg">
-          <h3 className="text-lg font-semibold text-white mb-2">🚀 Setup Required</h3>
-          <p className="text-secondary-text text-sm mb-3">
-            To enable payments, you need to create a product in your Stripe dashboard and update the price ID in the code.
-          </p>
-          <div className="text-xs text-secondary-text space-y-1">
-            <p>1. Go to <a href="https://dashboard.stripe.com/products" target="_blank" rel="noopener noreferrer" className="text-white hover:underline">Stripe Dashboard → Products</a></p>
-            <p>2. Create a product: "PathGen AI Pro" at $3.99/month</p>
-            <p>3. Copy the price ID (starts with "price_")</p>
-            <p>4. Update the priceId in src/app/pricing/page.tsx</p>
           </div>
         </div>
       </div>

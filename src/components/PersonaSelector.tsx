@@ -9,7 +9,11 @@ const personas = [
     title: 'Casual Player',
     description: 'Play for fun and improvement',
     features: ['Basic building tips', 'Weapon recommendations', 'Survival strategies', 'Fun gameplay focus'],
-    icon: '🎮',
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 10 19.5 10s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+      </svg>
+    ),
     color: 'white',
     difficulty: 'Beginner',
     timeCommitment: '1-2 hours/week',
@@ -43,22 +47,38 @@ const additionalFeatures = [
   {
     title: 'Personalized Training Plans',
     description: 'AI-generated routines based on your skill level',
-    icon: '📊'
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+      </svg>
+    )
   },
   {
     title: 'Progress Tracking',
     description: 'Monitor your improvement with detailed analytics',
-    icon: '📈'
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+      </svg>
+    )
   },
   {
     title: 'Community Challenges',
     description: 'Compete with other players in weekly events',
-    icon: '🏁'
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+    )
   },
   {
     title: 'Expert Mentorship',
     description: 'Get tips from top Fortnite professionals',
-    icon: '👨‍🏫'
+    icon: (
+      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      </svg>
+    )
   }
 ];
 

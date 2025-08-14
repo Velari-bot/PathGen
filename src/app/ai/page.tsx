@@ -3,12 +3,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { FortniteStats } from '@/lib/fortnite';
-import { epicService, EpicAccount } from '@/lib/epic';
-import EpicAccountModal from '@/components/EpicAccountModal';
+import { FortniteStats } from '@/types';
+import { SUBSCRIPTION_TIERS, UsageTracker } from '@/lib/osirion';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getFullDocumentation, getDocumentationSummary } from '@/lib/ai-docs';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: string;
@@ -44,16 +45,17 @@ export default function AIPage() {
   ]);
   const [currentConversationId, setCurrentConversationId] = useState<string>('');
   const [inputText, setInputText] = useState('');
-  const [linkedEpicAccount, setLinkedEpicAccount] = useState<EpicAccount | null>(null);
   const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showChatLog, setShowChatLog] = useState(false);
-  const [showEpicModal, setShowEpicModal] = useState(false);
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualUsername, setManualUsername] = useState('');
   const [trackerLink, setTrackerLink] = useState('');
-  const [inputMethod, setInputMethod] = useState<'epic' | 'manual' | 'tracker'>('epic');
+  const [inputMethod, setInputMethod] = useState<'manual' | 'tracker'>('manual');
+  const [currentUsage, setCurrentUsage] = useState<any>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<any>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Set the current conversation ID after the component mounts
@@ -96,6 +98,34 @@ export default function AIPage() {
       }
     }
   }, [messages.length]); // Changed from [messages] to [messages.length]
+
+  // Check subscription and usage
+  const checkSubscription = async () => {
+    if (!user) return;
+    
+    try {
+      const response = await fetch('/api/check-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.uid }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSubscriptionTier(data.tier);
+        setCurrentUsage(data.usage);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  };
+
+  // Check subscription on mount
+  useEffect(() => {
+    checkSubscription();
+  }, [user]);
 
   const scrollToBottom = () => {
     const chatContainer = messagesEndRef.current?.closest('.overflow-y-auto');
@@ -186,52 +216,59 @@ export default function AIPage() {
   // Load linked Epic account on component mount
   useEffect(() => {
     if (user) {
-      loadLinkedEpicAccount();
-      // Load manual username if it exists
+      // Load any existing manual username from localStorage
       const savedUsername = localStorage.getItem('pathgen_manual_username');
       if (savedUsername) {
         setManualUsername(savedUsername);
         setInputMethod('manual');
+      }
+      
+      // Load AI training preferences from localStorage
+      const savedAITraining = localStorage.getItem('pathgen_ai_training');
+      if (savedAITraining) {
+        try {
+          const training = JSON.parse(savedAITraining);
+          setAiCoachingStyle(training.coachingStyle || 'aggressive');
+          setAiFocusArea(training.focusArea || 'all');
+          setCustomKnowledge(training.customKnowledge || '');
+          setPersonalGoals(training.personalGoals || '');
+          console.log('Loaded AI training preferences:', training);
+        } catch (error) {
+          console.error('Error loading AI training preferences:', error);
+        }
       }
     }
   }, [user]);
 
   // Fetch Fortnite stats when Epic account changes or manual input is provided
   useEffect(() => {
-    if (linkedEpicAccount) {
-      fetchFortniteStats(linkedEpicAccount.displayName);
-    } else if (manualUsername) {
+    if (manualUsername) {
       fetchFortniteStats(manualUsername);
     } else {
       setFortniteStats(null);
     }
-  }, [linkedEpicAccount, manualUsername]);
-
-  const loadLinkedEpicAccount = async () => {
-    if (!user) return;
-
-    try {
-      const response = await fetch(`/api/user/get-epic-account?userId=${user.uid}`);
-      if (response.ok) {
-        const data = await response.json();
-        setLinkedEpicAccount(data.epicAccount);
-      }
-    } catch (error) {
-      console.error('Error loading linked Epic account:', error);
-    }
-  };
+  }, [manualUsername]);
 
   const fetchFortniteStats = async (username: string) => {
     console.log('fetchFortniteStats called with username:', username);
     setIsLoadingStats(true);
     try {
-      // Use the new server-side API route
-      const response = await fetch('/api/fortnite/stats', {
+      // Note: Osirion API requires Epic ID, not username
+      // For now, using a placeholder Epic ID for testing
+      // In production, users would need to provide their actual Epic ID
+      const epicId = '37da09eb8b574968ad36da5adc02232b'; // Placeholder Epic ID
+      
+      // Use the new Osirion API route
+      const response = await fetch('/api/osirion/stats', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ 
+          epicId,
+          userId: user?.uid || 'test-user',
+          platform: 'pc'
+        }),
       });
 
       if (!response.ok) {
@@ -289,15 +326,8 @@ export default function AIPage() {
     }
   };
 
-  const handleEpicAccountLinked = (account: EpicAccount) => {
-    setLinkedEpicAccount(account);
-    setShowEpicModal(false);
-    setInputMethod('epic');
-  };
-
   const handleManualUsernameSubmit = () => {
     if (manualUsername.trim()) {
-      setLinkedEpicAccount(null);
       setInputMethod('manual');
       setShowManualInput(false);
       // Save to localStorage for persistence
@@ -312,13 +342,12 @@ export default function AIPage() {
       if (usernameMatch) {
         const username = usernameMatch[1];
         setManualUsername(username);
-        setLinkedEpicAccount(null);
         setInputMethod('tracker');
         setShowManualInput(false);
         // Save to localStorage for persistence
         localStorage.setItem('pathgen_manual_username', username);
       } else {
-        alert('Please enter a valid Fortnite Tracker link (e.g., https://fortnitetracker.com/profile/username)');
+        alert('Please enter a valid Osirion link (e.g., https://osirion.com/profile/username)');
       }
     }
   };
@@ -326,10 +355,9 @@ export default function AIPage() {
   const clearAccountInfo = () => {
     console.log('clearAccountInfo called!');
     alert('Clearing account info...');
-    setLinkedEpicAccount(null);
     setManualUsername('');
     setTrackerLink('');
-    setInputMethod('epic');
+    setInputMethod('manual');
     setFortniteStats(null);
     // Clear from localStorage
     localStorage.removeItem('pathgen_manual_username');
@@ -347,8 +375,23 @@ export default function AIPage() {
     );
   };
 
+  const canSendMessage = () => {
+    if (!subscriptionTier || !currentUsage) return true;
+    
+    const limit = subscriptionTier.limits.ai.messagesPerMonth;
+    if (limit === -1) return true; // Unlimited
+    
+    return currentUsage.ai.messagesUsed < limit;
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
+    
+    // Check message limit
+    if (!canSendMessage()) {
+      setShowUpgradePrompt(true);
+      return;
+    }
 
     console.log('=== SENDING MESSAGE ===');
     console.log('Text:', text);
@@ -426,6 +469,7 @@ export default function AIPage() {
     try {
       console.log('generateAIResponse called with:', userInput);
       console.log('Current fortniteStats:', fortniteStats);
+      console.log('AI Training Data:', { aiCoachingStyle, aiFocusArea, customKnowledge, personalGoals });
       
       // Check if OpenAI API key is available (client-side check)
       if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
@@ -433,9 +477,28 @@ export default function AIPage() {
         return getFallbackResponse(userInput);
       }
 
-      // Build personalized context with user's stats
-      let personalizedContext = 'You are PathGen AI, a Fortnite improvement coach. ';
+      // Get developer documentation automatically
+      const developerDocs = getFullDocumentation();
+      const developerSummary = getDocumentationSummary();
       
+      console.log('Developer docs length:', developerDocs.length);
+      console.log('Developer summary length:', developerSummary.length);
+      console.log('Docs contain zone data:', developerDocs.includes('Double Pull'));
+      console.log('Summary contains zone data:', developerSummary.includes('Double Pull'));
+      
+      // Build personalized context
+      let personalizedContext = `
+${developerSummary}
+
+${developerDocs}
+
+Coaching Style: ${aiCoachingStyle}
+Focus Area: ${aiFocusArea}
+Custom Knowledge: ${customKnowledge}
+Personal Goals: ${personalGoals}
+`;
+      
+      // Add stats context
       if (fortniteStats && fortniteStats.stats && fortniteStats.stats.all) {
         const stats = fortniteStats.stats.all;
         personalizedContext += `The player's current stats are: K/D Ratio: ${stats.kd || 'N/A'}, Win Rate: ${stats.winRate || 'N/A'}%, Matches Played: ${stats.matches || 'N/A'}, Average Placement: ${stats.avgPlace || 'N/A'}. `;
@@ -447,9 +510,13 @@ export default function AIPage() {
         personalizedContext += `Provide specific, actionable advice based on these exact stats. `;
       }
       
-      personalizedContext += 'Focus on practical tips they can implement immediately. Keep responses under 200 words.';
+      personalizedContext += 'Focus on practical tips they can implement immediately.';
 
-      console.log('Sending personalized context:', personalizedContext);
+      console.log('Sending personalized context length:', personalizedContext.length);
+      console.log('Context contains zone data:', personalizedContext.includes('Double Pull'));
+      console.log('Context contains POI data:', personalizedContext.includes('Martial Maneuvers'));
+      console.log('Context contains tournament data:', personalizedContext.includes('FNCS'));
+      console.log('Context preview (first 500 chars):', personalizedContext.substring(0, 500));
 
       console.log('Calling OpenAI API...');
       const response = await fetch('/api/chat', {
@@ -460,7 +527,7 @@ export default function AIPage() {
         body: JSON.stringify({
           message: userInput,
           context: personalizedContext,
-          fortniteUsername: linkedEpicAccount?.displayName || manualUsername || 'Manual Input User'
+          fortniteUsername: manualUsername || 'Manual Input User'
         }),
       });
 
@@ -540,7 +607,7 @@ export default function AIPage() {
         }
       },
       fallback: {
-        manualCheckUrl: 'https://fortnitetracker.com',
+        manualCheckUrl: 'https://osirion.com',
         instructions: ['Enter your stats manually above for personalized coaching'],
         manualStatsForm: {
           kd: kd,
@@ -560,6 +627,131 @@ export default function AIPage() {
     
     console.log('Setting fortniteStats to:', manualStats);
     setFortniteStats(manualStats);
+  };
+
+  // AI Training & Customization State
+  const [showAITraining, setShowAITraining] = useState(false);
+  const [aiCoachingStyle, setAiCoachingStyle] = useState('aggressive');
+  const [aiFocusArea, setAiFocusArea] = useState('all');
+  const [customKnowledge, setCustomKnowledge] = useState('');
+  const [personalGoals, setPersonalGoals] = useState('');
+  const [aiTrainingSaved, setAiTrainingSaved] = useState(false);
+  const [bulkDocumentation, setBulkDocumentation] = useState('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result && typeof event.target.result === 'string') {
+          setBulkDocumentation(event.target.result);
+          console.log('File uploaded. Character count:', event.target.result.length);
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const importZoneDocumentation = () => {
+    const exampleZoneDoc = `
+Zone: Misty Meadows
+- Loot: Excellent, including rare items
+- Rotation: Excellent, with multiple paths and cover
+- Storm: Good, but can be tricky to predict
+- Drop: Excellent, with multiple options
+- Building: High ground control, quick edits
+- Combat: Stealthy, use natural cover
+- Strategy: Rotate through the mountain to avoid fights
+`;
+    setBulkDocumentation(exampleZoneDoc);
+    console.log('Imported Zone Documentation example.');
+  };
+
+  const importMechanicsDocumentation = () => {
+    const exampleMechanicsDoc = `
+Mechanic: Building Speed
+- Keybind: E (Edit)
+- Tips: Practice simple ramps first, then complex builds
+- Example: 90s (90-degree turn)
+- Practice: 15 minutes daily
+
+Mechanic: Aiming
+- Crosshair Placement: Center for most weapons
+- Recoil Control: Practice with recoil-heavy weapons
+- Example: 1000ms (1 second)
+- Practice: 1000ms for 100 shots
+`;
+    setBulkDocumentation(exampleMechanicsDoc);
+    console.log('Imported Mechanics Documentation example.');
+  };
+
+  const importStrategyDocumentation = () => {
+    const exampleStrategyDoc = `
+Strategy: Endgame Positioning
+- Storm: Always try to be in the safe zone or on high ground
+- Rotation: Rotate to the storm to avoid fights
+- Building: Use high ground control to defend
+- Combat: Stealthy, use natural cover
+- Example: 1000ms (1 second)
+- Practice: 1000ms for 100 shots
+`;
+    setBulkDocumentation(exampleStrategyDoc);
+    console.log('Imported Strategy Documentation example.');
+  };
+
+  const importBulkDocumentation = () => {
+    if (bulkDocumentation.trim()) {
+      // Check character limit
+      if (bulkDocumentation.length > 10000) {
+        alert('Documentation is too long (max 10,000 characters). Please split it into smaller sections.');
+        return;
+      }
+      
+      // Append to existing knowledge or replace
+      const newKnowledge = customKnowledge.trim() 
+        ? `${customKnowledge}\n\n--- NEW DOCUMENTATION ---\n\n${bulkDocumentation}`
+        : bulkDocumentation;
+      
+      setCustomKnowledge(newKnowledge);
+      setBulkDocumentation(''); // Clear the bulk input
+      setAiTrainingSaved(true);
+      setTimeout(() => setAiTrainingSaved(false), 3000);
+      console.log('Imported bulk documentation to AI training. Total length:', newKnowledge.length);
+      alert(`Bulk documentation imported to AI training! Total knowledge length: ${newKnowledge.length} characters`);
+    } else {
+      alert('Please paste or upload documentation first.');
+    }
+  };
+
+  const saveAITraining = () => {
+    console.log('Saving AI training preferences:', {
+      aiCoachingStyle,
+      aiFocusArea,
+      customKnowledge,
+      personalGoals
+    });
+    // In a real app, you'd send this to your backend API
+    // For now, we'll just simulate saving and show a message
+    setAiTrainingSaved(true);
+    setTimeout(() => setAiTrainingSaved(false), 3000); // Hide message after 3 seconds
+    // Save to localStorage
+    localStorage.setItem('pathgen_ai_training', JSON.stringify({
+      coachingStyle: aiCoachingStyle,
+      focusArea: aiFocusArea,
+      customKnowledge: customKnowledge,
+      personalGoals: personalGoals
+    }));
+  };
+
+  const resetAITraining = () => {
+    console.log('Resetting AI training preferences to default');
+    setAiCoachingStyle('aggressive');
+    setAiFocusArea('all');
+    setCustomKnowledge('');
+    setPersonalGoals('');
+    setAiTrainingSaved(false); // Hide message if resetting
+    // Clear from localStorage
+    localStorage.removeItem('pathgen_ai_training');
   };
 
   return (
@@ -606,10 +798,10 @@ export default function AIPage() {
                 </label>
                 
                 {/* Account Status Display */}
-                {(linkedEpicAccount || manualUsername) ? (
+                {manualUsername ? (
                   <div className="flex items-center gap-3">
                     <div className="px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm">
-                      ✓ {linkedEpicAccount?.displayName || manualUsername}
+                      ✓ {manualUsername}
                       {inputMethod === 'manual' && ' (Manual)'}
                       {inputMethod === 'tracker' && ' (Tracker)'}
                     </div>
@@ -634,25 +826,6 @@ export default function AIPage() {
                   <div className="space-y-3">
                     {/* Input Method Selection */}
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => {
-                          console.log('Epic Account method selected!');
-                          setInputMethod('epic');
-                        }}
-                        style={{ 
-                          padding: '8px 12px', 
-                          backgroundColor: inputMethod === 'epic' ? 'white' : 'rgba(255, 255, 255, 0.1)', 
-                          color: inputMethod === 'epic' ? 'black' : 'white', 
-                          borderRadius: '8px', 
-                          fontSize: '14px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          zIndex: 9999,
-                          position: 'relative'
-                        }}
-                      >
-                        Epic Account
-                      </button>
                       <button
                         onClick={() => {
                           console.log('Manual Input method selected!');
@@ -692,55 +865,6 @@ export default function AIPage() {
                         Tracker Link
                       </button>
                     </div>
-
-                    {/* Epic Account Method */}
-                    {inputMethod === 'epic' && (
-                      <div className="flex items-center justify-between">
-                        <button
-                          onClick={() => {
-                            console.log('Connect Epic Account clicked!');
-                            alert('Epic Account button clicked!');
-                            setShowEpicModal(true);
-                          }}
-                          style={{ 
-                            padding: '8px 16px', 
-                            backgroundColor: 'white', 
-                            color: 'black', 
-                            borderRadius: '8px', 
-                            fontWeight: 'bold',
-                            border: 'none',
-                            cursor: 'pointer',
-                            zIndex: 9999,
-                            position: 'relative'
-                          }}
-                        >
-                          Connect Epic Account
-                        </button>
-                        
-                        {/* Status aligned with button */}
-                        <div className="text-center">
-                          <p className="text-xs text-secondary-text mb-1">Status</p>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            (linkedEpicAccount || manualUsername)
-                              ? isLoadingStats
-                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'
-                                : fortniteStats
-                                  ? 'bg-green-500/20 text-green-400 border border-green-400/30'
-                                  : 'bg-red-500/20 text-red-400 border border-red-400/30'
-                              : 'bg-gray-500/20 text-gray-400 border border-gray-400/30'
-                          }`}>
-                            {(linkedEpicAccount || manualUsername)
-                              ? isLoadingStats
-                                ? 'Loading...'
-                                : fortniteStats
-                                  ? 'Connected'
-                                  : 'Not Found'
-                              : 'Not Connected'
-                            }
-                          </span>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Manual Username Method */}
                     {inputMethod === 'manual' && (
@@ -791,7 +915,7 @@ export default function AIPage() {
                           type="url"
                           value={trackerLink}
                           onChange={(e) => setTrackerLink(e.target.value)}
-                          placeholder="https://fortnitetracker.com/profile/username"
+                          placeholder="https://osirion.com/profile/username"
                           style={{ 
                             flex: '1',
                             padding: '8px 12px',
@@ -833,12 +957,53 @@ export default function AIPage() {
             {/* Stats Display */}
             {fortniteStats && (
               <div className="space-y-4">
+                {/* Usage Display */}
+                {subscriptionTier && currentUsage && (
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <h4 className="text-sm font-semibold text-blue-400 mb-2">
+                      📊 {subscriptionTier.name} Plan Usage
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="text-gray-300">AI Messages</p>
+                        <p className="text-white font-semibold">
+                          {currentUsage.ai.messagesUsed} / {subscriptionTier.limits.ai.messagesPerMonth === -1 ? '∞' : subscriptionTier.limits.ai.messagesPerMonth}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-300">Osirion Matches</p>
+                        <p className="text-white font-semibold">
+                          {currentUsage.osirion.matchesUsed} / {subscriptionTier.limits.osirion.matchesPerMonth === -1 ? '∞' : subscriptionTier.limits.osirion.matchesPerMonth}
+                        </p>
+                      </div>
+                      {subscriptionTier.limits.osirion.replayUploadsPerMonth > 0 && (
+                        <div>
+                          <p className="text-gray-300">Replay Uploads</p>
+                          <p className="text-white font-semibold">
+                            {currentUsage.osirion.replayUploadsUsed} / {subscriptionTier.limits.osirion.replayUploadsPerMonth}
+                          </p>
+                        </div>
+                      )}
+                      {subscriptionTier.limits.osirion.computeRequestsPerMonth > 0 && (
+                        <div>
+                          <p className="text-gray-300">Compute Requests</p>
+                          <p className="text-white font-semibold">
+                            {currentUsage.osirion.computeRequestsUsed} / {subscriptionTier.limits.osirion.computeRequestsPerMonth}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 text-xs text-gray-400">
+                      Resets on {currentUsage.resetDate.toLocaleDateString()}
+                    </div>
+                  </div>
+                )}
                 {/* Fallback Message - Show when API is blocked */}
                 {fortniteStats?.fallback && (
                   <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">⚠️ API Temporarily Unavailable</h4>
+                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">⚠️ Osirion API Temporarily Unavailable</h4>
                     <p className="text-xs text-yellow-300 mb-3">
-                      Fortnite Tracker is currently blocking automated requests. You can still get personalized AI coaching by entering your stats manually.
+                      Osirion API is currently unavailable. You can still get personalized AI coaching by entering your stats manually.
                     </p>
                     
                     {/* Manual Check Link */}
@@ -851,7 +1016,7 @@ export default function AIPage() {
                           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-300 hover:text-blue-200 text-sm transition-all duration-200 cursor-pointer"
                           style={{ zIndex: 9999, position: 'relative' }}
                         >
-                          🔗 Check your stats on Fortnite Tracker
+                          🔗 Check your stats on Osirion
                         </a>
                       </div>
                     )}
@@ -859,7 +1024,7 @@ export default function AIPage() {
                     {/* Instructions */}
                     {fortniteStats.fallback.instructions && fortniteStats.fallback.instructions.length > 0 && (
                       <div className="text-xs text-yellow-200 space-y-1 mb-3">
-                        {fortniteStats.fallback.instructions.map((instruction, index) => (
+                                                    {fortniteStats.fallback.instructions.map((instruction: string, index: number) => (
                           <p key={index}>• {instruction}</p>
                         ))}
                       </div>
@@ -1065,7 +1230,7 @@ export default function AIPage() {
                     <p className="text-gray-400">Match history not available in fallback mode</p>
                   ) : fortniteStats?.recentMatches && fortniteStats.recentMatches.length > 0 ? (
                     <div className="space-y-2">
-                      {fortniteStats.recentMatches.slice(0, 5).map((match, index) => (
+                                                  {fortniteStats.recentMatches.slice(0, 5).map((match: any, index: number) => (
                         <div key={index} className="text-sm text-gray-300">
                           <span className="text-blue-400">#{match.placement}</span> - {match.mode} - {match.date}
                         </div>
@@ -1080,16 +1245,274 @@ export default function AIPage() {
               </div>
             )}
 
-            {(linkedEpicAccount || manualUsername) && !fortniteStats && !isLoadingStats && (
+            {manualUsername && !fortniteStats && !isLoadingStats && (
               <p className="text-xs text-red-400 mt-2">
                 Username not found. Please check the spelling or try a different username.
               </p>
             )}
 
-            {(linkedEpicAccount || manualUsername) && !fortniteStats && (
+            {manualUsername && !fortniteStats && (
               <p className="text-xs text-secondary-text mt-2">
                 AI will provide general Fortnite advice without personalized coaching.
               </p>
+            )}
+          </div>
+
+          {/* AI Training & Customization */}
+          <div className="p-6 bg-white/5 border border-white/10 rounded-xl mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">AI Training & Customization</h3>
+              <button
+                onClick={() => setShowAITraining(!showAITraining)}
+                className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors cursor-pointer border border-white/20 hover:border-white/30"
+              >
+                {showAITraining ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            
+            {showAITraining && (
+              <div className="space-y-4">
+                {/* Developer Documentation Notice */}
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <p className="text-blue-300 text-sm">
+                    <strong>Developer Documentation:</strong> Comprehensive Fortnite knowledge including zone guides, mechanics, strategies, meta analysis, and pro tips is automatically included in every AI response.
+                  </p>
+                  <div className="mt-2">
+                    <a 
+                      href="/admin/docs" 
+                      target="_blank"
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-300 hover:text-blue-200 text-xs transition-all duration-200"
+                    >
+                      📝 Manage Documentation
+                    </a>
+                  </div>
+                </div>
+                
+                {/* AI Personality & Expertise */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      AI Coaching Style
+                    </label>
+                    <select
+                      value={aiCoachingStyle}
+                      onChange={(e) => setAiCoachingStyle(e.target.value)}
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
+                    >
+                      <option value="aggressive">Aggressive & Competitive</option>
+                      <option value="patient">Patient & Strategic</option>
+                      <option value="technical">Technical & Detailed</option>
+                      <option value="motivational">Motivational & Encouraging</option>
+                      <option value="analytical">Analytical & Data-Driven</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-white mb-2">
+                      Focus Areas
+                    </label>
+                    <select
+                      value={aiFocusArea}
+                      onChange={(e) => setAiFocusArea(e.target.value)}
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
+                    >
+                      <option value="all">All Aspects</option>
+                      <option value="building">Building & Editing</option>
+                      <option value="positioning">Positioning & Rotation</option>
+                      <option value="aim">Aim & Combat</option>
+                      <option value="game-sense">Game Sense & Decision Making</option>
+                      <option value="mechanics">Mechanical Skills</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Custom Knowledge Base */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Your Personal Strategies & Knowledge
+                  </label>
+                  <textarea
+                    value={customKnowledge}
+                    onChange={(e) => setCustomKnowledge(e.target.value)}
+                    placeholder="Add your own personal strategies, tips, or knowledge that you want the AI to consider..."
+                    rows={4}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 text-sm resize-none"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    This is in addition to the comprehensive developer documentation that's automatically included
+                  </p>
+                </div>
+
+                {/* Bulk Documentation Import */}
+                <div className="bg-gradient-to-r from-green-900/20 to-blue-900/20 p-4 rounded-lg border border-green-500/20">
+                  <h4 className="text-sm font-semibold text-green-400 mb-3">📖 Bulk Documentation Import</h4>
+                  
+                  {/* File Upload */}
+                  <div className="mb-3">
+                    <label className="block text-xs text-green-300 mb-2">
+                      Upload Documentation File (.txt, .md, .json)
+                    </label>
+                    <input
+                      type="file"
+                      accept=".txt,.md,.json"
+                      onChange={handleFileUpload}
+                      className="w-full text-xs text-green-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
+                    />
+                    <p className="text-xs text-green-400 mt-1">
+                      Upload zone guides, mechanics documentation, or any Fortnite text files
+                    </p>
+                  </div>
+
+                  {/* Quick Import Templates */}
+                  <div className="mb-3">
+                    <label className="block text-xs text-green-300 mb-2">
+                      Quick Import Templates
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => importZoneDocumentation()}
+                        className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                      >
+                        Import Zone Guide
+                      </button>
+                      <button
+                        onClick={() => importMechanicsDocumentation()}
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
+                      >
+                        Import Mechanics
+                      </button>
+                      <button
+                        onClick={() => importStrategyDocumentation()}
+                        className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded transition-colors"
+                      >
+                        Import Strategies
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bulk Text Import */}
+                  <div>
+                    <label className="block text-xs text-green-300 mb-2">
+                      Paste Large Documentation (Zones, Mechanics, etc.)
+                    </label>
+                    <textarea
+                      value={bulkDocumentation}
+                      onChange={(e) => setBulkDocumentation(e.target.value)}
+                      placeholder="Paste your zone documentation, mechanics guides, or any large text here..."
+                      rows={6}
+                      className="w-full px-3 py-2 bg-white/10 border border-green-500/30 rounded-lg text-white placeholder-green-400/50 text-xs resize-none"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={importBulkDocumentation}
+                        disabled={!bulkDocumentation.trim()}
+                        className="px-3 py-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white text-xs rounded transition-colors"
+                      >
+                        Import to AI Training
+                      </button>
+                      <button
+                        onClick={() => setBulkDocumentation('')}
+                        className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <p className="text-xs text-green-400 mt-1">
+                      Character count: {bulkDocumentation.length} | Max: 10,000
+                    </p>
+                  </div>
+                </div>
+
+                {/* Personal Goals */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Your Fortnite Goals
+                  </label>
+                  <textarea
+                    value={personalGoals}
+                    onChange={(e) => setPersonalGoals(e.target.value)}
+                    placeholder="What do you want to improve? (e.g., 'Get to Champion League', 'Improve building speed', 'Better endgame positioning')"
+                    rows={2}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 text-sm resize-none"
+                  />
+                </div>
+
+                {/* Save Training */}
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={saveAITraining}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    Save AI Training
+                  </button>
+                  <button
+                    onClick={resetAITraining}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
+                  >
+                    Reset to Default
+                  </button>
+                </div>
+
+                {/* Training Status */}
+                {aiTrainingSaved && (
+                  <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                    <p className="text-green-400 text-sm">✅ AI training saved! Your customizations will be used in future conversations.</p>
+                  </div>
+                )}
+
+                {/* Documentation Management */}
+                {customKnowledge.trim() && (
+                  <div className="bg-gradient-to-r from-orange-900/20 to-red-900/20 p-3 rounded-lg border border-orange-500/20">
+                    <h4 className="text-sm font-semibold text-orange-400 mb-2">📚 Current Documentation ({customKnowledge.length} chars)</h4>
+                    <div className="max-h-32 overflow-y-auto bg-black/20 p-2 rounded text-xs text-orange-200">
+                      <pre className="whitespace-pre-wrap break-words">{customKnowledge}</pre>
+                    </div>
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => setCustomKnowledge('')}
+                        className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                      >
+                        Clear All
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(customKnowledge);
+                          alert('Documentation copied to clipboard!');
+                        }}
+                        className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded transition-colors"
+                      >
+                        Copy to Clipboard
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Help Section */}
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <h4 className="text-sm font-semibold text-blue-400 mb-2">💡 How to Train Your AI Coach</h4>
+                  <div className="text-xs text-blue-300 space-y-1">
+                    <p><strong>Coaching Style:</strong> Choose how the AI communicates with you</p>
+                    <p><strong>Focus Areas:</strong> Tell the AI what skills you want to improve most</p>
+                    <p><strong>Custom Knowledge:</strong> Share your own strategies, drop spots, or techniques</p>
+                    <p><strong>Personal Goals:</strong> Set specific targets like "Reach Champion League" or "Improve building speed"</p>
+                  </div>
+                </div>
+
+                {/* Example Training Data */}
+                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+                  <h4 className="text-sm font-semibold text-purple-400 mb-2">📚 Example Training Data</h4>
+                  <div className="text-xs text-purple-300 space-y-2">
+                    <div>
+                      <p className="font-semibold">Custom Knowledge Example:</p>
+                      <p>"My favorite drop is Misty Meadows because it has good loot and rotation options. I always rotate through the mountain to avoid early fights. My building strategy focuses on high ground control and quick edits."</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Personal Goals Example:</p>
+                      <p>"I want to improve my endgame positioning, get better at reading the storm, and increase my win rate from 5% to 10%."</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
@@ -1110,17 +1533,19 @@ export default function AIPage() {
                 {conversations.length}/5 chats
               </span>
             </div>
-            <button
-              onClick={() => {
-                console.log('New Chat button clicked!');
-                createNewChat();
-              }}
-              disabled={conversations.length >= 5}
-              className="px-6 py-2 bg-white text-dark-charcoal rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ zIndex: 1000, position: 'relative' }}
-            >
-              + New Chat
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => {
+                  console.log('New Chat button clicked!');
+                  createNewChat();
+                }}
+                disabled={conversations.length >= 5}
+                className="px-6 py-2 bg-white text-dark-charcoal rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ zIndex: 1000, position: 'relative' }}
+              >
+                + New Chat
+              </button>
+            </div>
           </div>
 
           {/* Chat Log Sidebar */}
@@ -1194,7 +1619,15 @@ export default function AIPage() {
                         : 'bg-white/10 text-white'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
+                    {message.isUser ? (
+                      <p className="text-sm">{message.text}</p>
+                    ) : (
+                      <div className="text-sm prose prose-invert prose-sm max-w-none">
+                        <ReactMarkdown>
+                          {message.text}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                     <p className={`text-xs mt-2 ${message.isUser ? 'text-gray-600' : 'text-gray-400'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </p>
@@ -1282,32 +1715,29 @@ export default function AIPage() {
 
         {/* Navigation */}
         <div style={{ textAlign: 'center', marginTop: '48px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
             <button
               onClick={() => {
-                console.log('Back to Dashboard clicked!');
-                alert('Dashboard button clicked!');
                 window.location.href = '/dashboard';
               }}
               style={{ 
                 padding: '12px 24px', 
-                backgroundColor: 'white', 
-                color: 'black', 
+                backgroundColor: 'transparent', 
+                color: 'white', 
                 borderRadius: '8px', 
                 fontWeight: 'bold',
                 fontSize: '18px',
-                border: 'none',
+                border: '2px solid white',
                 cursor: 'pointer',
                 zIndex: 9999,
-                position: 'relative'
+                position: 'relative',
+                width: '280px'
               }}
             >
               ← Back to Dashboard
             </button>
             <button
               onClick={() => {
-                console.log('Back to Home clicked!');
-                alert('Home button clicked!');
                 window.location.href = '/';
               }}
               style={{ 
@@ -1320,7 +1750,8 @@ export default function AIPage() {
                 border: 'none',
                 cursor: 'pointer',
                 zIndex: 9999,
-                position: 'relative'
+                position: 'relative',
+                width: '280px'
               }}
             >
               Back to Home
@@ -1329,16 +1760,34 @@ export default function AIPage() {
         </div>
       </div>
       
+      {/* Upgrade Prompt Modal */}
+      {showUpgradePrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-dark-charcoal p-6 rounded-lg max-w-md mx-4">
+            <h3 className="text-xl font-bold text-white mb-4">Upgrade Required</h3>
+            <p className="text-gray-300 mb-6">
+              You've reached your monthly limit. Upgrade to continue using PathGen's AI coaching and Osirion analytics.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUpgradePrompt(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+              >
+                Maybe Later
+              </button>
+              <Link
+                href="/pricing"
+                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded hover:from-blue-600 hover:to-purple-700"
+              >
+                View Plans
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <Footer />
       
-      {/* Epic Account Modal */}
-      {showEpicModal && (
-        <EpicAccountModal
-          isOpen={showEpicModal}
-          onClose={() => setShowEpicModal(false)}
-          onAccountLinked={handleEpicAccountLinked}
-        />
-      )}
     </div>
   );
 }

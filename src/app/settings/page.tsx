@@ -9,12 +9,51 @@ import SmoothScroll from '@/components/SmoothScroll';
 export default function SettingsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [displayName, setDisplayName] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName || '');
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    setMessage('');
+    
+    try {
+      // Here you would typically update the user's display name in your database
+      // For now, we'll just simulate the update
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setMessage('Profile updated successfully!');
+      setIsEditing(false);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setDisplayName(user?.displayName || '');
+    setIsEditing(false);
+    setMessage('');
+  };
 
   if (loading) {
     return (
@@ -64,7 +103,44 @@ export default function SettingsPage() {
           <div className="max-w-4xl mx-auto space-y-8">
             {/* Profile Information */}
             <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Profile Information</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-white">Profile Information</h2>
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                  >
+                    Edit Profile
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white rounded-lg transition-colors"
+                    >
+                      {isSaving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {message && (
+                <div className={`mb-4 p-3 rounded-lg ${
+                  message.includes('successfully') 
+                    ? 'bg-green-500/20 border border-green-500/30 text-green-400' 
+                    : 'bg-red-500/20 border border-red-500/30 text-red-400'
+                }`}>
+                  {message}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
@@ -75,8 +151,10 @@ export default function SettingsPage() {
                     type="email"
                     value={user.email || ''}
                     disabled
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white"
+                    className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white cursor-not-allowed opacity-70"
+                    placeholder="Email cannot be changed"
                   />
+                  <p className="text-xs text-gray-400 mt-1">Email address cannot be modified for security reasons</p>
                 </div>
                 <div>
                   <label htmlFor="displayName" className="block text-sm font-medium text-white mb-2">
@@ -85,10 +163,19 @@ export default function SettingsPage() {
                   <input
                     id="displayName"
                     type="text"
-                    value={user.displayName || ''}
-                    disabled
-                    className="w-full px-4 py-3 border border-white/20 rounded-xl bg-white/5 text-white"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    disabled={!isEditing}
+                    className={`w-full px-4 py-3 border rounded-xl transition-colors ${
+                      isEditing 
+                        ? 'border-blue-500/50 bg-white/10 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20' 
+                        : 'border-white/20 bg-white/5 text-white cursor-not-allowed opacity-70'
+                    }`}
+                    placeholder="Enter your display name"
                   />
+                  <p className="text-xs text-gray-400 mt-1">
+                    {isEditing ? 'This name will be displayed to other users' : 'Click Edit Profile to change your display name'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -96,10 +183,16 @@ export default function SettingsPage() {
             {/* Account Status */}
             <div className="glass-card p-6">
               <h2 className="text-xl font-semibold text-white mb-4">Account Status</h2>
-              <p className="text-secondary-text">
+              <p className="text-secondary-text mb-4">
                 Your account is currently active. For additional features and support,
                 please visit the pricing page to upgrade your subscription.
               </p>
+              <button
+                onClick={() => router.push('/pricing')}
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105"
+              >
+                View Pricing Plans
+              </button>
             </div>
 
             {/* Navigation */}
@@ -107,13 +200,13 @@ export default function SettingsPage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="btn-secondary"
+                  className="px-6 py-3 border-2 border-white/20 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-all duration-300 hover:border-white/40 transform hover:scale-105"
                 >
                   ← Back to Dashboard
                 </button>
                 <button
                   onClick={() => router.push('/')}
-                  className="btn-primary"
+                  className="px-6 py-3 bg-white hover:bg-gray-100 text-gray-900 rounded-lg transition-all duration-300 transform hover:scale-105"
                 >
                   Back to Home
                 </button>

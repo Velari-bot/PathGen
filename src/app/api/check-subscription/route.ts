@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
 import { initializeApp } from 'firebase/app';
+import { SUBSCRIPTION_TIERS, UsageTracker } from '@/lib/osirion';
 
 // Initialize Firebase for API route
 const firebaseConfig = {
@@ -43,31 +44,51 @@ export async function POST(request: NextRequest) {
       const userDoc = await getDoc(doc(db, 'users', userId));
 
       if (!userDoc.exists()) {
-        return NextResponse.json(
-          { hasActiveSubscription: false },
-          { status: 200 }
-        );
+        // Return free tier for new users
+        const freeTier = SUBSCRIPTION_TIERS.free;
+        const usage = await UsageTracker.checkUsage(userId, 'free');
+        
+        return NextResponse.json({
+          hasActiveSubscription: false,
+          subscriptionTier: 'free',
+          tier: freeTier,
+          usage: usage,
+          limits: freeTier.limits
+        });
       }
 
       const userData = userDoc.data();
+      const subscriptionTier = userData.subscriptionTier || 'free';
       const hasActiveSubscription = userData.subscriptionStatus === 'active';
+      
+      // Get the tier details
+      const tier = SUBSCRIPTION_TIERS[subscriptionTier as keyof typeof SUBSCRIPTION_TIERS] || SUBSCRIPTION_TIERS.free;
+      
+      // Get current usage
+      const usage = await UsageTracker.checkUsage(userId, subscriptionTier as keyof typeof SUBSCRIPTION_TIERS);
 
       return NextResponse.json({
         hasActiveSubscription,
-        subscriptionTier: userData.subscriptionTier,
+        subscriptionTier,
         stripeCustomerId: userData.stripeCustomerId,
+        tier: tier,
+        usage: usage,
+        limits: tier.limits
       });
     } catch (firestoreError: any) {
       console.error('Firestore error:', firestoreError);
       
-      // If it's a permission error, check if user recently paid
+      // If it's a permission error, return free tier
       if (firestoreError.code === 'permission-denied') {
-        // For now, assume user has paid if they're accessing the API
-        // This is temporary until Firestore permissions are fixed
+        const freeTier = SUBSCRIPTION_TIERS.free;
+        const usage = await UsageTracker.checkUsage(userId, 'free');
+        
         return NextResponse.json({
-          hasActiveSubscription: true,
-          subscriptionTier: 'pro',
-          stripeCustomerId: 'temp',
+          hasActiveSubscription: false,
+          subscriptionTier: 'free',
+          tier: freeTier,
+          usage: usage,
+          limits: freeTier.limits
         });
       }
       
