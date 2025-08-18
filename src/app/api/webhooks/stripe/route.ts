@@ -11,6 +11,37 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
+// Helper function to initialize Firebase Admin
+function initializeFirebaseAdmin() {
+  // Check if Firebase Admin is already initialized
+  if (getApps().length > 0) {
+    console.log('✅ Firebase Admin already initialized');
+    return;
+  }
+
+  // Only initialize if we have the required environment variables
+  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+    try {
+      initializeApp({
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        }),
+      });
+      console.log('✅ Firebase Admin initialized successfully in webhook');
+    } catch (error: any) {
+      if (error.code !== 'app/duplicate-app') {
+        console.error('❌ Firebase Admin initialization error:', error);
+      } else {
+        console.log('✅ Firebase Admin already initialized (duplicate app)');
+      }
+    }
+  } else {
+    console.error('❌ Missing Firebase Admin environment variables in webhook');
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🔔 Webhook received - starting processing...');
@@ -79,24 +110,8 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status
         if (session.metadata?.userId) {
           try {
-            // Initialize Firebase Admin if not already initialized
-            if (getApps().length === 0) {
-              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-                try {
-                  initializeApp({
-                    credential: cert({
-                      projectId: process.env.FIREBASE_PROJECT_ID,
-                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                    }),
-                  });
-                } catch (error: any) {
-                  if (error.code !== 'app/duplicate-app') {
-                    console.error('❌ Firebase Admin initialization error:', error);
-                  }
-                }
-              }
-            }
+            // Initialize Firebase Admin
+            initializeFirebaseAdmin();
             
             const db = getFirestore();
 
@@ -146,24 +161,8 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status
         if (subscription.metadata?.userId) {
           try {
-            // Initialize Firebase Admin if not already initialized
-            if (getApps().length === 0) {
-              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-                try {
-                  initializeApp({
-                    credential: cert({
-                      projectId: process.env.FIREBASE_PROJECT_ID,
-                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                    }),
-                  });
-                } catch (error: any) {
-                  if (error.code !== 'app/duplicate-app') {
-                    console.error('❌ Firebase Admin initialization error:', error);
-                  }
-                }
-              }
-            }
+            // Initialize Firebase Admin
+            initializeFirebaseAdmin();
             
             const db = getFirestore();
 
@@ -211,24 +210,8 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status
         if (updatedSubscription.metadata?.userId) {
           try {
-            // Initialize Firebase Admin if not already initialized
-            if (getApps().length === 0) {
-              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-                try {
-                  initializeApp({
-                    credential: cert({
-                      projectId: process.env.FIREBASE_PROJECT_ID,
-                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                    }),
-                  });
-                } catch (error: any) {
-                  if (error.code !== 'app/duplicate-app') {
-                    console.error('❌ Firebase Admin initialization error:', error);
-                  }
-                }
-              }
-            }
+            // Initialize Firebase Admin
+            initializeFirebaseAdmin();
             
             const db = getFirestore();
 
@@ -311,24 +294,8 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status for successful payments
         if (invoice.subscription) {
           try {
-            // Initialize Firebase Admin if not already initialized
-            if (getApps().length === 0) {
-              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-                try {
-                  initializeApp({
-                    credential: cert({
-                      projectId: process.env.FIREBASE_PROJECT_ID,
-                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                    }),
-                  });
-                } catch (error: any) {
-                  if (error.code !== 'app/duplicate-app') {
-                    console.error('❌ Firebase Admin initialization error:', error);
-                  }
-                }
-              }
-            }
+            // Initialize Firebase Admin
+            initializeFirebaseAdmin();
             
             const db = getFirestore();
 
@@ -365,24 +332,8 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status for failed payments
         if (failedInvoice.subscription) {
           try {
-            // Initialize Firebase Admin if not already initialized
-            if (getApps().length === 0) {
-              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-                try {
-                  initializeApp({
-                    credential: cert({
-                      projectId: process.env.FIREBASE_PROJECT_ID,
-                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-                    }),
-                  });
-                } catch (error: any) {
-                  if (error.code !== 'app/duplicate-app') {
-                    console.error('❌ Firebase Admin initialization error:', error);
-                  }
-                }
-              }
-            }
+            // Initialize Firebase Admin
+            initializeFirebaseAdmin();
             
             const db = getFirestore();
 

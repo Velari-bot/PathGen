@@ -3,10 +3,10 @@ import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already initialized
-let firebaseAdminInitialized = false;
-
 function initializeFirebaseAdmin() {
-  if (firebaseAdminInitialized || getApps().length > 0) {
+  // Check if Firebase Admin is already initialized
+  if (getApps().length > 0) {
+    console.log('✅ Firebase Admin already initialized');
     return;
   }
 
@@ -20,10 +20,13 @@ function initializeFirebaseAdmin() {
           privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
         }),
       });
-      firebaseAdminInitialized = true;
       console.log('✅ Firebase Admin initialized successfully in check-subscription');
-    } catch (error) {
-      console.error('Failed to initialize Firebase Admin:', error);
+    } catch (error: any) {
+      if (error.code !== 'app/duplicate-app') {
+        console.error('Failed to initialize Firebase Admin:', error);
+      } else {
+        console.log('✅ Firebase Admin already initialized (duplicate app)');
+      }
     }
   } else {
     console.error('❌ Missing Firebase Admin environment variables');
