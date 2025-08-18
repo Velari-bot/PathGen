@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         const userDoc = await userRef.get();
         const userData = userDoc.exists ? userDoc.data() : {};
         
-        // Determine limits based on subscription tier
+        // Determine limits based on subscription tier - Credit-Efficient Limits
         let limits = {
           matches: { monthly: 6, oneTime: true },
           aiMessages: { monthly: 45, oneTime: true },
@@ -87,19 +87,19 @@ export async function GET(request: NextRequest) {
         
         if (userData.subscriptionTier === 'standard') {
           limits = {
-            matches: { monthly: 50, oneTime: false },
-            aiMessages: { monthly: 250, oneTime: false },
-            replayUploads: { monthly: 5, oneTime: false },
-            computeRequests: { monthly: 50, oneTime: false },
-            osirionPulls: { monthly: 50, oneTime: false }
+            matches: { monthly: 45, oneTime: false }, // 45 matches/month (≈1000 credits = ~€2 worth, safe)
+            aiMessages: { monthly: 225, oneTime: false }, // 225 messages/month (light weight on API)
+            replayUploads: { monthly: 5, oneTime: false }, // 5 × 20 credits = 100 credits ≈ €0.20
+            computeRequests: { monthly: 50, oneTime: false }, // 50 × 10 credits = 500 credits ≈ €1
+            osirionPulls: { monthly: 50, oneTime: false } // 50 pulls/month
           };
         } else if (userData.subscriptionTier === 'pro') {
           limits = {
-            matches: { monthly: 275, oneTime: false },
-            aiMessages: { monthly: 700, oneTime: false },
-            replayUploads: { monthly: 275, oneTime: false },
-            computeRequests: { monthly: 275, oneTime: false },
-            osirionPulls: { monthly: 500, oneTime: false }
+            matches: { monthly: 225, oneTime: false }, // 225 matches/month (≈5000 credits = ~€10)
+            aiMessages: { monthly: 650, oneTime: false }, // 650 messages/month
+            replayUploads: { monthly: 175, oneTime: false }, // 175 × 20 credits = 3500 credits = ~€7
+            computeRequests: { monthly: 275, oneTime: false }, // 275 × 10 credits = 2750 credits = ~€5.5
+            osirionPulls: { monthly: 500, oneTime: false } // 500 pulls/month
           };
         }
         
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
         const userDoc = await userRef.get();
         const userData = userDoc.exists ? userDoc.data() : {};
         
-        // Determine limits based on subscription tier
+        // Determine limits based on subscription tier - Credit-Efficient Limits
         let limits = {
           matches: { monthly: 6, oneTime: true },
           aiMessages: { monthly: 45, oneTime: true },
@@ -173,19 +173,19 @@ export async function GET(request: NextRequest) {
         
         if (userData.subscriptionTier === 'standard') {
           limits = {
-            matches: { monthly: 50, oneTime: false },
-            aiMessages: { monthly: 250, oneTime: false },
-            replayUploads: { monthly: 5, oneTime: false },
-            computeRequests: { monthly: 50, oneTime: false },
-            osirionPulls: { monthly: 50, oneTime: false }
+            matches: { monthly: 45, oneTime: false }, // 45 matches/month (≈1000 credits = ~€2 worth, safe)
+            aiMessages: { monthly: 225, oneTime: false }, // 225 messages/month (light weight on API)
+            replayUploads: { monthly: 5, oneTime: false }, // 5 × 20 credits = 100 credits ≈ €0.20
+            computeRequests: { monthly: 50, oneTime: false }, // 50 × 10 credits = 500 credits ≈ €1
+            osirionPulls: { monthly: 50, oneTime: false } // 50 pulls/month
           };
         } else if (userData.subscriptionTier === 'pro') {
           limits = {
-            matches: { monthly: 275, oneTime: false },
-            aiMessages: { monthly: 700, oneTime: false },
-            replayUploads: { monthly: 275, oneTime: false },
-            computeRequests: { monthly: 275, oneTime: false },
-            osirionPulls: { monthly: 500, oneTime: false }
+            matches: { monthly: 225, oneTime: false }, // 225 matches/month (≈5000 credits = ~€10)
+            aiMessages: { monthly: 650, oneTime: false }, // 650 messages/month
+            replayUploads: { monthly: 175, oneTime: false }, // 175 × 20 credits = 3500 credits = ~€7
+            computeRequests: { monthly: 275, oneTime: false }, // 275 × 10 credits = 2750 credits = ~€5.5
+            osirionPulls: { monthly: 500, oneTime: false } // 500 pulls/month
           };
         }
         

@@ -263,7 +263,7 @@ export class OsirionService {
   }
 }
 
-// Subscription tier definitions
+// Subscription tier definitions - Credit-Efficient Tiers
 export const SUBSCRIPTION_TIERS = {
   free: {
     id: 'free',
@@ -272,19 +272,21 @@ export const SUBSCRIPTION_TIERS = {
     currency: 'USD',
     limits: {
       osirion: {
-        matchesPerMonth: 6, // 6 uploads × $0.0254 = $0.15 (matches your cost)
+        matchesPerMonth: 6, // 6 uploads × $0.0254 = $0.15 (one-time trial)
         eventTypesPerMatch: 1,
         replayUploadsPerMonth: 0, // No replay uploads for free tier
-        computeRequestsPerMonth: 0 // No compute for free tier
+        computeRequestsPerMonth: 0, // No compute for free tier
+        osirionPullsPerMonth: 10 // 10 pulls per month
       },
       ai: {
-        messagesPerMonth: 45 // 45 messages × ~$0.00038 = $0.017 (matches your cost)
+        messagesPerMonth: 45 // 45 messages × ~$0.00038 = $0.017 (one-time trial)
       }
     },
     features: [
       '6 matches 1 time (one-time access)',
       'Basic elimination events only',
       '45 AI messages 1 time',
+      '10 Osirion API pulls per month',
       'Epic account connection',
       'Powered by Osirion'
     ]
@@ -296,21 +298,23 @@ export const SUBSCRIPTION_TIERS = {
     currency: 'USD',
     limits: {
       osirion: {
-        matchesPerMonth: 50, // 50 uploads × $0.0254 = $1.27 (matches your cost)
+        matchesPerMonth: 45, // 45 uploads × $0.0254 = $1.14 (≈1000 credits = ~€2 worth, safe)
         eventTypesPerMatch: 3,
-        replayUploadsPerMonth: 5, // 5 replay uploads
-        computeRequestsPerMonth: 50 // 50 compute requests
+        replayUploadsPerMonth: 5, // 5 × 20 credits = 100 credits ≈ €0.20
+        computeRequestsPerMonth: 50, // 50 × 10 credits = 500 credits ≈ €1
+        osirionPullsPerMonth: 50 // 50 pulls per month
       },
       ai: {
-        messagesPerMonth: 250 // 250 messages × ~$0.00038 = $0.095 (matches your cost)
+        messagesPerMonth: 225 // 225 messages × ~$0.00038 = $0.085 (light weight on API)
       }
     },
     features: [
-      '50 matches per month',
+      '45 matches per month',
       '3 event types per match',
       '5 replay uploads per month',
       '50 compute requests per month',
-      '250 AI messages per month',
+      '225 AI messages per month',
+      '50 Osirion API pulls per month',
       'Epic account connection',
       'Powered by Osirion'
     ]
@@ -322,21 +326,23 @@ export const SUBSCRIPTION_TIERS = {
     currency: 'USD',
     limits: {
       osirion: {
-        matchesPerMonth: 275, // 275 uploads × $0.0254 = $6.99 (matches your cost)
+        matchesPerMonth: 225, // 225 uploads × $0.0254 = $5.72 (≈5000 credits = ~€10)
         eventTypesPerMatch: -1, // All types
-        replayUploadsPerMonth: 275, // 275 replay uploads
-        computeRequestsPerMonth: 275 // 275 compute requests
+        replayUploadsPerMonth: 175, // 175 × 20 credits = 3500 credits = ~€7
+        computeRequestsPerMonth: 275, // 275 × 10 credits = 2750 credits = ~€5.5
+        osirionPullsPerMonth: 500 // 500 pulls per month
       },
       ai: {
-        messagesPerMonth: 700 // 700 messages × ~$0.00038 = $0.266 (matches your cost)
+        messagesPerMonth: 650 // 650 messages × ~$0.00038 = $0.247
       }
     },
     features: [
-      '275 matches per month',
+      '225 matches per month',
       'All event types',
-      '275 replay uploads per month',
+      '175 replay uploads per month',
       '275 compute requests per month',
-      '700 AI messages per month',
+      '650 AI messages per month',
+      '500 Osirion API pulls per month',
       'Epic account connection',
       'Powered by Osirion'
     ]
