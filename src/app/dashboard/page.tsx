@@ -952,12 +952,9 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
                 </div>
                 <div className="text-sm text-white/80 space-y-2">
                   <p><span className="text-white/60">Status:</span> {subscriptionInfo.hasActiveSubscription ? 'Active' : 'Inactive'}</p>
-                  <p><span className="text-white/60">Messages Remaining:</span> {subscriptionInfo.usage?.remaining || 0}</p>
-                  <p><span className="text-white/60">Monthly Messages:</span> {subscriptionInfo.limits?.monthlyMessages || 0}</p>
-                  <p><span className="text-white/60">Monthly Tokens:</span> {subscriptionInfo.limits?.monthlyTokens || 0}</p>
-                  <p><span className="text-white/60">Data Pulls:</span> {subscriptionInfo.limits?.monthlyDataPulls || 0}</p>
-                  <p><span className="text-white/60">Replay Uploads:</span> {subscriptionInfo.limits?.replayUploads || 0}</p>
-                  <p><span className="text-white/60">Tournament Strategies:</span> {subscriptionInfo.limits?.tournamentStrategies || 0}</p>
+                  <p><span className="text-white/60">Member Since:</span> {subscriptionInfo.startDate ? new Date(subscriptionInfo.startDate).toLocaleDateString() : 'N/A'}</p>
+                  <p><span className="text-white/60">Plan Duration:</span> Monthly Subscription</p>
+                  <p><span className="text-white/60">Next billing cycle:</span> {subscriptionInfo.startDate ? new Date(new Date(subscriptionInfo.startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() : 'N/A'}</p>
                 </div>
                 {subscriptionInfo.subscriptionTier === 'free' && (
                   <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
@@ -981,6 +978,84 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
                 </div>
                 
 
+              </div>
+            </div>
+          )}
+
+          {/* Credit-Efficient Usage Limits */}
+          {usageInfo && (
+            <div className="glass-card p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">🎯 Credit-Efficient Usage Limits</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Osirion API Usage */}
+                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <span className="text-pink-400 mr-2">⚡</span>
+                    Osirion API Usage
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Matches:</span>
+                      <span className="text-white font-medium">{usageInfo.matches?.used || 0}/{usageInfo.matches?.monthly || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Replay Uploads:</span>
+                      <span className="text-white font-medium">{usageInfo.replayUploads?.used || 0}/{usageInfo.replayUploads?.monthly || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Compute Requests:</span>
+                      <span className="text-white font-medium">{usageInfo.computeRequests?.used || 0}/{usageInfo.computeRequests?.monthly || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Event Types:</span>
+                      <span className="text-white font-medium">{usageInfo.matches?.eventTypes || 1}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Coaching Usage */}
+                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <span className="text-purple-400 mr-2">🤖</span>
+                    AI Coaching Usage
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">AI Messages:</span>
+                      <span className="text-white font-medium">{usageInfo.aiMessages?.used || 0}/{usageInfo.aiMessages?.monthly || 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Conversations:</span>
+                      <span className="text-white font-medium">{usageInfo.aiMessages?.conversations || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Epic Account Sync */}
+                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <span className="text-blue-400 mr-2">🎮</span>
+                    Epic Account Sync
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Last Sync:</span>
+                      <span className="text-white font-medium">{epicAccount ? 'Connected' : 'Never'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Sync Count:</span>
+                      <span className="text-white font-medium">{epicAccount ? '1' : '0'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Stats Pulled:</span>
+                      <span className="text-white font-medium">{fortniteStats ? '1' : '0'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Total Sessions:</span>
+                      <span className="text-white font-medium">{fortniteStats ? '1' : '0'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
