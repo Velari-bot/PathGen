@@ -123,15 +123,15 @@ export async function POST(request: NextRequest) {
       // Comprehensive debugging
       console.log('=== SUBSCRIPTION DEBUG INFO ===');
       console.log('User ID:', userId);
-      console.log('User data fields:', Object.keys(userData));
-      console.log('User subscription data:', userData.subscription);
-      console.log('User subscriptionTier field:', userData.subscriptionTier);
-      console.log('User subscriptionStatus field:', userData.subscriptionStatus);
-      console.log('User tier field:', userData.tier);
-      console.log('User status field:', userData.status);
+      console.log('User data fields:', userData ? Object.keys(userData) : 'No user data');
+      console.log('User subscription data:', userData?.subscription);
+      console.log('User subscriptionTier field:', userData?.subscriptionTier);
+      console.log('User subscriptionStatus field:', userData?.subscriptionStatus);
+      console.log('User tier field:', userData?.tier);
+      console.log('User status field:', userData?.status);
       console.log('Separate subscription data:', subscriptionData);
       console.log('Has separate subscription:', !subscriptionsSnapshot.empty);
-      console.log('All user data:', JSON.stringify(userData, null, 2));
+      console.log('All user data:', userData ? JSON.stringify(userData, null, 2) : 'No user data');
       console.log('=== END DEBUG INFO ===');
       
       // Search for any field that contains "pro" subscription data
@@ -141,12 +141,12 @@ export async function POST(request: NextRequest) {
       
       // Check all possible field locations
       const possibleFields = [
-        userData.subscriptionTier,
-        userData.subscriptionStatus,
-        userData.tier,
-        userData.status,
-        userData.subscription?.tier,
-        userData.subscription?.status,
+        userData?.subscriptionTier,
+        userData?.subscriptionStatus,
+        userData?.tier,
+        userData?.status,
+        userData?.subscription?.tier,
+        userData?.subscription?.status,
         subscriptionData?.plan,
         subscriptionData?.status
       ];
@@ -170,21 +170,25 @@ export async function POST(request: NextRequest) {
       };
       
       // Check user data recursively
-      checkForPro(userData, 'userData');
-      checkForPro(subscriptionData, 'subscriptionData');
+      if (userData) {
+        checkForPro(userData, 'userData');
+      }
+      if (subscriptionData) {
+        checkForPro(subscriptionData, 'subscriptionData');
+      }
       
       // If we didn't find "pro" in the recursive search, use the direct field values
       if (!foundProSubscription) {
         subscriptionTier = subscriptionData?.plan || 
-                          userData.subscriptionTier || 
-                          userData.subscription?.tier || 
-                          userData.tier ||
+                          userData?.subscriptionTier || 
+                          userData?.subscription?.tier || 
+                          userData?.tier ||
                           'free';
                           
         subscriptionStatus = subscriptionData?.status || 
-                            userData.subscriptionStatus || 
-                            userData.subscription?.status || 
-                            userData.status ||
+                            userData?.subscriptionStatus || 
+                            userData?.subscription?.status || 
+                            userData?.status ||
                             'free';
       }
       
@@ -211,7 +215,7 @@ export async function POST(request: NextRequest) {
       const limits = SUBSCRIPTION_PLANS[planForLimits];
       
       // Get current usage from subscription if available (prioritize subscriptions collection)
-      const usage = subscriptionData?.usage || userData.subscription?.usage || userData.usage || {
+      const usage = subscriptionData?.usage || userData?.subscription?.usage || userData?.usage || {
         messagesUsed: 0,
         tokensUsed: 0,
         dataPullsUsed: 0,
@@ -234,8 +238,8 @@ export async function POST(request: NextRequest) {
           foundStatus: subscriptionStatus,
           planForLimits,
           foundProSubscription,
-          userDataFields: Object.keys(userData),
-          subscriptionFields: userData.subscription ? Object.keys(userData.subscription) : [],
+          userDataFields: userData ? Object.keys(userData) : [],
+          subscriptionFields: userData?.subscription ? Object.keys(userData.subscription) : [],
           separateSubscriptionData: subscriptionData,
           hasSeparateSubscription: !subscriptionsSnapshot.empty,
           allUserData: userData,
