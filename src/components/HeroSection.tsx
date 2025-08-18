@@ -87,6 +87,8 @@ export default function HeroSection() {
                   src="/Black PathGen logo.png"
                   alt="PathGen AI Logo"
                   fill
+                  sizes="64px"
+                  priority
                   className="object-contain"
                 />
               </div>

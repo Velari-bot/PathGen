@@ -34,7 +34,7 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
         client_id: epicClientId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'basic_profile',
+        scope: 'basic_profile friends_list country presence',
         state: user.uid, // Pass user ID for security
       });
 

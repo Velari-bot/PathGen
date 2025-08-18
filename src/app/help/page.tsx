@@ -9,7 +9,7 @@ export default function HelpCenter() {
   const faqs = [
     {
       question: "How do I connect my Fortnite account?",
-      answer: "You can connect your Fortnite account in three ways: 1) Epic Account OAuth (recommended), 2) Manual username input, or 3) Fortnite Tracker link. Go to the AI page and select your preferred method."
+      answer: "You can connect your Fortnite account in three ways: 1) Epic Account OAuth (recommended), 2) Manual username input, or 3) Sign In with Epic. Go to the AI page and select your preferred method."
     },
     {
       question: "Why can't I see my Fortnite stats?",

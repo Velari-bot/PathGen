@@ -41,8 +41,129 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (auth) {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        setUser(user);
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            // Check if user document exists in Firestore
+            if (!db) {
+              console.error('❌ Firebase not initialized in AuthContext');
+              return;
+            }
+            
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (!userDoc.exists()) {
+              // Create new user document with comprehensive data
+              const newUser = {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || user.email?.split('@')[0] || 'User',
+                photoURL: user.photoURL || null,
+                epicId: null,
+                discordId: null,
+                persona: 'casual' as const,
+                subscriptionStatus: 'active' as const,
+                subscriptionTier: 'free' as const,
+                createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp(),
+                // Additional user profile fields
+                profile: {
+                  avatar: user.photoURL || null,
+                  bio: null,
+                  location: null,
+                  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  language: navigator.language || 'en',
+                  dateOfBirth: null,
+                  gender: null
+                },
+                gaming: {
+                  favoriteGame: null, // Will be filled during onboarding
+                  skillLevel: null, // Will be filled during onboarding
+                  playStyle: null, // Will be filled during onboarding
+                  preferredModes: [], // Will be filled during onboarding
+                  teamSize: null, // Will be filled during onboarding
+                  goals: [] // Will be filled during onboarding
+                },
+                subscription: {
+                  status: 'free' as const,
+                  tier: 'free',
+                  startDate: serverTimestamp(),
+                  endDate: null,
+                  autoRenew: false,
+                  paymentMethod: null,
+                  stripeCustomerId: null,
+                  stripeSubscriptionId: null
+                },
+                settings: {
+                  notifications: {
+                    email: true,
+                    push: false,
+                    sms: false,
+                    discord: false
+                  },
+                  privacy: {
+                    profilePublic: false,
+                    statsPublic: false,
+                    allowFriendRequests: true,
+                    showOnlineStatus: true
+                  },
+                  preferences: {
+                    theme: 'dark' as const,
+                    language: navigator.language || 'en',
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    dateFormat: 'MM/DD/YYYY',
+                    timeFormat: '12h' as const
+                  }
+                },
+                statistics: {
+                  totalSessions: 0,
+                  totalTime: 0,
+                  lastActivity: serverTimestamp(),
+                  favoriteFeatures: [],
+                  mostUsedTools: [],
+                  improvementAreas: []
+                }
+              };
+              
+              await setDoc(userDocRef, newUser);
+              console.log('✅ New comprehensive user document created in Firestore');
+              
+              // Also create initial usage document
+              try {
+                const { UsageTracker } = await import('@/lib/usage-tracker');
+                await UsageTracker.getUserUsage(user.uid, 'free');
+                console.log('✅ Initial usage document created in Firestore');
+              } catch (error) {
+                console.warn('⚠️ Could not create usage document:', error);
+              }
+            } else {
+              // Update last login and ensure subscription status is correct
+              const userData = userDoc.data();
+              const updates: any = {
+                lastLogin: serverTimestamp(),
+              };
+              
+              // Ensure subscription status is set correctly for existing users
+              if (!userData.subscriptionStatus || userData.subscriptionStatus === 'inactive') {
+                updates.subscriptionStatus = 'active';
+                updates.subscriptionTier = 'free';
+                console.log('✅ Updated existing user subscription status to active/free');
+              }
+              
+              await updateDoc(userDocRef, updates);
+              console.log('✅ User document updated in Firestore');
+            }
+            
+            setUser(user);
+          } catch (error) {
+            console.error('❌ Error setting up user document:', error);
+            // Still set the user even if Firestore setup fails
+            setUser(user);
+          }
+        } else {
+          setUser(null);
+        }
         setLoading(false);
       });
 
@@ -61,15 +182,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Create user document in Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      // Create comprehensive user document in Firestore
+      const newUser = {
+        uid: user.uid,
         email: user.email,
         displayName: user.displayName || email.split('@')[0], // Use email prefix if no display name
+        photoURL: null,
+        epicId: null,
+        discordId: null,
+        persona: 'casual' as const,
+        subscriptionStatus: 'active' as const,
+        subscriptionTier: 'free' as const,
         createdAt: serverTimestamp(),
-        subscriptionStatus: 'inactive',
-        subscriptionTier: null,
         lastLogin: serverTimestamp(),
-      });
+        // Additional user profile fields
+        profile: {
+          avatar: null,
+          bio: null,
+          location: null,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          language: navigator.language || 'en',
+          dateOfBirth: null,
+          gender: null
+        },
+        gaming: {
+          favoriteGame: null, // Will be filled during onboarding
+          skillLevel: null, // Will be filled during onboarding
+          playStyle: null, // Will be filled during onboarding
+          preferredModes: [], // Will be filled during onboarding
+          teamSize: null, // Will be filled during onboarding
+          goals: [] // Will be filled during onboarding
+        },
+        subscription: {
+          status: 'free' as const,
+          tier: 'free',
+          startDate: serverTimestamp(),
+          endDate: null,
+          autoRenew: false,
+          paymentMethod: null,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null
+        },
+        settings: {
+          notifications: {
+            email: true,
+            push: false,
+            sms: false,
+            discord: false
+          },
+          privacy: {
+            profilePublic: false,
+            statsPublic: false,
+            allowFriendRequests: true,
+            showOnlineStatus: true
+          },
+          preferences: {
+            theme: 'dark' as const,
+            language: navigator.language || 'en',
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            dateFormat: 'MM/DD/YYYY',
+            timeFormat: '12h' as const
+          }
+        },
+        statistics: {
+          totalSessions: 0,
+          totalTime: 0,
+          lastActivity: serverTimestamp(),
+          favoriteFeatures: [],
+          mostUsedTools: [],
+          improvementAreas: []
+        }
+      };
+      
+      await setDoc(doc(db, 'users', user.uid), newUser);
+      console.log('✅ New comprehensive user document created in Firestore during signup');
+      
+      // Also create initial usage document
+      try {
+        const { UsageTracker } = await import('@/lib/usage-tracker');
+        await UsageTracker.getUserUsage(user.uid, 'free');
+        console.log('✅ Initial usage document created in Firestore during signup');
+      } catch (error) {
+        console.warn('⚠️ Could not create usage document during signup:', error);
+      }
 
       return user;
     } catch (error: any) {
@@ -87,14 +282,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Update last login in Firestore
+      // Update last login and ensure subscription status in Firestore
       if (db) {
         try {
-          await updateDoc(doc(db, 'users', user.uid), {
-            lastLogin: serverTimestamp(),
-          });
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const updates: any = {
+              lastLogin: serverTimestamp(),
+            };
+            
+            // Ensure subscription status is set correctly
+            if (!userData.subscriptionStatus || userData.subscriptionStatus === 'inactive') {
+              updates.subscriptionStatus = 'active';
+              updates.subscriptionTier = 'free';
+              console.log('✅ Updated user subscription status to active/free during signin');
+            }
+            
+            await updateDoc(userDocRef, updates);
+            console.log('✅ User document updated in Firestore during signin');
+          }
         } catch (error) {
-          console.error('Error updating last login:', error);
+          console.error('Error updating user document during signin:', error);
         }
       }
 
@@ -120,20 +331,105 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userDoc = await getDoc(userDocRef);
 
       if (!userDoc.exists()) {
-        // Create new user document for Google sign-in
-        await setDoc(userDocRef, {
+        // Create comprehensive user document for Google sign-in
+        const newUser = {
+          uid: user.uid,
           email: user.email,
           displayName: user.displayName || user.email?.split('@')[0] || 'User',
+          photoURL: user.photoURL || null,
+          epicId: null,
+          discordId: null,
+          persona: 'casual' as const,
+          subscriptionStatus: 'active' as const,
+          subscriptionTier: 'free' as const,
           createdAt: serverTimestamp(),
-          subscriptionStatus: 'inactive',
-          subscriptionTier: null,
           lastLogin: serverTimestamp(),
-        });
+          // Additional user profile fields
+          profile: {
+            avatar: user.photoURL || null,
+            bio: null,
+            location: null,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            language: navigator.language || 'en',
+            dateOfBirth: null,
+            gender: null
+          },
+          gaming: {
+            favoriteGame: null, // Will be filled during onboarding
+            skillLevel: null, // Will be filled during onboarding
+            playStyle: null, // Will be filled during onboarding
+            preferredModes: [], // Will be filled during onboarding
+            teamSize: null, // Will be filled during onboarding
+            goals: [] // Will be filled during onboarding
+          },
+          subscription: {
+            status: 'free' as const,
+            tier: 'free',
+            startDate: serverTimestamp(),
+            endDate: null,
+            autoRenew: false,
+            paymentMethod: null,
+            stripeCustomerId: null,
+            stripeSubscriptionId: null
+          },
+          settings: {
+            notifications: {
+              email: true,
+              push: false,
+              sms: false,
+              discord: false
+            },
+            privacy: {
+              profilePublic: false,
+              statsPublic: false,
+              allowFriendRequests: true,
+              showOnlineStatus: true
+            },
+            preferences: {
+              theme: 'dark' as const,
+              language: navigator.language || 'en',
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              dateFormat: 'MM/DD/YYYY',
+              timeFormat: '12h' as const
+            }
+          },
+          statistics: {
+            totalSessions: 0,
+            totalTime: 0,
+            lastActivity: serverTimestamp(),
+            favoriteFeatures: [],
+            mostUsedTools: [],
+            improvementAreas: []
+          }
+        };
+        
+        await setDoc(userDocRef, newUser);
+        console.log('✅ New comprehensive user document created in Firestore during Google signin');
+        
+        // Also create initial usage document
+        try {
+          const { UsageTracker } = await import('@/lib/usage-tracker');
+          await UsageTracker.getUserUsage(user.uid, 'free');
+          console.log('✅ Initial usage document created in Firestore during Google signin');
+        } catch (error) {
+          console.warn('⚠️ Could not create usage document during Google signin:', error);
+        }
       } else {
-        // Update last login for existing user
-        await updateDoc(userDocRef, {
+        // Update last login and ensure subscription status for existing user
+        const userData = userDoc.data();
+        const updates: any = {
           lastLogin: serverTimestamp(),
-        });
+        };
+        
+        // Ensure subscription status is set correctly
+        if (!userData.subscriptionStatus || userData.subscriptionStatus === 'inactive') {
+          updates.subscriptionStatus = 'active';
+          updates.subscriptionTier = 'free';
+          console.log('✅ Updated existing user subscription status to active/free during Google signin');
+        }
+        
+        await updateDoc(userDocRef, updates);
+        console.log('✅ User document updated in Firestore during Google signin');
       }
 
       return user;

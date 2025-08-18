@@ -1,1793 +1,725 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import { FortniteStats } from '@/types';
-import { SUBSCRIPTION_TIERS, UsageTracker } from '@/lib/osirion';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getFullDocumentation, getDocumentationSummary } from '@/lib/ai-docs';
-import ReactMarkdown from 'react-markdown';
-
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-}
-
-interface Conversation {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: Date;
-}
+import Navbar from '@/components/Navbar';
+import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
+import { FirebaseService, FortniteData, ChatMessage } from '@/lib/firebase-service';
+import { UsageTracker } from '@/lib/usage-tracker';
 
 export default function AIPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const [conversations, setConversations] = useState<Conversation[]>([
-    {
-      id: Date.now().toString(),
-      title: 'New Chat',
-      messages: [
-        {
-          id: '1',
-          text: "Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?",
-          isUser: false,
-          timestamp: new Date('2024-01-01T12:00:00'),
-        }
-      ],
-      createdAt: new Date('2024-01-01T12:00:00'),
-    }
-  ]);
-  const [currentConversationId, setCurrentConversationId] = useState<string>('');
-  const [inputText, setInputText] = useState('');
-  const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [showChatLog, setShowChatLog] = useState(false);
-  const [showManualInput, setShowManualInput] = useState(false);
-  const [manualUsername, setManualUsername] = useState('');
-  const [trackerLink, setTrackerLink] = useState('');
-  const [inputMethod, setInputMethod] = useState<'manual' | 'tracker'>('manual');
-  const [currentUsage, setCurrentUsage] = useState<any>(null);
-  const [subscriptionTier, setSubscriptionTier] = useState<any>(null);
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Set the current conversation ID after the component mounts
-  useEffect(() => {
-    console.log('useEffect triggered - conversations:', conversations.length, 'currentConversationId:', currentConversationId);
-    if (conversations.length > 0 && !currentConversationId) {
-      console.log('Setting currentConversationId to:', conversations[0].id);
-      setCurrentConversationId(conversations[0].id);
-    }
-  }, [conversations, currentConversationId]);
-
-  const currentConversation = conversations.find(c => c.id === currentConversationId);
-  const messages = currentConversation?.messages || [];
-
-  // Debug logging
-  useEffect(() => {
-    console.log('Current conversation state:', {
-      currentConversationId,
-      currentConversation: currentConversation?.id,
-      messagesCount: messages.length,
-      conversationsCount: conversations.length
-    });
-  }, [currentConversationId, currentConversation, messages, conversations]);
-
-  const quickSuggestions = [
-    "Generate fastest route",
-    "Optimize for stealth",
-    "Avoid high-traffic areas",
-    "Improve building speed",
-    "Analyze recent gameplay",
-    "Get positioning tips"
-  ];
+  const [fortniteStats, setFortniteStats] = useState<FortniteData | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date }>>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only scroll within the chat container when new messages are added
-    if (messages.length > 0 && messagesEndRef.current) {
-      const chatContainer = messagesEndRef.current.closest('.overflow-y-auto');
-      if (chatContainer) {
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
+    if (!loading && !user) {
+      router.push('/login');
     }
-  }, [messages.length]); // Changed from [messages] to [messages.length]
+  }, [user, loading, router]);
 
-  // Check subscription and usage
-  const checkSubscription = async () => {
-    if (!user) return;
-    
-    try {
-      const response = await fetch('/api/check-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: user.uid }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptionTier(data.tier);
-        setCurrentUsage(data.usage);
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    }
-  };
-
-  // Check subscription on mount
-  useEffect(() => {
-    checkSubscription();
-  }, [user]);
-
-  const scrollToBottom = () => {
-    const chatContainer = messagesEndRef.current?.closest('.overflow-y-auto');
-    if (chatContainer) {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
-  };
-
-  const createNewChat = () => {
-    // Check if we're at the 5 chat limit
-    if (conversations.length >= 5) {
-      alert('You have reached the maximum of 5 chats. Please delete an old chat to create a new one.');
-      return;
-    }
-
-    const newChat: Conversation = {
-      id: Date.now().toString(),
-      title: 'New Chat',
-      messages: [
-        {
-          id: '1',
-          text: "Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?",
-          isUser: false,
-          timestamp: new Date(),
-        }
-      ],
-      createdAt: new Date(),
-    };
-    
-    setConversations(prev => [newChat, ...prev]);
-    setCurrentConversationId(newChat.id);
-    setInputText('');
-  };
-
-  const deleteChat = (conversationId: string) => {
-    if (conversations.length <= 1) {
-      alert('You must keep at least one chat open.');
-      return;
-    }
-
-    setConversations(prev => {
-      const filtered = prev.filter(c => c.id !== conversationId);
-      // If we're deleting the current chat, switch to the first available one
-      if (conversationId === currentConversationId && filtered.length > 0) {
-        setCurrentConversationId(filtered[0].id);
-      }
-      return filtered;
-    });
-  };
-
-  const cleanupExpiredChats = () => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    setConversations(prev => {
-      const validChats = prev.filter(c => c.createdAt > thirtyDaysAgo);
-      // If all chats expired, create a new one
-      if (validChats.length === 0) {
-        const newChat: Conversation = {
-          id: Date.now().toString(),
-          title: 'New Chat',
-          messages: [
-            {
-              id: '1',
-              text: "Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?",
-              isUser: false,
-              timestamp: new Date(),
-            }
-          ],
-          createdAt: new Date(),
-        };
-        setCurrentConversationId(newChat.id);
-        return [newChat];
-      }
-      // If current chat was deleted, switch to first available
-      if (!validChats.find(c => c.id === currentConversationId) && validChats.length > 0) {
-        setCurrentConversationId(validChats[0].id);
-      }
-      return validChats;
-    });
-  };
-
-  // Clean up expired chats on component mount
-  useEffect(() => {
-    cleanupExpiredChats();
-  }, []);
-
-  // Load linked Epic account on component mount
   useEffect(() => {
     if (user) {
-      // Load any existing manual username from localStorage
-      const savedUsername = localStorage.getItem('pathgen_manual_username');
-      if (savedUsername) {
-        setManualUsername(savedUsername);
-        setInputMethod('manual');
-      }
-      
-      // Load AI training preferences from localStorage
-      const savedAITraining = localStorage.getItem('pathgen_ai_training');
-      if (savedAITraining) {
-        try {
-          const training = JSON.parse(savedAITraining);
-          setAiCoachingStyle(training.coachingStyle || 'aggressive');
-          setAiFocusArea(training.focusArea || 'all');
-          setCustomKnowledge(training.customKnowledge || '');
-          setPersonalGoals(training.personalGoals || '');
-          console.log('Loaded AI training preferences:', training);
-        } catch (error) {
-          console.error('Error loading AI training preferences:', error);
-        }
-      }
+      loadFortniteStats();
+      initializeChat();
     }
   }, [user]);
 
-  // Fetch Fortnite stats when Epic account changes or manual input is provided
-  useEffect(() => {
-    if (manualUsername) {
-      fetchFortniteStats(manualUsername);
-    } else {
-      setFortniteStats(null);
-    }
-  }, [manualUsername]);
-
-  const fetchFortniteStats = async (username: string) => {
-    console.log('fetchFortniteStats called with username:', username);
-    setIsLoadingStats(true);
+  const loadFortniteStats = async () => {
     try {
-      // Note: Osirion API requires Epic ID, not username
-      // For now, using a placeholder Epic ID for testing
-      // In production, users would need to provide their actual Epic ID
-      const epicId = '37da09eb8b574968ad36da5adc02232b'; // Placeholder Epic ID
-      
-      // Use the new Osirion API route
-      const response = await fetch('/api/osirion/stats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          epicId,
-          userId: user?.uid || 'test-user',
-          platform: 'pc'
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Failed to fetch Fortnite stats:', errorData);
-        setFortniteStats(null);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('Fortnite stats response:', data);
-      
-      if (data.success) {
-        // API worked, set the stats
-        setFortniteStats(data);
-      } else if (data.blocked) {
-        // API is blocked, show fallback options
-        console.log('API blocked, showing fallback options');
-        setFortniteStats({
-          account: {
-            id: 'fallback',
-            name: username,
-            platform: 'pc'
-          },
-          stats: {
-            all: {
-              wins: 0,
-              top10: 0,
-              kills: 0,
-              kd: 0,
-              matches: 0,
-              winRate: 0,
-              avgPlace: 0,
-              avgKills: 0
-            }
-          },
-          recentMatches: [],
-          preferences: {
-            preferredDrop: 'Unknown',
-            weakestZone: 'Unknown',
-            bestWeapon: 'Unknown',
-            avgSurvivalTime: 0
-          },
-          fallback: data.fallback
-        });
-      } else {
-        // Other error
-        setFortniteStats(null);
-      }
+      setIsLoadingStats(true);
+      const stats = await FirebaseService.getFortniteData(user!.uid);
+      setFortniteStats(stats);
     } catch (error) {
-      console.error('Error fetching Fortnite stats:', error);
-      setFortniteStats(null);
+      console.error('Error loading Fortnite stats:', error);
     } finally {
       setIsLoadingStats(false);
     }
   };
 
-  const handleManualUsernameSubmit = () => {
-    if (manualUsername.trim()) {
-      setInputMethod('manual');
-      setShowManualInput(false);
-      // Save to localStorage for persistence
-      localStorage.setItem('pathgen_manual_username', manualUsername.trim());
+  const initializeChat = async () => {
+    if (!user) return;
+    
+    try {
+      // Create a new chat session
+      const chatId = `chat_${Date.now()}_${user.uid}`;
+      setCurrentChatId(chatId);
+      
+      // Create chat document in Firebase
+      await FirebaseService.createChat({
+        userId: user.uid,
+        title: 'AI Coaching Session',
+        messageCount: 0,
+        type: 'coaching',
+        status: 'active',
+        tags: ['fortnite', 'coaching', 'ai']
+      });
+      
+      console.log('✅ New chat session created:', chatId);
+    } catch (error) {
+      console.error('Error initializing chat:', error);
     }
   };
 
-  const handleTrackerLinkSubmit = () => {
-    if (trackerLink.trim()) {
-      // Extract username from tracker link
-      const usernameMatch = trackerLink.match(/fortnitetracker\.com\/profile\/([^\/\?]+)/);
-      if (usernameMatch) {
-        const username = usernameMatch[1];
-        setManualUsername(username);
-        setInputMethod('tracker');
-        setShowManualInput(false);
-        // Save to localStorage for persistence
-        localStorage.setItem('pathgen_manual_username', username);
-      } else {
-        alert('Please enter a valid Osirion link (e.g., https://osirion.com/profile/username)');
-      }
-    }
-  };
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !user || !currentChatId) return;
 
-  const clearAccountInfo = () => {
-    console.log('clearAccountInfo called!');
-    alert('Clearing account info...');
-    setManualUsername('');
-    setTrackerLink('');
-    setInputMethod('manual');
-    setFortniteStats(null);
-    // Clear from localStorage
-    localStorage.removeItem('pathgen_manual_username');
-    console.log('Account info cleared successfully');
-  };
-
-  const switchConversation = (conversationId: string) => {
-    setCurrentConversationId(conversationId);
-    setInputText('');
-  };
-
-  const updateConversationTitle = (conversationId: string, title: string) => {
-    setConversations(prev => 
-      prev.map(c => c.id === conversationId ? { ...c, title } : c)
-    );
-  };
-
-  const canSendMessage = () => {
-    if (!subscriptionTier || !currentUsage) return true;
-    
-    const limit = subscriptionTier.limits.ai.messagesPerMonth;
-    if (limit === -1) return true; // Unlimited
-    
-    return currentUsage.ai.messagesUsed < limit;
-  };
-
-  const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return;
-    
-    // Check message limit
-    if (!canSendMessage()) {
-      setShowUpgradePrompt(true);
-      return;
-    }
-
-    console.log('=== SENDING MESSAGE ===');
-    console.log('Text:', text);
-    console.log('Current fortniteStats:', fortniteStats);
-    console.log('Current conversation ID:', currentConversationId);
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      text: text.trim(),
-      isUser: true,
-      timestamp: new Date(),
+    const userMessage = {
+      role: 'user' as const,
+      content: inputMessage,
+      timestamp: new Date()
     };
 
-    // Update current conversation with user message
-    setConversations(prev => 
-      prev.map(c => 
-        c.id === currentConversationId 
-          ? { 
-              ...c, 
-              messages: [...c.messages, userMessage],
-              title: c.title === 'New Chat' ? text.trim().slice(0, 30) + '...' : c.title
-            }
-          : c
-      )
-    );
-
-    setInputText('');
-    setIsTyping(true);
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoadingResponse(true);
 
     try {
-      console.log('Generating AI response...');
-      // Get AI response (now async)
-      const aiResponseText = await generateAIResponse(text);
-      console.log('AI response received:', aiResponseText);
-      
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: aiResponseText,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      // Update conversation with AI response
-      setConversations(prev => 
-        prev.map(c => 
-          c.id === currentConversationId 
-            ? { ...c, messages: [...c.messages, aiResponse] }
-            : c
-        )
-      );
-    } catch (error) {
-      console.error('Error generating AI response:', error);
-      // Fallback response on error
-      const fallbackResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "I'm having trouble connecting right now. Please try again in a moment. If the problem persists, check your OpenAI API key configuration.",
-        isUser: false,
-        timestamp: new Date(),
-      };
-      
-      setConversations(prev => 
-        prev.map(c => 
-          c.id === currentConversationId 
-            ? { ...c, messages: [...c.messages, fallbackResponse] }
-            : c
-        )
-      );
-    } finally {
-      setIsTyping(false);
-      console.log('Message handling completed');
-    }
-  };
-
-  const generateAIResponse = async (userInput: string): Promise<string> => {
-    try {
-      console.log('generateAIResponse called with:', userInput);
-      console.log('Current fortniteStats:', fortniteStats);
-      console.log('AI Training Data:', { aiCoachingStyle, aiFocusArea, customKnowledge, personalGoals });
-      
-      // Check if OpenAI API key is available (client-side check)
-      if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
-        console.warn('OpenAI API key not found, using fallback responses');
-        return getFallbackResponse(userInput);
-      }
-
-      // Get developer documentation automatically
-      const developerDocs = getFullDocumentation();
-      const developerSummary = getDocumentationSummary();
-      
-      console.log('Developer docs length:', developerDocs.length);
-      console.log('Developer summary length:', developerSummary.length);
-      console.log('Docs contain zone data:', developerDocs.includes('Double Pull'));
-      console.log('Summary contains zone data:', developerSummary.includes('Double Pull'));
-      
-      // Build personalized context
-      let personalizedContext = `
-${developerSummary}
-
-${developerDocs}
-
-Coaching Style: ${aiCoachingStyle}
-Focus Area: ${aiFocusArea}
-Custom Knowledge: ${customKnowledge}
-Personal Goals: ${personalGoals}
-`;
-      
-      // Add stats context
-      if (fortniteStats && fortniteStats.stats && fortniteStats.stats.all) {
-        const stats = fortniteStats.stats.all;
-        personalizedContext += `The player's current stats are: K/D Ratio: ${stats.kd || 'N/A'}, Win Rate: ${stats.winRate || 'N/A'}%, Matches Played: ${stats.matches || 'N/A'}, Average Placement: ${stats.avgPlace || 'N/A'}. `;
-        personalizedContext += `Provide specific, actionable advice based on these exact stats. `;
-      } else if (fortniteStats && fortniteStats.stats && fortniteStats.stats.all) {
-        // This handles manually entered stats that are stored in fortniteStats
-        const stats = fortniteStats.stats.all;
-        personalizedContext += `The player's manually entered stats are: K/D Ratio: ${stats.kd}, Win Rate: ${stats.winRate}%, Matches Played: ${stats.matches}, Average Placement: ${stats.avgPlace}. `;
-        personalizedContext += `Provide specific, actionable advice based on these exact stats. `;
-      }
-      
-      personalizedContext += 'Focus on practical tips they can implement immediately.';
-
-      console.log('Sending personalized context length:', personalizedContext.length);
-      console.log('Context contains zone data:', personalizedContext.includes('Double Pull'));
-      console.log('Context contains POI data:', personalizedContext.includes('Martial Maneuvers'));
-      console.log('Context contains tournament data:', personalizedContext.includes('FNCS'));
-      console.log('Context preview (first 500 chars):', personalizedContext.substring(0, 500));
-
-      console.log('Calling OpenAI API...');
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userInput,
-          context: personalizedContext,
-          fortniteUsername: manualUsername || 'Manual Input User'
-        }),
+      // Save user message to Firebase
+      await FirebaseService.addMessage(currentChatId, {
+        chatId: currentChatId,
+        userId: user.uid,
+        role: 'user',
+        content: inputMessage,
+        type: 'text',
+        aiResponse: undefined
       });
 
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
-      }
+      // Track usage for AI messages
+      await UsageTracker.incrementUsage(user.uid, 'messagesUsed');
 
-      const data = await response.json();
-      console.log('OpenAI API response:', data);
+      // Get AI response from API
+      const aiResponse = await generateAIResponse(inputMessage, fortniteStats);
+      
+      const assistantMessage = {
+        role: 'assistant' as const,
+        content: aiResponse,
+        timestamp: new Date()
+      };
 
-      if (data.error) {
-        throw new Error(data.error);
-      }
+      setMessages(prev => [...prev, assistantMessage]);
 
-      return data.response || 'I apologize, but I encountered an error generating a response. Please try again.';
+      // Save AI response to Firebase
+      await FirebaseService.addMessage(currentChatId, {
+        chatId: currentChatId,
+        userId: user.uid,
+        role: 'assistant',
+        content: aiResponse,
+        type: 'text',
+        aiResponse: {
+          model: 'pathgen-ai',
+          confidence: 0.9,
+          suggestions: [],
+          relatedTopics: ['fortnite', 'coaching'],
+          followUpQuestions: [],
+          tokensUsed: Math.ceil(aiResponse.length / 4) // Rough estimate
+        }
+      });
+
+      // Update chat message count
+      await FirebaseService.updateChat(currentChatId, {
+        messageCount: messages.length + 2, // +2 for user and AI message
+        updatedAt: new Date()
+      });
+
     } catch (error) {
       console.error('Error generating AI response:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      return `I apologize, but I encountered an error: ${errorMessage}. Using fallback response instead.`;
-    }
-  };
-
-  const getFallbackResponse = (userInput: string): string => {
-    const responses = [
-      "Based on your question, I recommend focusing on high ground positioning and building efficiency. Try practicing 90s in Creative mode for 15 minutes daily.",
-      "For stealth gameplay, consider using natural cover, avoiding open areas, and timing your movements with the storm. Sound cues are crucial!",
-      "To avoid high-traffic areas, stay away from named locations during the first few minutes. Focus on edge rotations and use vehicles strategically.",
-      "Your building speed can be improved by practicing keybinds and building patterns. Start with simple ramps and gradually increase complexity.",
-      "Great question! Let me analyze your recent gameplay patterns and provide specific recommendations for improvement.",
-      "Positioning is key in Fortnite. Always try to maintain high ground advantage and use natural cover effectively."
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
-
-  const handleQuickSuggestion = (suggestion: string) => {
-    console.log('Quick suggestion clicked:', suggestion);
-    handleSendMessage(suggestion);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Input change event fired:', e.target.value);
-    setInputText(e.target.value);
-  };
-
-  const handleSendClick = () => {
-    console.log('Send clicked, current inputText:', inputText);
-    handleSendMessage(inputText);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      console.log('Enter key pressed, inputText:', inputText);
-      handleSendMessage(inputText);
-    }
-  };
-
-  const saveManualStats = (kd: number, winRate: number, matches: number, avgPlace: number) => {
-    console.log('Saving manual stats:', { kd, winRate, matches, avgPlace });
-    
-    const manualStats: FortniteStats = {
-      account: {
-        id: 'manual',
-        name: manualUsername || 'Manual Input User',
-        platform: 'pc'
-      },
-      stats: {
-        all: {
-          kd: kd,
-          winRate: winRate,
-          matches: matches,
-          avgPlace: avgPlace,
-          kills: 0,
-          wins: 0,
-          top10: 0,
-          avgKills: 0
-        }
-      },
-      fallback: {
-        manualCheckUrl: 'https://osirion.com',
-        instructions: ['Enter your stats manually above for personalized coaching'],
-        manualStatsForm: {
-          kd: kd,
-          winRate: winRate,
-          matches: matches,
-          avgPlace: avgPlace
-        }
-      },
-      recentMatches: [],
-      preferences: {
-        preferredDrop: 'Custom Landing',
-        weakestZone: 'Mid Game',
-        bestWeapon: 'Assault Rifle',
-        avgSurvivalTime: 15
-      }
-    };
-    
-    console.log('Setting fortniteStats to:', manualStats);
-    setFortniteStats(manualStats);
-  };
-
-  // AI Training & Customization State
-  const [showAITraining, setShowAITraining] = useState(false);
-  const [aiCoachingStyle, setAiCoachingStyle] = useState('aggressive');
-  const [aiFocusArea, setAiFocusArea] = useState('all');
-  const [customKnowledge, setCustomKnowledge] = useState('');
-  const [personalGoals, setPersonalGoals] = useState('');
-  const [aiTrainingSaved, setAiTrainingSaved] = useState(false);
-  const [bulkDocumentation, setBulkDocumentation] = useState('');
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result && typeof event.target.result === 'string') {
-          setBulkDocumentation(event.target.result);
-          console.log('File uploaded. Character count:', event.target.result.length);
-        }
+      const errorMessage = {
+        role: 'assistant' as const,
+        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        timestamp: new Date()
       };
-      reader.readAsText(file);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoadingResponse(false);
     }
   };
 
-  const importZoneDocumentation = () => {
-    const exampleZoneDoc = `
-Zone: Misty Meadows
-- Loot: Excellent, including rare items
-- Rotation: Excellent, with multiple paths and cover
-- Storm: Good, but can be tricky to predict
-- Drop: Excellent, with multiple options
-- Building: High ground control, quick edits
-- Combat: Stealthy, use natural cover
-- Strategy: Rotate through the mountain to avoid fights
-`;
-    setBulkDocumentation(exampleZoneDoc);
-    console.log('Imported Zone Documentation example.');
-  };
+  const generateAIResponse = async (userQuestion: string, stats: FortniteData | null): Promise<string> => {
+    // Enhanced AI coaching logic using comprehensive data
+    if (!stats) {
+      return "I don't see any Fortnite stats yet. Connect your Epic account first to get personalized coaching!";
+    }
 
-  const importMechanicsDocumentation = () => {
-    const exampleMechanicsDoc = `
-Mechanic: Building Speed
-- Keybind: E (Edit)
-- Tips: Practice simple ramps first, then complex builds
-- Example: 90s (90-degree turn)
-- Practice: 15 minutes daily
+    const question = userQuestion.toLowerCase();
+    const { stats: playerStats, modes, rawOsirionData } = stats;
 
-Mechanic: Aiming
-- Crosshair Placement: Center for most weapons
-- Recoil Control: Practice with recoil-heavy weapons
-- Example: 1000ms (1 second)
-- Practice: 1000ms for 100 shots
-`;
-    setBulkDocumentation(exampleMechanicsDoc);
-    console.log('Imported Mechanics Documentation example.');
-  };
+    // Tournament and competitive questions
+    if (question.includes('tournament') || question.includes('fncs') || question.includes('competitive') || question.includes('qualify')) {
+      return `🏆 **Tournament Information - NA Region** 🏆\n\n**Current FNCS Cup Results:**\n• Top 100: 332 points\n• Top 1800: 276 points\n\n**Division Targets:**\n• **Division 1:** 650+ points cumulative (6 min queue)\n• **Division 2:** 640+ points cumulative (2 min queue)\n• **Division 3:** 515+ points cumulative (6 min queue)\n\n**Tips for Tournament Success:**\n• Use 🤖tourney-calc-pro to calculate your targets\n• Re-queue after safe time to avoid bugs\n• Focus on consistent placements over high-elim games\n• Practice your drop spots and rotations\n• Stay calm under pressure - every point matters!\n\nWhat division are you aiming for? I can give you specific strategies!`;
+    }
 
-  const importStrategyDocumentation = () => {
-    const exampleStrategyDoc = `
-Strategy: Endgame Positioning
-- Storm: Always try to be in the safe zone or on high ground
-- Rotation: Rotate to the storm to avoid fights
-- Building: Use high ground control to defend
-- Combat: Stealthy, use natural cover
-- Example: 1000ms (1 second)
-- Practice: 1000ms for 100 shots
-`;
-    setBulkDocumentation(exampleStrategyDoc);
-    console.log('Imported Strategy Documentation example.');
-  };
+    // Analyze performance and provide coaching
+    if (question.includes('kd') || question.includes('kill') || question.includes('death')) {
+      const kd = playerStats.kd || 0;
+      if (kd < 1.0) {
+        return `Your current K/D ratio is ${kd.toFixed(2)}. To improve this:\n\n• Focus on survival over aggressive plays\n• Practice building for protection\n• Choose your fights wisely\n• Land in less populated areas to start\n\n**Tournament Context:** For competitive play, you'll need to balance aggression with survival. A 1.5+ K/D is typically needed for higher divisions.\n\nWould you like specific strategies for any of these areas?`;
+      } else if (kd < 2.0) {
+        return `Your K/D ratio of ${kd.toFixed(2)} shows solid fundamentals! To reach the next level:\n\n• Work on advanced building techniques\n• Improve your editing speed\n• Practice piece control\n• Analyze your VODs for positioning mistakes\n\n**Tournament Context:** You're in a good range for Division 2-3. Focus on consistent placements to qualify!`;
+      } else {
+        return `Excellent K/D ratio of ${kd.toFixed(2)}! You're clearly a skilled player. Consider:\n\n• Competitive play and tournaments\n• Coaching other players\n• Advanced strategies like box fighting\n• Optimizing your loadout for your playstyle\n\n**Tournament Context:** With this K/D, you should aim for Division 1! Focus on endgame positioning and rotation strategies.`;
+      }
+    }
 
-  const importBulkDocumentation = () => {
-    if (bulkDocumentation.trim()) {
-      // Check character limit
-      if (bulkDocumentation.length > 10000) {
-        alert('Documentation is too long (max 10,000 characters). Please split it into smaller sections.');
-        return;
+    if (question.includes('win') || question.includes('victory') || question.includes('placement')) {
+      const winRate = (playerStats.top1 / Math.max(playerStats.matches, 1)) * 100;
+      if (winRate < 5) {
+        return `Your win rate is ${winRate.toFixed(1)}%. To increase wins:\n\n• Focus on endgame positioning\n• Practice rotation strategies\n• Improve your building for late-game\n• Work on decision making under pressure\n\n**Tournament Context:** For competitive play, focus on consistent top 25s rather than wins. Top 25s with 1-2 elims are often better than risky plays for wins.`;
+      } else if (winRate < 15) {
+        return `Good win rate of ${winRate.toFixed(1)}%! To improve further:\n\n• Analyze your endgame VODs\n• Practice specific scenarios\n• Work on team coordination (if playing squads)\n• Optimize your loadout for different zones\n\n**Tournament Context:** This win rate suggests you can compete in Division 2-3. Focus on maintaining consistency across all games.`;
+      } else {
+        return `Impressive win rate of ${winRate.toFixed(1)}%! You're clearly doing something right. Consider:\n\n• Competitive play\n• Advanced strategies\n• Coaching others\n• Analyzing your gameplay for fine-tuning\n\n**Tournament Context:** With this win rate, you're ready for Division 1! Focus on optimizing your rotations and endgame strategies.`;
+      }
+    }
+
+    if (question.includes('build') || question.includes('building')) {
+      return `Building is crucial in Fortnite! Based on your stats:\n\n• Practice 90s and ramps consistently\n• Work on editing speed and accuracy\n• Learn piece control techniques\n• Practice building under pressure\n\n**Tournament Context:** In competitive play, building efficiency is key. You need to build quickly while conserving materials for endgame. Practice piece control and editing under pressure.\n\nWould you like specific building drills or techniques?`;
+    }
+
+    if (question.includes('rotation') || question.includes('position')) {
+      return `Good rotations are key to consistent placements:\n\n• Always be aware of the storm\n• Plan your route before moving\n• Use natural cover and builds\n• Avoid open areas when possible\n• Practice different rotation strategies for each map\n\n**Tournament Context:** Tournament rotations are more predictable. Study common rotation patterns and practice them. Remember: safe rotations often beat aggressive ones in competitive play.`;
+    }
+
+    if (question.includes('drop') || question.includes('land') || question.includes('poi') || question.includes('location')) {
+      return `🗺️ **POI Drop Analysis** 🗺️\n\n**Best Competitive Drops (Low Rating = Better):**\n• **SuperNova (Rating 13):** High metal (7,700), decent loot, 2.1 teams - Great for building practice\n• **Shogun's (Rating 14):** High loot (48), low metal (200), 1.66 teams - Good for early game fights\n• **Demon's (Rating 19):** High loot (74), low metal (500), 1.73 teams - Balanced option\n• **Outlaw Oasis (Rating 28):** Low teams (0.87), good survival (67%), decent metal (1,900)\n\n**High Survival Rate Drops:**\n• **Superman Icy Biome (81% survival):** Very low teams (0.54), good metal (5,300)\n• **FO Split Drop (79% survival):** Low teams (0.99), good loot (61)\n• **Bottom Right Split (71% survival):** Very low teams (0.23), low metal (200)\n\n**High Metal Locations:**\n• **O.X.R HQ:** 10,000 metal, 1.23 teams, 61% survival\n• **Rebel Base:** 8,300 metal, 1.31 teams, 55% survival\n• **SuperNova:** 7,700 metal, 2.1 teams, 57% survival\n\n**Tournament Strategy:** Choose based on your goals:\n• **Aggressive:** Shogun's, Demon's (higher loot, more fights)\n• **Survival:** Superman Icy Biome, FO Split Drop (higher survival rates)\n• **Building Practice:** O.X.R HQ, Rebel Base (high metal)\n• **Balanced:** SuperNova, Outlaw Oasis (good mix of all factors)\n\nWhat's your playstyle? I can recommend specific POIs!`;
+    }
+
+    if (question.includes('loadout') || question.includes('weapon') || question.includes('inventory')) {
+      return `Your loadout should complement your playstyle:\n\n• AR for medium range\n• Shotgun for close combat\n• SMG for building fights\n• Healing items (shields, medkits)\n• Mobility items (shockwaves, launch pads)\n\n**Tournament Context:** In tournaments, prioritize healing over mobility. You'll often need to heal multiple times per game. Carry at least 6 shield potions and 3 medkits.\n\nWhat's your preferred playstyle? I can suggest specific loadouts.`;
+    }
+
+    // New comprehensive analysis using raw data
+    if (question.includes('analysis') || question.includes('detailed') || question.includes('breakdown') || question.includes('comprehensive')) {
+      let response = `📊 **Comprehensive Performance Analysis**\n\n`;
+      response += `**Core Statistics:**\n`;
+      response += `• ${playerStats.matches} total matches\n`;
+      response += `• ${playerStats.top1} wins (${((playerStats.top1 / playerStats.matches) * 100).toFixed(1)}% win rate)\n`;
+      response += `• K/D ratio: ${playerStats.kd.toFixed(2)}\n`;
+      response += `• Average placement: ${playerStats.placement.toFixed(1)}\n`;
+      response += `• Top 10 rate: ${((playerStats.top10 / playerStats.matches) * 100).toFixed(1)}%\n`;
+      response += `• Total assists: ${playerStats.assists || 0}\n`;
+      response += `• Average survival time: ${Math.round((playerStats.timeAlive || 0) / 60)} minutes\n\n`;
+      
+      if (rawOsirionData?.preferences) {
+        response += `**Player Insights:**\n`;
+        response += `• Preferred drop: ${rawOsirionData.preferences.preferredDrop || 'Unknown'}\n`;
+        response += `• Weakest zone: ${rawOsirionData.preferences.weakestZone || 'Unknown'}\n`;
+        response += `• Best weapon: ${rawOsirionData.preferences.bestWeapon || 'Unknown'}\n`;
+        response += `• Average survival time: ${Math.round((rawOsirionData.preferences.avgSurvivalTime || 0) / 60)} minutes\n\n`;
       }
       
-      // Append to existing knowledge or replace
-      const newKnowledge = customKnowledge.trim() 
-        ? `${customKnowledge}\n\n--- NEW DOCUMENTATION ---\n\n${bulkDocumentation}`
-        : bulkDocumentation;
+      if (rawOsirionData?.matches && rawOsirionData.matches.length > 0) {
+        response += `**Recent Performance:**\n`;
+        const recentMatches = rawOsirionData.matches.slice(0, 5);
+        response += `Last 5 matches:\n`;
+        recentMatches.forEach((match: any, index: number) => {
+          response += `• Match ${index + 1}: #${match.placement} | ${match.kills || 0} kills | ${Math.round(match.damage || 0)} damage\n`;
+        });
+        response += `\n`;
+      }
       
-      setCustomKnowledge(newKnowledge);
-      setBulkDocumentation(''); // Clear the bulk input
-      setAiTrainingSaved(true);
-      setTimeout(() => setAiTrainingSaved(false), 3000);
-      console.log('Imported bulk documentation to AI training. Total length:', newKnowledge.length);
-      alert(`Bulk documentation imported to AI training! Total knowledge length: ${newKnowledge.length} characters`);
-    } else {
-      alert('Please paste or upload documentation first.');
+      response += `**Recommendations:**\n`;
+      if (playerStats.kd < 1.0) {
+        response += `• Focus on improving K/D ratio through better positioning\n`;
+      }
+      if ((playerStats.top1 / playerStats.matches) < 0.1) {
+        response += `• Work on endgame strategies to increase win rate\n`;
+      }
+      if (playerStats.placement > 15) {
+        response += `• Improve early game survival and rotation strategies\n`;
+      }
+      
+      return response;
+    }
+
+    if (question.includes('matches') || question.includes('games') || question.includes('history') || question.includes('recent')) {
+      if (rawOsirionData?.matches && rawOsirionData.matches.length > 0) {
+        let response = `🎮 **Match History Analysis**\n\n`;
+        response += `You've played ${rawOsirionData.matches.length} matches recently.\n\n`;
+        
+        // Calculate insights from match data
+        const placements = rawOsirionData.matches.map((m: any) => m.placement);
+        const kills = rawOsirionData.matches.map((m: any) => m.kills || 0);
+        const damage = rawOsirionData.matches.map((m: any) => m.damage || 0);
+        
+        const bestPlacement = Math.min(...placements);
+        const worstPlacement = Math.max(...placements);
+        const totalKills = kills.reduce((a: number, b: number) => a + b, 0);
+        const totalDamage = damage.reduce((a: number, b: number) => a + b, 0);
+        const avgDamage = totalDamage / rawOsirionData.matches.length;
+        
+        response += `**Performance Range:**\n`;
+        response += `• Best placement: #${bestPlacement}\n`;
+        response += `• Worst placement: #${worstPlacement}\n`;
+        response += `• Total kills: ${totalKills}\n`;
+        response += `• Total damage: ${Math.round(totalDamage)}\n`;
+        response += `• Average damage per match: ${Math.round(avgDamage)}\n\n`;
+        
+        response += `**Consistency Analysis:**\n`;
+        const top10Count = placements.filter((p: number) => p <= 10).length;
+        const top25Count = placements.filter((p: number) => p <= 25).length;
+        response += `• Top 10 finishes: ${top10Count} (${((top10Count / placements.length) * 100).toFixed(1)}%)\n`;
+        response += `• Top 25 finishes: ${top25Count} (${((top25Count / placements.length) * 100).toFixed(1)}%)\n`;
+        
+        // Identify patterns
+        const highKillGames = kills.filter((k: number) => k >= 5).length;
+        const lowKillGames = kills.filter((k: number) => k <= 1).length;
+        response += `• High kill games (5+): ${highKillGames} (${((highKillGames / kills.length) * 100).toFixed(1)}%)\n`;
+        response += `• Low kill games (0-1): ${lowKillGames} (${((lowKillGames / kills.length) * 100).toFixed(1)}%)\n`;
+        
+        return response;
+      }
+    }
+
+    // Default response
+    return `I can help you improve your Fortnite skills! I can see you have:\n\n• ${playerStats.matches} total matches\n• ${playerStats.top1} victories\n• ${playerStats.kd?.toFixed(2)} K/D ratio\n• ${((playerStats.top10 / Math.max(playerStats.matches, 1)) * 100).toFixed(1)}% top 10 rate\n\n**Ask me about:**\n• Improving your K/D ratio\n• Building techniques\n• Win strategies\n• Loadout optimization\n• Rotation strategies\n• **Drop locations and POI analysis**\n• **Tournament strategies and qualification targets**\n• **📊 Comprehensive performance analysis**\n• **🎮 Match history breakdown**\n• **📈 Detailed statistics**\n\n**Current Info:** Check the left panels for:\n• Live NA tournament results and division targets\n• Complete POI drop analysis with ratings, loot, metal, and survival rates\n\n**New Features:**\n• Ask for "comprehensive analysis" for detailed breakdown\n• Ask for "match history" for recent performance insights\n• Use "Show More" buttons in stats for expanded view\n\nWhat would you like to work on?`;
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
-  const saveAITraining = () => {
-    console.log('Saving AI training preferences:', {
-      aiCoachingStyle,
-      aiFocusArea,
-      customKnowledge,
-      personalGoals
-    });
-    // In a real app, you'd send this to your backend API
-    // For now, we'll just simulate saving and show a message
-    setAiTrainingSaved(true);
-    setTimeout(() => setAiTrainingSaved(false), 3000); // Hide message after 3 seconds
-    // Save to localStorage
-    localStorage.setItem('pathgen_ai_training', JSON.stringify({
-      coachingStyle: aiCoachingStyle,
-      focusArea: aiFocusArea,
-      customKnowledge: customKnowledge,
-      personalGoals: personalGoals
-    }));
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const resetAITraining = () => {
-    console.log('Resetting AI training preferences to default');
-    setAiCoachingStyle('aggressive');
-    setAiFocusArea('all');
-    setCustomKnowledge('');
-    setPersonalGoals('');
-    setAiTrainingSaved(false); // Hide message if resetting
-    // Clear from localStorage
-    localStorage.removeItem('pathgen_ai_training');
-  };
+  if (!user) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex flex-col">
+    <div className="min-h-screen bg-gradient-dark">
       <Navbar />
       
-      {/* Main Content Container */}
-      <div className="flex-1 relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20">
-        {/* Animated Background */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-20 w-32 h-32 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-40 h-40 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-white/5 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-          
-          {/* Moving Lines */}
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white to-transparent animate-pulse"></div>
-            <div className="absolute top-1/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" style={{ animationDelay: '1s' }}></div>
-            <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" style={{ animationDelay: '2s' }}></div>
-            <div className="absolute top-3/4 left-0 w-full h-px bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" style={{ animationDelay: '3s' }}></div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-white mb-4">🤖 AI Fortnite Coach</h1>
+            <p className="text-xl text-gray-300">
+              Get personalized coaching based on your actual gameplay data
+            </p>
           </div>
-        </div>
 
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            <span className="text-primary-text">PathGen</span>
-            <br />
-            <span className="text-gradient">AI Assistant</span>
-          </h1>
-          <p className="text-xl text-secondary-text">
-            Your personal Fortnite improvement coach powered by AI
-          </p>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Stats Panel */}
+            <div className="space-y-6">
+              <div className="bg-gray-800/50 rounded-lg p-6">
+                <h2 className="text-2xl font-bold text-white mb-4">📊 Your Performance Stats</h2>
+                <FortniteStatsDisplay 
+                  stats={fortniteStats} 
+                  isLoading={isLoadingStats}
+                  showModes={true}
+                  compact={true}
+                />
+              </div>
 
-        {/* Chat Interface */}
-        <div className="max-w-5xl mx-auto space-y-8">
-          {/* Fortnite Account Input */}
-          <div className="p-6 bg-white/5 border border-white/10 rounded-xl">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-white mb-2">
-                  Fortnite Account
-                </label>
-                
-                {/* Account Status Display */}
-                {manualUsername ? (
-                  <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-sm">
-                      ✓ {manualUsername}
-                      {inputMethod === 'manual' && ' (Manual)'}
-                      {inputMethod === 'tracker' && ' (Tracker)'}
+              <div className="bg-gray-800/50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4">💡 Coaching Tips</h3>
+                <div className="space-y-3 text-sm text-gray-300">
+                  <div className="flex items-start space-x-2">
+                    <span className="text-blue-400">•</span>
+                    <span>Ask me about specific areas you want to improve</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-green-400">•</span>
+                    <span>Get personalized advice based on your stats</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-purple-400">•</span>
+                    <span>Learn strategies for your skill level</span>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <span className="text-yellow-400">•</span>
+                    <span>Practice drills and techniques</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tournament Information */}
+              <div className="bg-gray-800/50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold text-white mb-4">🏆 Tournament Info - NA</h3>
+                <div className="space-y-4 text-sm text-gray-300">
+                  {/* FNCS Cup Results */}
+                  <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3">
+                    <h4 className="text-blue-400 font-semibold mb-2">🏆 C6S4 CHAMPION PJ FNCS CUP</h4>
+                    <div className="space-y-1 text-xs">
+                      <p><span className="text-blue-300">Top 100:</span> 332 points</p>
+                      <p><span className="text-blue-300">Top 1800:</span> 276 points</p>
                     </div>
-                    <button
-                      onClick={clearAccountInfo}
-                      style={{ 
-                        padding: '8px 12px', 
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)', 
-                        color: 'white', 
-                        borderRadius: '8px', 
-                        fontSize: '14px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        zIndex: 9999,
-                        position: 'relative'
-                      }}
-                    >
-                      Change
-                    </button>
+                  </div>
+
+                  {/* Division 1 */}
+                  <div className="bg-green-600/10 border border-green-600/20 rounded-lg p-3">
+                    <h4 className="text-green-400 font-semibold mb-2">1️⃣ DIVISION 1</h4>
+                    <div className="space-y-1 text-xs">
+                      <p><span className="text-green-300">Day 1 Top 33:</span> 333 points</p>
+                      <p><span className="text-green-300">Day 1 Top 100:</span> 214 points</p>
+                      <p><span className="text-green-300">Cumulative Target:</span> 650+ points</p>
+                      <p className="text-green-300/70">Queue: 6 min safe time</p>
+                    </div>
+                  </div>
+
+                  {/* Division 2 */}
+                  <div className="bg-yellow-600/10 border border-yellow-600/20 rounded-lg p-3">
+                    <h4 className="text-yellow-400 font-semibold mb-2">2️⃣ DIVISION 2</h4>
+                    <div className="space-y-1 text-xs">
+                      <p><span className="text-yellow-300">Day 1 Top 40:</span> 333 points</p>
+                      <p><span className="text-yellow-300">Day 1 Top 100:</span> 278 points</p>
+                      <p><span className="text-yellow-300">Day 1 Top 200:</span> 229 points</p>
+                      <p><span className="text-yellow-300">Day 2 Top 100:</span> 255+ points</p>
+                      <p><span className="text-yellow-300">Day 2 Top 200:</span> 200+ points</p>
+                      <p><span className="text-yellow-300">Cumulative Target:</span> 640+ points</p>
+                      <p className="text-yellow-300/70">Queue: 2 min safe time</p>
+                    </div>
+                  </div>
+
+                  {/* Division 3 */}
+                  <div className="bg-purple-600/10 border border-purple-600/20 rounded-lg p-3">
+                    <h4 className="text-purple-400 font-semibold mb-2">3️⃣ DIVISION 3</h4>
+                    <div className="space-y-1 text-xs">
+                      <p><span className="text-purple-300">Day 1 Top 200:</span> 268 points</p>
+                      <p><span className="text-purple-300">Day 1 Top 1000:</span> 213 points</p>
+                      <p><span className="text-purple-300">Day 1 Top 2500:</span> 139 points</p>
+                      <p><span className="text-purple-300">Day 2 Top 200:</span> 255+ points</p>
+                      <p><span className="text-purple-300">Day 2 Top 1000:</span> 200+ points</p>
+                      <p><span className="text-purple-300">Cumulative Target:</span> 515+ points</p>
+                      <p className="text-purple-300/70">Queue: 6 min safe time</p>
+                    </div>
+                  </div>
+
+                  {/* Quick Reference */}
+                  <div className="bg-gray-600/10 border border-gray-600/20 rounded-lg p-3">
+                    <h4 className="text-gray-300 font-semibold mb-2">📊 Quick Reference</h4>
+                    <div className="space-y-1 text-xs text-gray-400">
+                      <p>• Use 🤖tourney-calc-pro for target calculations</p>
+                      <p>• Re-queue after safe time to avoid bugs</p>
+                      <p>• Play for experience even if not qualifying</p>
+                      <p>• Elo resets on Day 2 for Division 3</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* POI Drop Data */}
+            <div className="bg-gray-800/50 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">🗺️ POI Drop Analysis</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-gray-300 border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-600">
+                      <th className="text-left p-2 bg-gray-700/50">POI</th>
+                      <th className="text-left p-2 bg-gray-700/50">Rating</th>
+                      <th className="text-left p-2 bg-gray-700/50">Loot</th>
+                      <th className="text-left p-2 bg-gray-700/50">Metal</th>
+                      <th className="text-left p-2 bg-gray-700/50">Avg Teams</th>
+                      <th className="text-left p-2 bg-gray-700/50">Survival</th>
+                    </tr>
+                  </thead>
+                  <tbody className="space-y-1">
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">SuperNova</td>
+                      <td className="p-2">13</td>
+                      <td className="p-2">27</td>
+                      <td className="p-2">7,700</td>
+                      <td className="p-2">2.1</td>
+                      <td className="p-2 text-green-400">57%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Shogun's</td>
+                      <td className="p-2">14</td>
+                      <td className="p-2">48</td>
+                      <td className="p-2">200</td>
+                      <td className="p-2">1.66</td>
+                      <td className="p-2 text-green-400">59%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Demon's</td>
+                      <td className="p-2">19</td>
+                      <td className="p-2">74</td>
+                      <td className="p-2">500</td>
+                      <td className="p-2">1.73</td>
+                      <td className="p-2 text-yellow-400">49%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Outlaw Oasis</td>
+                      <td className="p-2">28</td>
+                      <td className="p-2">24</td>
+                      <td className="p-2">1,900</td>
+                      <td className="p-2">0.87</td>
+                      <td className="p-2 text-green-400">67%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Kappa</td>
+                      <td className="p-2">30</td>
+                      <td className="p-2">50</td>
+                      <td className="p-2">6,000</td>
+                      <td className="p-2">1.51</td>
+                      <td className="p-2 text-green-400">55%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Outpost</td>
+                      <td className="p-2">32</td>
+                      <td className="p-2">57</td>
+                      <td className="p-2">2,200</td>
+                      <td className="p-2">1.48</td>
+                      <td className="p-2 text-green-400">55%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Rebel Base</td>
+                      <td className="p-2">33</td>
+                      <td className="p-2">49</td>
+                      <td className="p-2">8,300</td>
+                      <td className="p-2">1.31</td>
+                      <td className="p-2 text-green-400">55%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Top Left Split</td>
+                      <td className="p-2">34</td>
+                      <td className="p-2">78</td>
+                      <td className="p-2">300</td>
+                      <td className="p-2">1.31</td>
+                      <td className="p-2 text-green-400">64%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">The Hive</td>
+                      <td className="p-2">35</td>
+                      <td className="p-2">81</td>
+                      <td className="p-2">600</td>
+                      <td className="p-2">1.26</td>
+                      <td className="p-2 text-green-400">53%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">O.X.R HQ</td>
+                      <td className="p-2">41</td>
+                      <td className="p-2">50</td>
+                      <td className="p-2">10,000</td>
+                      <td className="p-2">1.23</td>
+                      <td className="p-2 text-green-400">61%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Rainbow Fields</td>
+                      <td className="p-2">41</td>
+                      <td className="p-2">55</td>
+                      <td className="p-2">2,400</td>
+                      <td className="p-2">1.38</td>
+                      <td className="p-2 text-green-400">65%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">First Order</td>
+                      <td className="p-2">42</td>
+                      <td className="p-2">56</td>
+                      <td className="p-2">7,500</td>
+                      <td className="p-2">1.41</td>
+                      <td className="p-2 text-green-400">62%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Top Middle Split</td>
+                      <td className="p-2">44</td>
+                      <td className="p-2">55</td>
+                      <td className="p-2">700</td>
+                      <td className="p-2">0.98</td>
+                      <td className="p-2 text-green-400">69%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Swarm Stash</td>
+                      <td className="p-2">46</td>
+                      <td className="p-2">56</td>
+                      <td className="p-2">3,000</td>
+                      <td className="p-2">1.09</td>
+                      <td className="p-2 text-green-400">58%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Wharf Split</td>
+                      <td className="p-2">54</td>
+                      <td className="p-2">47</td>
+                      <td className="p-2">3,200</td>
+                      <td className="p-2">1.06</td>
+                      <td className="p-2 text-green-400">72%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Shining Span</td>
+                      <td className="p-2">51</td>
+                      <td className="p-2">40</td>
+                      <td className="p-2">2,600</td>
+                      <td className="p-2">0.68</td>
+                      <td className="p-2 text-green-400">64%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Canyon</td>
+                      <td className="p-2">56</td>
+                      <td className="p-2">71</td>
+                      <td className="p-2">3,300</td>
+                      <td className="p-2">1.43</td>
+                      <td className="p-2 text-green-400">65%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Foxy</td>
+                      <td className="p-2">30</td>
+                      <td className="p-2">38</td>
+                      <td className="p-2">3,400</td>
+                      <td className="p-2">1.3</td>
+                      <td className="p-2 text-green-400">62%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Canyon Tunnel</td>
+                      <td className="p-2">54</td>
+                      <td className="p-2">40</td>
+                      <td className="p-2">2,100</td>
+                      <td className="p-2">0.74</td>
+                      <td className="p-2 text-green-400">69%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Bottom Right Split</td>
+                      <td className="p-2">60</td>
+                      <td className="p-2">34</td>
+                      <td className="p-2">200</td>
+                      <td className="p-2">0.23</td>
+                      <td className="p-2 text-green-400">71%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">FO Split Drop</td>
+                      <td className="p-2">85</td>
+                      <td className="p-2">61</td>
+                      <td className="p-2">3,500</td>
+                      <td className="p-2">0.99</td>
+                      <td className="p-2 text-green-400">79%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Ranger's Ruin</td>
+                      <td className="p-2">64</td>
+                      <td className="p-2">109</td>
+                      <td className="p-2">9,300</td>
+                      <td className="p-2">1.38</td>
+                      <td className="p-2 text-green-400">52%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Shiny Shafts</td>
+                      <td className="p-2">83</td>
+                      <td className="p-2">55</td>
+                      <td className="p-2">9,600</td>
+                      <td className="p-2">0.71</td>
+                      <td className="p-2 text-green-400">73%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Pumped Power</td>
+                      <td className="p-2">97</td>
+                      <td className="p-2">38</td>
+                      <td className="p-2">1,600</td>
+                      <td className="p-2">0.26</td>
+                      <td className="p-2 text-green-400">75%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Construction Site</td>
+                      <td className="p-2">102</td>
+                      <td className="p-2">47</td>
+                      <td className="p-2">2,000</td>
+                      <td className="p-2">0.39</td>
+                      <td className="p-2 text-green-400">75%</td>
+                    </tr>
+                    <tr className="border-b border-gray-600/30">
+                      <td className="p-2 font-medium text-yellow-400">Superman Icy Biome</td>
+                      <td className="p-2">109</td>
+                      <td className="p-2">53</td>
+                      <td className="p-2">5,300</td>
+                      <td className="p-2">0.54</td>
+                      <td className="p-2 text-green-400">81%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 text-xs text-gray-400">
+                <p><span className="text-yellow-400">Rating:</span> Lower = Better (1-109 scale)</p>
+                <p><span className="text-blue-400">Loot:</span> Number of chests/items</p>
+                <p><span className="text-green-400">Metal:</span> Building materials available</p>
+                <p><span className="text-purple-400">Avg Teams:</span> Average teams landing</p>
+                <p><span className="text-orange-400">Survival:</span> Survival rate percentage</p>
+              </div>
+            </div>
+
+            {/* Chat Panel */}
+            <div className="bg-gray-800/50 rounded-lg p-6">
+              <h2 className="text-2xl font-bold text-white mb-4">💬 AI Coaching Chat</h2>
+              
+              {/* Messages */}
+              <div className="h-96 overflow-y-auto mb-4 space-y-3">
+                {messages.length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">
+                    <p>Start a conversation with your AI coach!</p>
+                    <p className="text-sm">Ask about improving your K/D, building techniques, or any Fortnite strategy.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {/* Input Method Selection */}
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => {
-                          console.log('Manual Input method selected!');
-                          setInputMethod('manual');
-                        }}
-                        style={{ 
-                          padding: '8px 12px', 
-                          backgroundColor: inputMethod === 'manual' ? 'white' : 'rgba(255, 255, 255, 0.1)', 
-                          color: inputMethod === 'manual' ? 'black' : 'white', 
-                          borderRadius: '8px', 
-                          fontSize: '14px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          zIndex: 9999,
-                          position: 'relative'
-                        }}
+                  messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          message.role === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-white'
+                        }`}
                       >
-                        Manual Input
-                      </button>
-                      <button
-                        onClick={() => {
-                          console.log('Tracker Link method selected!');
-                          setInputMethod('tracker');
-                        }}
-                        style={{ 
-                          padding: '8px 12px', 
-                          backgroundColor: inputMethod === 'tracker' ? 'white' : 'rgba(255, 255, 255, 0.1)', 
-                          color: inputMethod === 'tracker' ? 'black' : 'white', 
-                          borderRadius: '8px', 
-                          fontSize: '14px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          zIndex: 9999,
-                          position: 'relative'
-                        }}
-                      >
-                        Tracker Link
-                      </button>
-                    </div>
-
-                    {/* Manual Username Method */}
-                    {inputMethod === 'manual' && (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="text"
-                          value={manualUsername}
-                          onChange={(e) => setManualUsername(e.target.value)}
-                          placeholder="Enter Fortnite username"
-                          style={{ 
-                            flex: '1',
-                            padding: '8px 12px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            fontSize: '14px',
-                            outline: 'none',
-                            zIndex: 9999,
-                            position: 'relative'
-                          }}
-                        />
-                        <button
-                          onClick={handleManualUsernameSubmit}
-                          disabled={!manualUsername.trim()}
-                          style={{ 
-                            padding: '8px 16px', 
-                            backgroundColor: 'white', 
-                            color: 'black', 
-                            borderRadius: '8px', 
-                            fontWeight: 'bold',
-                            border: 'none',
-                            cursor: 'pointer',
-                            zIndex: 9999,
-                            position: 'relative',
-                            opacity: manualUsername.trim() ? 1 : 0.5
-                          }}
-                        >
-                          Submit
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Tracker Link Method */}
-                    {inputMethod === 'tracker' && (
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="url"
-                          value={trackerLink}
-                          onChange={(e) => setTrackerLink(e.target.value)}
-                          placeholder="https://osirion.com/profile/username"
-                          style={{ 
-                            flex: '1',
-                            padding: '8px 12px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            fontSize: '14px',
-                            outline: 'none',
-                            zIndex: 9999,
-                            position: 'relative'
-                          }}
-                        />
-                        <button
-                          onClick={handleTrackerLinkSubmit}
-                          disabled={!trackerLink.trim()}
-                          style={{ 
-                            padding: '8px 16px', 
-                            backgroundColor: 'white', 
-                            color: 'black', 
-                            borderRadius: '8px', 
-                            fontWeight: 'bold',
-                            border: 'none',
-                            cursor: 'pointer',
-                            zIndex: 9999,
-                            position: 'relative',
-                            opacity: trackerLink.trim() ? 1 : 0.5
-                          }}
-                        >
-                          Submit
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Stats Display */}
-            {fortniteStats && (
-              <div className="space-y-4">
-                {/* Usage Display */}
-                {subscriptionTier && currentUsage && (
-                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <h4 className="text-sm font-semibold text-blue-400 mb-2">
-                      📊 {subscriptionTier.name} Plan Usage
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div>
-                        <p className="text-gray-300">AI Messages</p>
-                        <p className="text-white font-semibold">
-                          {currentUsage.ai.messagesUsed} / {subscriptionTier.limits.ai.messagesPerMonth === -1 ? '∞' : subscriptionTier.limits.ai.messagesPerMonth}
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {message.timestamp.toLocaleTimeString()}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-gray-300">Osirion Matches</p>
-                        <p className="text-white font-semibold">
-                          {currentUsage.osirion.matchesUsed} / {subscriptionTier.limits.osirion.matchesPerMonth === -1 ? '∞' : subscriptionTier.limits.osirion.matchesPerMonth}
-                        </p>
-                      </div>
-                      {subscriptionTier.limits.osirion.replayUploadsPerMonth > 0 && (
-                        <div>
-                          <p className="text-gray-300">Replay Uploads</p>
-                          <p className="text-white font-semibold">
-                            {currentUsage.osirion.replayUploadsUsed} / {subscriptionTier.limits.osirion.replayUploadsPerMonth}
-                          </p>
-                        </div>
-                      )}
-                      {subscriptionTier.limits.osirion.computeRequestsPerMonth > 0 && (
-                        <div>
-                          <p className="text-gray-300">Compute Requests</p>
-                          <p className="text-white font-semibold">
-                            {currentUsage.osirion.computeRequestsUsed} / {subscriptionTier.limits.osirion.computeRequestsPerMonth}
-                          </p>
-                        </div>
-                      )}
                     </div>
-                    <div className="mt-3 text-xs text-gray-400">
-                      Resets on {currentUsage.resetDate.toLocaleDateString()}
-                    </div>
-                  </div>
+                  ))
                 )}
-                {/* Fallback Message - Show when API is blocked */}
-                {fortniteStats?.fallback && (
-                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <h4 className="text-sm font-semibold text-yellow-400 mb-2">⚠️ Osirion API Temporarily Unavailable</h4>
-                    <p className="text-xs text-yellow-300 mb-3">
-                      Osirion API is currently unavailable. You can still get personalized AI coaching by entering your stats manually.
-                    </p>
-                    
-                    {/* Manual Check Link */}
-                    {fortniteStats.fallback.manualCheckUrl && (
-                      <div className="mb-3">
-                        <a 
-                          href={fortniteStats.fallback.manualCheckUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-300 hover:text-blue-200 text-sm transition-all duration-200 cursor-pointer"
-                          style={{ zIndex: 9999, position: 'relative' }}
-                        >
-                          🔗 Check your stats on Osirion
-                        </a>
-                      </div>
-                    )}
-                    
-                    {/* Instructions */}
-                    {fortniteStats.fallback.instructions && fortniteStats.fallback.instructions.length > 0 && (
-                      <div className="text-xs text-yellow-200 space-y-1 mb-3">
-                                                    {fortniteStats.fallback.instructions.map((instruction: string, index: number) => (
-                          <p key={index}>• {instruction}</p>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Manual Stats Input Form */}
-                    <div className="bg-white/5 p-3 rounded-lg">
-                      <h5 className="text-xs font-semibold text-white mb-2">Enter Your Stats Manually:</h5>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs text-gray-300">K/D Ratio</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            placeholder="2.5"
-                            defaultValue={fortniteStats?.stats?.all?.kd || 0}
-                            className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded text-white"
-                            tabIndex={0}
-                            style={{ zIndex: 9999, position: 'relative' }}
-                            onFocus={() => console.log('K/D input focused')}
-                            onBlur={() => console.log('K/D input blurred')}
-                            onChange={(e) => {
-                              const value = parseFloat(e.target.value) || 0;
-                              console.log('K/D input changed to:', value);
-                              // Save the stats immediately
-                              const currentStats = fortniteStats?.stats?.all;
-                              if (currentStats) {
-                                saveManualStats(
-                                  value,
-                                  currentStats.winRate || 0,
-                                  currentStats.matches || 0,
-                                  currentStats.avgPlace || 0
-                                );
-                              }
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-300">Win Rate %</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="100"
-                            placeholder="15.2"
-                            defaultValue={fortniteStats?.stats?.all?.winRate || 0}
-                            className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded text-white"
-                            tabIndex={0}
-                            style={{ zIndex: 9999, position: 'relative' }}
-                            onFocus={() => console.log('Win Rate input focused')}
-                            onBlur={() => console.log('Win Rate input blurred')}
-                            onChange={(e) => {
-                              const value = parseFloat(e.target.value) || 0;
-                              console.log('Win Rate input changed to:', value);
-                              // Save the stats immediately
-                              const currentStats = fortniteStats?.stats?.all;
-                              if (currentStats) {
-                                saveManualStats(
-                                  currentStats.kd || 0,
-                                  value,
-                                  currentStats.matches || 0,
-                                  currentStats.avgPlace || 0
-                                );
-                              }
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-300">Matches</label>
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="150"
-                            defaultValue={fortniteStats?.stats?.all?.matches || 0}
-                            className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded text-white"
-                            tabIndex={0}
-                            style={{ zIndex: 9999, position: 'relative' }}
-                            onFocus={() => console.log('Matches input focused')}
-                            onBlur={() => console.log('Matches input blurred')}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              console.log('Matches input changed to:', value);
-                              // Save the stats immediately
-                              const currentStats = fortniteStats?.stats?.all;
-                              if (currentStats) {
-                                saveManualStats(
-                                  currentStats.kd || 0,
-                                  currentStats.winRate || 0,
-                                  value,
-                                  currentStats.avgPlace || 0
-                                );
-                              }
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-300">Avg Place</label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="100"
-                            placeholder="25"
-                            defaultValue={fortniteStats?.stats?.all?.avgPlace || 0}
-                            className="w-full px-2 py-1 text-xs bg-white/10 border border-white/20 rounded text-white"
-                            tabIndex={0}
-                            style={{ zIndex: 9999, position: 'relative' }}
-                            onFocus={() => console.log('Avg Place input focused')}
-                            onBlur={() => console.log('Avg Place input blurred')}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              console.log('Avg Place input changed to:', value);
-                              // Save the stats immediately
-                              const currentStats = fortniteStats?.stats?.all;
-                              if (currentStats) {
-                                saveManualStats(
-                                  currentStats.kd || 0,
-                                  currentStats.winRate || 0,
-                                  currentStats.matches || 0,
-                                  value
-                                );
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-3 flex justify-between items-center">
-                        <p className="text-green-300 text-xs">🎯 AI will provide personalized advice based on your manual stats!</p>
-                        <button
-                          onClick={() => {
-                            const currentStats = fortniteStats?.stats?.all;
-                            if (currentStats) {
-                              saveManualStats(
-                                currentStats.kd || 0,
-                                currentStats.winRate || 0,
-                                currentStats.matches || 0,
-                                currentStats.avgPlace || 0
-                              );
-                              alert('Stats saved! You can now ask the AI for personalized advice.');
-                            }
-                          }}
-                          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
-                        >
-                          Save Stats
-                        </button>
+                {isLoadingResponse && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-700 text-white px-4 py-2 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span className="text-sm">AI is thinking...</span>
                       </div>
                     </div>
                   </div>
                 )}
-
-                {/* Regular Stats Display */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-white/5 rounded-lg">
-                    <p className="text-2xl font-bold text-white">{fortniteStats?.stats?.all?.kd?.toFixed(1) || '0.0'}</p>
-                    <p className="text-xs text-secondary-text">K/D Ratio</p>
-                  </div>
-                  <div className="text-center p-3 bg-white/5 rounded-lg">
-                    <p className="text-2xl font-bold text-white">{fortniteStats?.stats?.all?.winRate?.toFixed(1) || '0.0'}%</p>
-                    <p className="text-xs text-secondary-text">Win Rate</p>
-                  </div>
-                  <div className="text-center p-3 bg-white/5 rounded-lg">
-                    <p className="text-2xl font-bold text-white">{fortniteStats?.stats?.all?.avgPlace?.toFixed(1) || '0.0'}</p>
-                    <p className="text-xs text-secondary-text">Avg Place</p>
-                  </div>
-                  <div className="text-center p-3 bg-white/5 rounded-lg">
-                    <p className="text-2xl font-bold text-white">{fortniteStats?.stats?.all?.matches || '0'}</p>
-                    <p className="text-xs text-secondary-text">Matches</p>
-                  </div>
-                </div>
-
-                {/* AI Coaching Context */}
-                <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 p-4 rounded-lg border border-white/10">
-                  <h3 className="text-lg font-semibold text-white mb-3">AI Coaching Context</h3>
-                  
-                  {fortniteStats?.fallback ? (
-                    <div className="text-sm text-gray-300">
-                      <p className="text-yellow-400 mb-2">⚠️ Using Fallback Mode (Fortnite Tracker API Blocked)</p>
-                      <p><span className="text-blue-400">K/D Ratio:</span> {fortniteStats?.stats?.all?.kd?.toFixed(1) || 'N/A'}</p>
-                      <p><span className="text-blue-400">Win Rate:</span> {fortniteStats?.stats?.all?.winRate?.toFixed(1) || 'N/A'}%</p>
-                      <p><span className="text-blue-400">Matches Played:</span> {fortniteStats?.stats?.all?.matches || 'N/A'}</p>
-                      <p><span className="text-blue-400">Average Placement:</span> {fortniteStats?.stats?.all?.avgPlace?.toFixed(1) || 'N/A'}</p>
-                      <p className="text-yellow-400 mt-2">Tip: Update your stats above for more accurate coaching</p>
-                    </div>
-                  ) : fortniteStats?.preferences ? (
-                    <div className="text-sm text-gray-300">
-                      <p><span className="text-blue-400">Preferred Drop:</span> {fortniteStats.preferences.preferredDrop}</p>
-                      <p><span className="text-blue-400">Weakest Zone:</span> {fortniteStats.preferences.weakestZone}</p>
-                      <p><span className="text-blue-400">Survival Time:</span> {fortniteStats.preferences.avgSurvivalTime} minutes avg</p>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-300">
-                      <p>AI will provide personalized advice based on your stats!</p>
-                      <p className="text-yellow-400 mt-2">Tip: Update your stats above for more accurate coaching</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Recent Matches */}
-                <div className="bg-white/5 p-4 rounded-lg">
-                  <h3 className="text-lg font-semibold text-white mb-3">Recent Matches</h3>
-                  
-                  {fortniteStats?.fallback ? (
-                    <p className="text-gray-400">Match history not available in fallback mode</p>
-                  ) : fortniteStats?.recentMatches && fortniteStats.recentMatches.length > 0 ? (
-                    <div className="space-y-2">
-                                                  {fortniteStats.recentMatches.slice(0, 5).map((match: any, index: number) => (
-                        <div key={index} className="text-sm text-gray-300">
-                          <span className="text-blue-400">#{match.placement}</span> - {match.mode} - {match.date}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-400">Match history not available in manual mode</p>
-                  )}
-                  
-                  <p className="text-gray-400 mt-2">AI coaching will focus on your overall performance stats</p>
-                </div>
               </div>
-            )}
 
-            {manualUsername && !fortniteStats && !isLoadingStats && (
-              <p className="text-xs text-red-400 mt-2">
-                Username not found. Please check the spelling or try a different username.
-              </p>
-            )}
-
-            {manualUsername && !fortniteStats && (
-              <p className="text-xs text-secondary-text mt-2">
-                AI will provide general Fortnite advice without personalized coaching.
-              </p>
-            )}
-          </div>
-
-          {/* AI Training & Customization */}
-          <div className="p-6 bg-white/5 border border-white/10 rounded-xl mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">AI Training & Customization</h3>
-              <button
-                onClick={() => setShowAITraining(!showAITraining)}
-                className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors cursor-pointer border border-white/20 hover:border-white/30"
-              >
-                {showAITraining ? 'Hide' : 'Show'}
-              </button>
-            </div>
-            
-            {showAITraining && (
-              <div className="space-y-4">
-                {/* Developer Documentation Notice */}
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                  <p className="text-blue-300 text-sm">
-                    <strong>Developer Documentation:</strong> Comprehensive Fortnite knowledge including zone guides, mechanics, strategies, meta analysis, and pro tips is automatically included in every AI response.
-                  </p>
-                  <div className="mt-2">
-                    <a 
-                      href="/admin/docs" 
-                      target="_blank"
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-blue-300 hover:text-blue-200 text-xs transition-all duration-200"
-                    >
-                      📝 Manage Documentation
-                    </a>
-                  </div>
-                </div>
-                
-                {/* AI Personality & Expertise */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      AI Coaching Style
-                    </label>
-                    <select
-                      value={aiCoachingStyle}
-                      onChange={(e) => setAiCoachingStyle(e.target.value)}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
-                    >
-                      <option value="aggressive">Aggressive & Competitive</option>
-                      <option value="patient">Patient & Strategic</option>
-                      <option value="technical">Technical & Detailed</option>
-                      <option value="motivational">Motivational & Encouraging</option>
-                      <option value="analytical">Analytical & Data-Driven</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">
-                      Focus Areas
-                    </label>
-                    <select
-                      value={aiFocusArea}
-                      onChange={(e) => setAiFocusArea(e.target.value)}
-                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm"
-                    >
-                      <option value="all">All Aspects</option>
-                      <option value="building">Building & Editing</option>
-                      <option value="positioning">Positioning & Rotation</option>
-                      <option value="aim">Aim & Combat</option>
-                      <option value="game-sense">Game Sense & Decision Making</option>
-                      <option value="mechanics">Mechanical Skills</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Custom Knowledge Base */}
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    Your Personal Strategies & Knowledge
-                  </label>
-                  <textarea
-                    value={customKnowledge}
-                    onChange={(e) => setCustomKnowledge(e.target.value)}
-                    placeholder="Add your own personal strategies, tips, or knowledge that you want the AI to consider..."
-                    rows={4}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 text-sm resize-none"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    This is in addition to the comprehensive developer documentation that's automatically included
-                  </p>
-                </div>
-
-                {/* Bulk Documentation Import */}
-                <div className="bg-gradient-to-r from-green-900/20 to-blue-900/20 p-4 rounded-lg border border-green-500/20">
-                  <h4 className="text-sm font-semibold text-green-400 mb-3">📖 Bulk Documentation Import</h4>
-                  
-                  {/* File Upload */}
-                  <div className="mb-3">
-                    <label className="block text-xs text-green-300 mb-2">
-                      Upload Documentation File (.txt, .md, .json)
-                    </label>
-                    <input
-                      type="file"
-                      accept=".txt,.md,.json"
-                      onChange={handleFileUpload}
-                      className="w-full text-xs text-green-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-500 file:text-white hover:file:bg-green-600"
-                    />
-                    <p className="text-xs text-green-400 mt-1">
-                      Upload zone guides, mechanics documentation, or any Fortnite text files
-                    </p>
-                  </div>
-
-                  {/* Quick Import Templates */}
-                  <div className="mb-3">
-                    <label className="block text-xs text-green-300 mb-2">
-                      Quick Import Templates
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => importZoneDocumentation()}
-                        className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors"
-                      >
-                        Import Zone Guide
-                      </button>
-                      <button
-                        onClick={() => importMechanicsDocumentation()}
-                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded transition-colors"
-                      >
-                        Import Mechanics
-                      </button>
-                      <button
-                        onClick={() => importStrategyDocumentation()}
-                        className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white text-xs rounded transition-colors"
-                      >
-                        Import Strategies
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Bulk Text Import */}
-                  <div>
-                    <label className="block text-xs text-green-300 mb-2">
-                      Paste Large Documentation (Zones, Mechanics, etc.)
-                    </label>
-                    <textarea
-                      value={bulkDocumentation}
-                      onChange={(e) => setBulkDocumentation(e.target.value)}
-                      placeholder="Paste your zone documentation, mechanics guides, or any large text here..."
-                      rows={6}
-                      className="w-full px-3 py-2 bg-white/10 border border-green-500/30 rounded-lg text-white placeholder-green-400/50 text-xs resize-none"
-                    />
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={importBulkDocumentation}
-                        disabled={!bulkDocumentation.trim()}
-                        className="px-3 py-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white text-xs rounded transition-colors"
-                      >
-                        Import to AI Training
-                      </button>
-                      <button
-                        onClick={() => setBulkDocumentation('')}
-                        className="px-3 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                    <p className="text-xs text-green-400 mt-1">
-                      Character count: {bulkDocumentation.length} | Max: 10,000
-                    </p>
-                  </div>
-                </div>
-
-                {/* Personal Goals */}
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    Your Fortnite Goals
-                  </label>
-                  <textarea
-                    value={personalGoals}
-                    onChange={(e) => setPersonalGoals(e.target.value)}
-                    placeholder="What do you want to improve? (e.g., 'Get to Champion League', 'Improve building speed', 'Better endgame positioning')"
-                    rows={2}
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 text-sm resize-none"
-                  />
-                </div>
-
-                {/* Save Training */}
-                <div className="flex justify-between items-center">
-                  <button
-                    onClick={saveAITraining}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors"
-                  >
-                    Save AI Training
-                  </button>
-                  <button
-                    onClick={resetAITraining}
-                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors"
-                  >
-                    Reset to Default
-                  </button>
-                </div>
-
-                {/* Training Status */}
-                {aiTrainingSaved && (
-                  <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
-                    <p className="text-green-400 text-sm">✅ AI training saved! Your customizations will be used in future conversations.</p>
-                  </div>
-                )}
-
-                {/* Documentation Management */}
-                {customKnowledge.trim() && (
-                  <div className="bg-gradient-to-r from-orange-900/20 to-red-900/20 p-3 rounded-lg border border-orange-500/20">
-                    <h4 className="text-sm font-semibold text-orange-400 mb-2">📚 Current Documentation ({customKnowledge.length} chars)</h4>
-                    <div className="max-h-32 overflow-y-auto bg-black/20 p-2 rounded text-xs text-orange-200">
-                      <pre className="whitespace-pre-wrap break-words">{customKnowledge}</pre>
-                    </div>
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => setCustomKnowledge('')}
-                        className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
-                      >
-                        Clear All
-                      </button>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(customKnowledge);
-                          alert('Documentation copied to clipboard!');
-                        }}
-                        className="px-2 py-1 bg-orange-500 hover:bg-orange-600 text-white text-xs rounded transition-colors"
-                      >
-                        Copy to Clipboard
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Help Section */}
-                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <h4 className="text-sm font-semibold text-blue-400 mb-2">💡 How to Train Your AI Coach</h4>
-                  <div className="text-xs text-blue-300 space-y-1">
-                    <p><strong>Coaching Style:</strong> Choose how the AI communicates with you</p>
-                    <p><strong>Focus Areas:</strong> Tell the AI what skills you want to improve most</p>
-                    <p><strong>Custom Knowledge:</strong> Share your own strategies, drop spots, or techniques</p>
-                    <p><strong>Personal Goals:</strong> Set specific targets like "Reach Champion League" or "Improve building speed"</p>
-                  </div>
-                </div>
-
-                {/* Example Training Data */}
-                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-                  <h4 className="text-sm font-semibold text-purple-400 mb-2">📚 Example Training Data</h4>
-                  <div className="text-xs text-purple-300 space-y-2">
-                    <div>
-                      <p className="font-semibold">Custom Knowledge Example:</p>
-                      <p>"My favorite drop is Misty Meadows because it has good loot and rotation options. I always rotate through the mountain to avoid early fights. My building strategy focuses on high ground control and quick edits."</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold">Personal Goals Example:</p>
-                      <p>"I want to improve my endgame positioning, get better at reading the storm, and increase my win rate from 5% to 10%."</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Chat Controls */}
-          <div className="flex items-center justify-between relative z-20">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  console.log('Show Chat Log button clicked!');
-                  setShowChatLog(!showChatLog);
-                }}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all duration-300"
-                style={{ zIndex: 1000, position: 'relative' }}
-              >
-                {showChatLog ? 'Hide Chat Log' : 'Show Chat Log'}
-              </button>
-              <span className="text-sm text-secondary-text">
-                {conversations.length}/5 chats
-              </span>
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => {
-                  console.log('New Chat button clicked!');
-                  createNewChat();
-                }}
-                disabled={conversations.length >= 5}
-                className="px-6 py-2 bg-white text-dark-charcoal rounded-lg font-semibold hover:bg-gray-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ zIndex: 1000, position: 'relative' }}
-              >
-                + New Chat
-              </button>
-            </div>
-          </div>
-
-          {/* Chat Log Sidebar */}
-          {showChatLog && (
-            <div className="p-6 bg-white/5 border border-white/10 rounded-xl relative z-20">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Chat History</h3>
-                <span className="text-xs text-secondary-text">{conversations.length}/5 chats</span>
-              </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {conversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    className={`p-3 rounded-lg transition-all duration-300 ${
-                      conversation.id === currentConversationId
-                        ? 'bg-white/20 border border-white/30'
-                        : 'bg-white/5 hover:bg-white/10 border border-transparent'
-                    }`}
-                    style={{ zIndex: 1000, position: 'relative' }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div 
-                        className="flex-1 cursor-pointer"
-                        onClick={() => switchConversation(conversation.id)}
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-white text-sm truncate">{conversation.title}</p>
-                          <span className="text-xs text-secondary-text">
-                            {conversation.createdAt.toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-xs text-secondary-text mt-1">
-                          {conversation.messages.length} messages
-                        </p>
-                      </div>
-                      {conversations.length > 1 && (
-                        <button
-                          onClick={() => deleteChat(conversation.id)}
-                          className="ml-2 p-1 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
-                          title="Delete chat"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Chat Container */}
-          <div className="glass-card p-8 h-96 overflow-y-auto mb-6">
-            <div className="space-y-4">
-              {/* Debug info */}
-              <div className="text-xs text-gray-400 mb-2">
-                Debug: {messages.length} messages, Conversation ID: {currentConversationId}
-              </div>
-              
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                      message.isUser
-                        ? 'bg-white text-dark-charcoal ml-auto'
-                        : 'bg-white/10 text-white'
-                    }`}
-                  >
-                    {message.isUser ? (
-                      <p className="text-sm">{message.text}</p>
-                    ) : (
-                      <div className="text-sm prose prose-invert prose-sm max-w-none">
-                        <ReactMarkdown>
-                          {message.text}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                    <p className={`text-xs mt-2 ${message.isUser ? 'text-gray-600' : 'text-gray-400'}`}>
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              
-              {/* Typing Indicator */}
-              {isTyping && (
-                <div className="flex justify-start">
-                  <div className="bg-white/10 text-white px-4 py-3 rounded-2xl">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* Input Area */}
-          <div className="flex gap-4 mb-8">
-            <input
-              type="text"
-              value={inputText}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your question..."
-              className="flex-1 px-6 py-4 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-              style={{ zIndex: 1000, position: 'relative' }}
-            />
-            <button
-              onClick={handleSendClick}
-              disabled={!inputText.trim() || isTyping}
-              className="px-8 py-4 bg-white text-dark-charcoal rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ 
-                zIndex: 1000, 
-                position: 'relative',
-                pointerEvents: 'auto',
-                cursor: 'pointer'
-              }}
-            >
-              Send
-            </button>
-          </div>
-
-          {/* Quick Suggestions - Moved to bottom */}
-          <div className="relative z-20">
-            <h3 className="text-lg font-semibold text-white text-center mb-6">Quick Suggestions</h3>
-            <div className="flex flex-wrap gap-4 justify-center">
-              {quickSuggestions.map((suggestion, index) => (
+              {/* Input */}
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ask me about improving your Fortnite skills..."
+                  className="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500"
+                  disabled={isLoadingResponse}
+                />
                 <button
-                  key={index}
-                  onClick={() => {
-                    console.log(`Quick suggestion "${suggestion}" clicked!`);
-                    handleQuickSuggestion(suggestion);
-                  }}
-                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-full text-white hover:bg-white/20 transition-all duration-300 hover:scale-105"
-                  style={{ zIndex: 1000, position: 'relative' }}
+                  onClick={handleSendMessage}
+                  disabled={!inputMessage.trim() || isLoadingResponse}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
                 >
-                  {suggestion}
+                  Send
                 </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Model Tag */}
-          <div className="text-center">
-            <span className="text-xs text-secondary-text bg-white/5 px-4 py-2 rounded-full">
-              Powered by GPT-4o-mini
-            </span>
-            {typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_OPENAI_API_KEY && (
-              <div className="mt-2">
-                <span className="text-xs text-white bg-white/10 px-3 py-1 rounded-full border border-white/20">
-                  ⚠️ Using Fallback Mode (No API Key)
-                </span>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div style={{ textAlign: 'center', marginTop: '48px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
-            <button
-              onClick={() => {
-                window.location.href = '/dashboard';
-              }}
-              style={{ 
-                padding: '12px 24px', 
-                backgroundColor: 'transparent', 
-                color: 'white', 
-                borderRadius: '8px', 
-                fontWeight: 'bold',
-                fontSize: '18px',
-                border: '2px solid white',
-                cursor: 'pointer',
-                zIndex: 9999,
-                position: 'relative',
-                width: '280px'
-              }}
-            >
-              ← Back to Dashboard
-            </button>
-            <button
-              onClick={() => {
-                window.location.href = '/';
-              }}
-              style={{ 
-                padding: '12px 24px', 
-                backgroundColor: 'white', 
-                color: 'black', 
-                borderRadius: '8px', 
-                fontWeight: 'bold',
-                fontSize: '18px',
-                border: 'none',
-                cursor: 'pointer',
-                zIndex: 9999,
-                position: 'relative',
-                width: '280px'
-              }}
-            >
-              Back to Home
-            </button>
+            </div>
           </div>
         </div>
       </div>
-      
-      {/* Upgrade Prompt Modal */}
-      {showUpgradePrompt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-dark-charcoal p-6 rounded-lg max-w-md mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">Upgrade Required</h3>
-            <p className="text-gray-300 mb-6">
-              You've reached your monthly limit. Upgrade to continue using PathGen's AI coaching and Osirion analytics.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowUpgradePrompt(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-              >
-                Maybe Later
-              </button>
-              <Link
-                href="/pricing"
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded hover:from-blue-600 hover:to-purple-700"
-              >
-                View Plans
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      <Footer />
-      
     </div>
   );
 }

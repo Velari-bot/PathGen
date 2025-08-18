@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, fortniteUsername } = await request.json();
+    const { message, context, fortniteUsername, epicContext, userStats } = await request.json();
 
     if (!message) {
       return NextResponse.json(
@@ -31,6 +31,16 @@ export async function POST(request: NextRequest) {
     // If we have both context and username, append username info to the existing context
     if (fortniteUsername && context) {
       enhancedContext = `${context}\n\nUser's Fortnite username: ${fortniteUsername}`;
+    }
+
+    // Add Epic account context if available
+    if (epicContext) {
+      enhancedContext = `${enhancedContext}\n\nEpic Account Context: ${epicContext}`;
+    }
+
+    // Add user stats availability info
+    if (userStats) {
+      enhancedContext = `${enhancedContext}\n\nUser Stats: ${userStats}`;
     }
 
     // Add formatting and conciseness instructions

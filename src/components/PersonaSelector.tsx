@@ -107,6 +107,7 @@ export default function PersonaSelector() {
                   src="/Black PathGen logo.png"
                   alt="PathGen AI Logo"
                   fill
+                  sizes="48px"
                   className="object-contain"
                 />
               </div>

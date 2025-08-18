@@ -82,3 +82,9 @@ temp/
 
 # Epic Games SDK (large files)
 src/lib/EOS-SDK-CSharp-*/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

@@ -11,21 +11,44 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase only on the client side and if config is available
+// Initialize Firebase
 let app: FirebaseApp | undefined;
 let auth: Auth | undefined;
 let db: Firestore | undefined;
 
-if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
-  // Only initialize if we're in the browser and have config
-  if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApps()[0];
+if (typeof window !== 'undefined') {
+  try {
+    // Initialize Firebase app
+    if (getApps().length === 0) {
+      app = initializeApp(firebaseConfig);
+      console.log('✅ Firebase app initialized successfully');
+    } else {
+      app = getApps()[0];
+      console.log('✅ Using existing Firebase app');
+    }
+    
+    // Initialize Auth and Firestore
+    auth = getAuth(app);
+    db = getFirestore(app);
+    
+    console.log('✅ Firebase services initialized successfully');
+    
+    // Make Firebase available globally for development only
+    if (process.env.NODE_ENV === 'development') {
+      (window as any).firebase = {
+        app,
+        auth,
+        db
+      };
+      console.log('✅ Firebase available globally for development');
+    }
+    
+  } catch (error) {
+    console.error('❌ Firebase initialization failed:', error);
+    throw error;
   }
-  
-  auth = getAuth(app);
-  db = getFirestore(app);
+} else {
+  console.warn('⚠️ Firebase: Server-side rendering detected');
 }
 
 export { app, auth, db };

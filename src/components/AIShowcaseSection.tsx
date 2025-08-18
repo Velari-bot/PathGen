@@ -120,6 +120,7 @@ export default function AIShowcaseSection() {
                       src="/Black PathGen logo.png"
                       alt="PathGen AI Logo"
                       fill
+                      sizes="32px"
                       className="object-contain"
                     />
                   </div>

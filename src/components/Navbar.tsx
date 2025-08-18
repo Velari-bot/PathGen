@@ -26,12 +26,13 @@ export default function Navbar() {
             <Link href="/" className="flex items-center space-x-2">
               <div className="relative w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-lg">
                 <div className="relative w-6 h-6">
-                  <Image
-                    src="/Black PathGen logo.png"
-                    alt="PathGen AI Logo"
-                    fill
-                    className="object-contain"
-                  />
+                                  <Image
+                  src="/Black PathGen logo.png"
+                  alt="PathGen AI Logo"
+                  fill
+                  sizes="24px"
+                  className="object-contain"
+                />
                 </div>
               </div>
               <span className="text-xl font-bold text-primary-text">PathGen AI</span>
@@ -55,6 +56,7 @@ export default function Navbar() {
                   src="/Black PathGen logo.png"
                   alt="PathGen AI Logo"
                   fill
+                  sizes="24px"
                   className="object-contain"
                 />
               </div>
@@ -72,8 +74,8 @@ export default function Navbar() {
                                  <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
                    AI Coach
                  </Link>
-                                   <Link href="/poi-analysis" className="text-secondary-text hover:text-white transition-colors duration-300">
-                    POI Analysis
+                                                   <Link href="/map" className="text-secondary-text hover:text-white transition-colors duration-300">
+                   POI Analysis
                   </Link>
                   <Link href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
                     Tournament

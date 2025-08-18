@@ -11,6 +11,10 @@ import { SUBSCRIPTION_TIERS } from '@/lib/osirion';
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
+  const [promoCodes, setPromoCodes] = useState({
+    paid: '',
+    pro: ''
+  });
   const { user } = useAuth();
   const router = useRouter();
 
@@ -33,7 +37,8 @@ export default function PricingPage() {
         body: JSON.stringify({
           priceId: tier === 'paid' ? 'price_1RvsvqCitWuvPenEw9TefOig' : 'price_1RvsyxCitWuvPenEOtFzt5FC', // Standard and Pro tier price IDs
           userId: user.uid,
-          tier: tier
+          tier: tier,
+          promoCode: promoCodes[tier as keyof typeof promoCodes] || null
         }),
       });
 
@@ -89,7 +94,7 @@ export default function PricingPage() {
             <h3 className="text-2xl font-bold text-primary-text mb-4">{SUBSCRIPTION_TIERS.free.name}</h3>
             <div className="mb-6">
               <span className="text-5xl font-bold text-white">${SUBSCRIPTION_TIERS.free.price}</span>
-              <span className="text-lg text-secondary-text">/month</span>
+              <span className="text-lg text-secondary-text">1 time</span>
             </div>
             <div className="text-left space-y-3 mb-6">
               {SUBSCRIPTION_TIERS.free.features.map((feature, index) => (
@@ -132,6 +137,22 @@ export default function PricingPage() {
                 </div>
               ))}
             </div>
+            {/* Promo Code Input */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Enter promo code"
+                value={promoCodes.paid}
+                onChange={(e) => setPromoCodes(prev => ({ ...prev, paid: e.target.value }))}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/40 mb-2"
+              />
+              {promoCodes.paid && (
+                <div className="text-xs text-green-400">
+                  🎫 Promo code applied: {promoCodes.paid}
+                </div>
+              )}
+            </div>
+            
             <button
               onClick={() => handleSubscribe('paid')}
               disabled={loading}
@@ -160,6 +181,22 @@ export default function PricingPage() {
                 </div>
               ))}
             </div>
+            {/* Promo Code Input */}
+            <div className="mb-4">
+              <input
+                type="text"
+                placeholder="Enter promo code"
+                value={promoCodes.pro}
+                onChange={(e) => setPromoCodes(prev => ({ ...prev, pro: e.target.value }))}
+                className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-right focus:border-white/40 mb-2"
+              />
+              {promoCodes.pro && (
+                <div className="text-xs text-green-400">
+                  🎫 Promo code applied: {promoCodes.pro}
+                </div>
+                )}
+            </div>
+            
             <button
               onClick={() => handleSubscribe('pro')}
               disabled={loading}

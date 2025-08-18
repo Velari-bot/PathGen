@@ -11,6 +11,7 @@ export default function AuthCallbackPage() {
   const { user } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
+  const [testResults, setTestResults] = useState<string[]>([]);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -18,16 +19,31 @@ export default function AuthCallbackPage() {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const error = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
+
+        console.log('Epic OAuth Callback Debug:', {
+          code: code ? `${code.substring(0, 8)}...` : null,
+          state: state ? `${state.substring(0, 8)}...` : null,
+          error,
+          errorDescription,
+          hasCode: !!code,
+          hasState: !!state,
+          hasError: !!error,
+          url: window.location.href
+        });
 
         if (error) {
-          throw new Error(`OAuth error: ${error}`);
+          console.error('Epic OAuth error received:', { error, errorDescription });
+          throw new Error(`OAuth error: ${error}${errorDescription ? ` - ${errorDescription}` : ''}`);
         }
 
         if (!code || !state) {
+          console.error('Missing OAuth parameters:', { code: !!code, state: !!state });
           throw new Error('Missing OAuth parameters');
         }
 
         if (!user || user.uid !== state) {
+          console.error('Invalid user state:', { userUid: user?.uid, stateUid: state });
           throw new Error('Invalid user state');
         }
 
@@ -47,17 +63,45 @@ export default function AuthCallbackPage() {
 
         if (!response.ok) {
           const errorData = await response.json();
+          
+          // Check if it's a scope consent error
+          if (errorData.requiresConsent) {
+            setStatus('error');
+            setMessage('Epic OAuth requires additional permissions');
+            setTestResults([
+              '⚠️ Epic OAuth Scope Consent Required',
+              '',
+              'Epic Games requires you to approve the requested permissions:',
+              '• basic_profile - Access to your basic profile information',
+              '• openid - OpenID Connect authentication',
+              '',
+              'To fix this:',
+              '1. Go back to Epic OAuth',
+              '2. Make sure to check all permission boxes',
+              '3. Complete the authorization process',
+              '',
+              'Click "Try Epic OAuth Again" to retry'
+            ]);
+            return;
+          }
+          
           throw new Error(errorData.error || 'Failed to connect Epic account');
         }
 
         const data = await response.json();
         
+                // Store Epic account data in localStorage for the dashboard to use
+        if (data.epicAccount) {
+          localStorage.setItem('epicAccountData', JSON.stringify(data.epicAccount));
+          console.log('Stored Epic account data:', data.epicAccount);
+        }
+        
         setStatus('success');
         setMessage('Epic account connected successfully!');
-
-        // Redirect to test page after a short delay
+        
+        // Redirect to dashboard after a short delay
         setTimeout(() => {
-          router.push('/test-osirion-api');
+          router.push('/dashboard');
         }, 2000);
 
       } catch (error) {
@@ -108,7 +152,7 @@ export default function AuthCallbackPage() {
               </div>
               <h1 className="text-2xl font-bold text-white mb-4">Success!</h1>
               <p className="text-gray-300">{message}</p>
-              <p className="text-sm text-gray-400 mt-2">Redirecting to test page...</p>
+              <p className="text-sm text-gray-400 mt-2">Redirecting to dashboard...</p>
             </>
           )}
 
@@ -121,12 +165,34 @@ export default function AuthCallbackPage() {
               </div>
               <h1 className="text-2xl font-bold text-white mb-4">Connection Failed</h1>
               <p className="text-red-300 mb-4">{message}</p>
-              <button
-                onClick={() => router.push('/test-osirion-api')}
-                className="px-6 py-2 bg-white text-dark-charcoal rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                Go Back to Test Page
-              </button>
+              
+              {testResults.length > 0 && (
+                <div className="bg-black/20 p-4 rounded-lg mb-4 text-left">
+                  {testResults.map((result, index) => (
+                    <div key={index} className="text-sm text-gray-300 mb-1">
+                      {result}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="px-6 py-2 bg-white text-dark-charcoal rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  Go to Dashboard
+                </button>
+                
+                {testResults.length > 0 && (
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Try Epic OAuth Again
+                  </button>
+                )}
+              </div>
             </>
           )}
         </div>

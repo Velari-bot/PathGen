@@ -192,14 +192,33 @@ export class OsirionService {
   }
 
   private transformStatsData(epicId: string, matches: any[]): OsirionStats {
-    // Filter out non-BR matches and get player stats
-    const brMatches = matches.filter(match => 
-      match.info?.gameMode && 
-      match.info.gameMode.includes('BR') && 
-      !match.info.gameMode.includes('Creative')
-    );
+    console.log('Processing', matches.length, 'matches from Osirion');
     
-    const playerStats = brMatches.map(match => {
+    // Debug: Log first few matches to see their structure
+    if (matches.length > 0) {
+      console.log('First match structure:', JSON.stringify(matches[0], null, 2));
+      console.log('First match gameMode:', matches[0]?.info?.gameMode);
+      console.log('First match playerStats:', matches[0]?.playerStats);
+    }
+    
+    // More lenient filtering - accept any match with player stats
+    const validMatches = matches.filter(match => {
+      const hasPlayerStats = match.playerStats && Array.isArray(match.playerStats) && match.playerStats.length > 0;
+      const hasInfo = match.info;
+      
+      if (!hasPlayerStats) {
+        console.log('Match filtered out - no player stats:', match.info?.matchId);
+      }
+      if (!hasInfo) {
+        console.log('Match filtered out - no info:', match);
+      }
+      
+      return hasPlayerStats && hasInfo;
+    });
+    
+    console.log('Valid matches after filtering:', validMatches.length);
+    
+    const playerStats = validMatches.map(match => {
       const stats = match.playerStats?.[0] || {};
       return {
         matchId: match.info?.matchId,
@@ -208,7 +227,7 @@ export class OsirionService {
         assists: stats.assists || 0,
         damageDone: stats.damageDone || 0,
         lengthMs: match.info?.lengthMs || 0,
-        gameMode: match.info?.gameMode || '',
+        gameMode: match.info?.gameMode || 'Unknown',
         startTimestamp: match.info?.startTimestamp || 0
       };
     });
@@ -222,11 +241,14 @@ export class OsirionService {
     const avgKills = totalMatches > 0 ? totalKills / totalMatches : 0;
     const avgSurvivalTime = totalMatches > 0 ? playerStats.reduce((sum, m) => sum + (m.lengthMs / 1000), 0) / totalMatches : 0;
 
+    // Get the username from the first match's player stats
+    const firstMatchUsername = validMatches[0]?.playerStats?.[0]?.epicUsername || 'Unknown';
+    
     return {
       accountId: epicId,
-      username: 'Unknown', // Epic username not available in current API response
+      username: firstMatchUsername, // Use real Epic username from API
       platform: 'pc', // Default to PC for now
-      matches: this.transformMatches(brMatches),
+      matches: this.transformMatches(validMatches),
       summary: {
         totalMatches,
         wins,
@@ -250,19 +272,20 @@ export const SUBSCRIPTION_TIERS = {
     currency: 'USD',
     limits: {
       osirion: {
-        matchesPerMonth: 7,
+        matchesPerMonth: 6, // 6 uploads × $0.0254 = $0.15 (matches your cost)
         eventTypesPerMatch: 1,
-        replayUploadsPerMonth: 0,
-        computeRequestsPerMonth: 0
+        replayUploadsPerMonth: 0, // No replay uploads for free tier
+        computeRequestsPerMonth: 0 // No compute for free tier
       },
       ai: {
-        messagesPerMonth: 45
+        messagesPerMonth: 45 // 45 messages × ~$0.00038 = $0.017 (matches your cost)
       }
     },
     features: [
-      'Last 7 matches per month',
+      '6 matches 1 time (one-time access)',
       'Basic elimination events only',
-      '45 AI messages per month',
+      '45 AI messages 1 time',
+      'Epic account connection',
       'Powered by Osirion'
     ]
   },
@@ -273,21 +296,22 @@ export const SUBSCRIPTION_TIERS = {
     currency: 'USD',
     limits: {
       osirion: {
-        matchesPerMonth: 25,
+        matchesPerMonth: 50, // 50 uploads × $0.0254 = $1.27 (matches your cost)
         eventTypesPerMatch: 3,
-        replayUploadsPerMonth: 5,
-        computeRequestsPerMonth: 50
+        replayUploadsPerMonth: 5, // 5 replay uploads
+        computeRequestsPerMonth: 50 // 50 compute requests
       },
       ai: {
-        messagesPerMonth: 250
+        messagesPerMonth: 250 // 250 messages × ~$0.00038 = $0.095 (matches your cost)
       }
     },
     features: [
-      'Up to 25 matches per month',
+      '50 matches per month',
       '3 event types per match',
       '5 replay uploads per month',
       '50 compute requests per month',
       '250 AI messages per month',
+      'Epic account connection',
       'Powered by Osirion'
     ]
   },
@@ -298,21 +322,22 @@ export const SUBSCRIPTION_TIERS = {
     currency: 'USD',
     limits: {
       osirion: {
-        matchesPerMonth: -1, // Unlimited
+        matchesPerMonth: 275, // 275 uploads × $0.0254 = $6.99 (matches your cost)
         eventTypesPerMatch: -1, // All types
-        replayUploadsPerMonth: 20,
-        computeRequestsPerMonth: -1 // Unlimited
+        replayUploadsPerMonth: 275, // 275 replay uploads
+        computeRequestsPerMonth: 275 // 275 compute requests
       },
       ai: {
-        messagesPerMonth: -1 // No cap
+        messagesPerMonth: 700 // 700 messages × ~$0.00038 = $0.266 (matches your cost)
       }
     },
     features: [
-      'Unlimited matches per month',
+      '275 matches per month',
       'All event types',
-      '20 replay uploads per month',
-      'Unlimited compute requests',
-      'Unlimited AI messages',
+      '275 replay uploads per month',
+      '275 compute requests per month',
+      '700 AI messages per month',
+      'Epic account connection',
       'Powered by Osirion'
     ]
   }
