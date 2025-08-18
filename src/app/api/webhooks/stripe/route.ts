@@ -141,9 +141,9 @@ export async function POST(request: NextRequest) {
             if (subscription.items.data.length > 0) {
               const priceId = subscription.items.data[0].price.id;
               // Map your Stripe price IDs to tiers
-              if (priceId === 'price_1RvsvqCitWuvPenEw9TefOig') {
+                             if (priceId === 'price_1RvsvqCitWuvPenEw9TefOig') { // Standard tier
                 subscriptionTier = 'paid';
-              } else if (priceId === 'price_1RvsyxCitWuvPenEOtFzt5FC') {
+                                                             } else if (priceId === 'price_1RvsyxCitWuvPenEOtFzt5FC') { // Pro tier
                 subscriptionTier = 'pro';
               }
             }
