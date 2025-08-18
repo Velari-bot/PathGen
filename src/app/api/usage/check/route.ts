@@ -77,15 +77,30 @@ export async function GET(request: NextRequest) {
         const userData = userDoc.exists ? userDoc.data() : {};
         
         // Determine limits based on subscription tier
-        let monthlyLimit = 10; // Free tier default
-        let pullsPerMonth = 10;
+        let limits = {
+          matches: { monthly: 6, oneTime: true },
+          aiMessages: { monthly: 45, oneTime: true },
+          replayUploads: { monthly: 0, oneTime: false },
+          computeRequests: { monthly: 0, oneTime: false },
+          osirionPulls: { monthly: 10, oneTime: false }
+        };
         
         if (userData.subscriptionTier === 'standard') {
-          monthlyLimit = 50;
-          pullsPerMonth = 50;
+          limits = {
+            matches: { monthly: 50, oneTime: false },
+            aiMessages: { monthly: 250, oneTime: false },
+            replayUploads: { monthly: 5, oneTime: false },
+            computeRequests: { monthly: 50, oneTime: false },
+            osirionPulls: { monthly: 50, oneTime: false }
+          };
         } else if (userData.subscriptionTier === 'pro') {
-          monthlyLimit = 500;
-          pullsPerMonth = 500;
+          limits = {
+            matches: { monthly: 275, oneTime: false },
+            aiMessages: { monthly: 700, oneTime: false },
+            replayUploads: { monthly: 275, oneTime: false },
+            computeRequests: { monthly: 275, oneTime: false },
+            osirionPulls: { monthly: 500, oneTime: false }
+          };
         }
         
         return NextResponse.json({
@@ -94,17 +109,42 @@ export async function GET(request: NextRequest) {
             userId: userId,
             currentMonth: currentMonth,
             osirionPulls: osirionPulls,
-            osirionPullsRemaining: monthlyLimit - osirionPulls,
-            monthlyLimit: monthlyLimit,
+            osirionPullsRemaining: limits.osirionPulls.monthly - osirionPulls,
+            monthlyLimit: limits.osirionPulls.monthly,
             lastReset: lastReset,
-            lastPull: usageData?.lastPull || null
+            lastPull: usageData?.lastPull || null,
+            // Add all usage metrics
+            matches: {
+              used: usageData?.matches || 0,
+              limit: limits.matches.monthly,
+              oneTime: limits.matches.oneTime
+            },
+            aiMessages: {
+              used: usageData?.aiMessages || 0,
+              limit: limits.aiMessages.monthly,
+              oneTime: limits.aiMessages.oneTime
+            },
+            replayUploads: {
+              used: usageData?.replayUploads || 0,
+              limit: limits.replayUploads.monthly,
+              oneTime: limits.replayUploads.oneTime
+            },
+            computeRequests: {
+              used: usageData?.computeRequests || 0,
+              limit: limits.computeRequests.monthly,
+              oneTime: limits.computeRequests.oneTime
+            }
           },
           limits: {
             osirion: {
-              pullsPerMonth: pullsPerMonth,
-              resetsMonthly: true,
+              pullsPerMonth: limits.osirionPulls.monthly,
+              resetsMonthly: !limits.osirionPulls.oneTime,
               description: `Osirion API pulls per month (${userData.subscriptionTier || 'free'} tier)`
-            }
+            },
+            matches: limits.matches,
+            aiMessages: limits.aiMessages,
+            replayUploads: limits.replayUploads,
+            computeRequests: limits.computeRequests
           }
         });
       } else {
@@ -123,15 +163,30 @@ export async function GET(request: NextRequest) {
         const userData = userDoc.exists ? userDoc.data() : {};
         
         // Determine limits based on subscription tier
-        let monthlyLimit = 10; // Free tier default
-        let pullsPerMonth = 10;
+        let limits = {
+          matches: { monthly: 6, oneTime: true },
+          aiMessages: { monthly: 45, oneTime: true },
+          replayUploads: { monthly: 0, oneTime: false },
+          computeRequests: { monthly: 0, oneTime: false },
+          osirionPulls: { monthly: 10, oneTime: false }
+        };
         
         if (userData.subscriptionTier === 'standard') {
-          monthlyLimit = 50;
-          pullsPerMonth = 50;
+          limits = {
+            matches: { monthly: 50, oneTime: false },
+            aiMessages: { monthly: 250, oneTime: false },
+            replayUploads: { monthly: 5, oneTime: false },
+            computeRequests: { monthly: 50, oneTime: false },
+            osirionPulls: { monthly: 50, oneTime: false }
+          };
         } else if (userData.subscriptionTier === 'pro') {
-          monthlyLimit = 500;
-          pullsPerMonth = 500;
+          limits = {
+            matches: { monthly: 275, oneTime: false },
+            aiMessages: { monthly: 700, oneTime: false },
+            replayUploads: { monthly: 275, oneTime: false },
+            computeRequests: { monthly: 275, oneTime: false },
+            osirionPulls: { monthly: 500, oneTime: false }
+          };
         }
         
         return NextResponse.json({
@@ -140,17 +195,42 @@ export async function GET(request: NextRequest) {
             userId: userId,
             currentMonth: currentMonth,
             osirionPulls: 0,
-            osirionPullsRemaining: monthlyLimit,
-            monthlyLimit: monthlyLimit,
+            osirionPullsRemaining: limits.osirionPulls.monthly,
+            monthlyLimit: limits.osirionPulls.monthly,
             lastReset: new Date(),
-            lastPull: null
+            lastPull: null,
+            // Add all usage metrics
+            matches: {
+              used: 0,
+              limit: limits.matches.monthly,
+              oneTime: limits.matches.oneTime
+            },
+            aiMessages: {
+              used: 0,
+              limit: limits.aiMessages.monthly,
+              oneTime: limits.aiMessages.oneTime
+            },
+            replayUploads: {
+              used: 0,
+              limit: limits.replayUploads.monthly,
+              oneTime: limits.replayUploads.oneTime
+            },
+            computeRequests: {
+              used: 0,
+              limit: limits.computeRequests.monthly,
+              oneTime: limits.computeRequests.oneTime
+            }
           },
           limits: {
             osirion: {
-              pullsPerMonth: pullsPerMonth,
-              resetsMonthly: true,
+              pullsPerMonth: limits.osirionPulls.monthly,
+              resetsMonthly: !limits.osirionPulls.oneTime,
               description: `Osirion API pulls per month (${userData.subscriptionTier || 'free'} tier)`
-            }
+            },
+            matches: limits.matches,
+            aiMessages: limits.aiMessages,
+            replayUploads: limits.replayUploads,
+            computeRequests: limits.computeRequests
           },
           message: 'Usage tracking initialized for new user'
         });
