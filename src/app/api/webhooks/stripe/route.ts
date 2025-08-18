@@ -98,7 +98,6 @@ export async function POST(request: NextRequest) {
               }
             }
             
-            const { doc, updateDoc } = await import('firebase-admin/firestore');
             const { getFirestore } = await import('firebase-admin/firestore');
             const db = getFirestore();
 
@@ -107,7 +106,7 @@ export async function POST(request: NextRequest) {
               return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
             }
 
-            const userDocRef = doc(db, 'users', session.metadata.userId);
+            const userDocRef = db.collection('users').doc(session.metadata.userId);
             
             // Determine subscription tier and status
             let subscriptionTier = 'free';
@@ -120,7 +119,7 @@ export async function POST(request: NextRequest) {
             }
             
             // Update user document with subscription info
-            await updateDoc(userDocRef, {
+            await userDocRef.update({
               subscriptionStatus: subscriptionStatus,
               subscriptionTier: subscriptionTier,
               'subscription.status': subscriptionTier,
@@ -148,15 +147,35 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status
         if (subscription.metadata?.userId) {
           try {
-            const { doc, updateDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            
-            if (!db) {
-              console.error('❌ Firebase not initialized in webhook');
-              return NextResponse.json({ error: 'Firebase not available' }, { status: 500 });
+            // Initialize Firebase Admin if not already initialized
+            if (getApps().length === 0) {
+              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+                try {
+                  const { initializeApp, cert } = await import('firebase-admin/app');
+                  initializeApp({
+                    credential: cert({
+                      projectId: process.env.FIREBASE_PROJECT_ID,
+                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    }),
+                  });
+                } catch (error: any) {
+                  if (error.code !== 'app/duplicate-app') {
+                    console.error('❌ Firebase Admin initialization error:', error);
+                  }
+                }
+              }
             }
             
-            const userDocRef = doc(db, 'users', subscription.metadata.userId);
+            const { getFirestore } = await import('firebase-admin/firestore');
+            const db = getFirestore();
+
+            if (!db) {
+              console.error('❌ Firebase Admin not initialized in webhook');
+              return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
+            }
+            
+            const userDocRef = db.collection('users').doc(subscription.metadata.userId);
             
             // Determine subscription tier based on price ID
             let subscriptionTier = 'free';
@@ -170,7 +189,7 @@ export async function POST(request: NextRequest) {
               }
             }
             
-            await updateDoc(userDocRef, {
+            await userDocRef.update({
               subscriptionStatus: subscription.status,
               subscriptionTier: subscriptionTier,
               'subscription.status': subscriptionTier,
@@ -195,17 +214,37 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status
         if (updatedSubscription.metadata?.userId) {
           try {
-            const { doc, updateDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            
-            if (!db) {
-              console.error('❌ Firebase not initialized in webhook');
-              return NextResponse.json({ error: 'Firebase not available' }, { status: 500 });
+            // Initialize Firebase Admin if not already initialized
+            if (getApps().length === 0) {
+              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+                try {
+                  const { initializeApp, cert } = await import('firebase-admin/app');
+                  initializeApp({
+                    credential: cert({
+                      projectId: process.env.FIREBASE_PROJECT_ID,
+                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    }),
+                  });
+                } catch (error: any) {
+                  if (error.code !== 'app/duplicate-app') {
+                    console.error('❌ Firebase Admin initialization error:', error);
+                  }
+                }
+              }
             }
             
-            const userDocRef = doc(db, 'users', updatedSubscription.metadata.userId);
+            const { getFirestore } = await import('firebase-admin/firestore');
+            const db = getFirestore();
+
+            if (!db) {
+              console.error('❌ Firebase Admin not initialized in webhook');
+              return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
+            }
             
-            await updateDoc(userDocRef, {
+            const userDocRef = db.collection('users').doc(updatedSubscription.metadata.userId);
+            
+            await userDocRef.update({
               subscriptionStatus: updatedSubscription.status,
               'subscription.status': updatedSubscription.status,
               updatedAt: new Date()
@@ -225,17 +264,37 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status to inactive
         if (deletedSubscription.metadata?.userId) {
           try {
-            const { doc, updateDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
-            
-            if (!db) {
-              console.error('❌ Firebase not initialized in webhook');
-              return NextResponse.json({ error: 'Firebase not available' }, { status: 500 });
+            // Initialize Firebase Admin if not already initialized
+            if (getApps().length === 0) {
+              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+                try {
+                  const { initializeApp, cert } = await import('firebase-admin/app');
+                  initializeApp({
+                    credential: cert({
+                      projectId: process.env.FIREBASE_PROJECT_ID,
+                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    }),
+                  });
+                } catch (error: any) {
+                  if (error.code !== 'app/duplicate-app') {
+                    console.error('❌ Firebase Admin initialization error:', error);
+                  }
+                }
+              }
             }
             
-            const userDocRef = doc(db, 'users', deletedSubscription.metadata.userId);
+            const { getFirestore } = await import('firebase-admin/firestore');
+            const db = getFirestore();
+
+            if (!db) {
+              console.error('❌ Firebase Admin not initialized in webhook');
+              return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
+            }
             
-            await updateDoc(userDocRef, {
+            const userDocRef = db.collection('users').doc(deletedSubscription.metadata.userId);
+            
+            await userDocRef.update({
               subscriptionStatus: 'inactive',
               subscriptionTier: 'free',
               'subscription.status': 'inactive',
@@ -259,12 +318,32 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status for successful payments
         if (invoice.subscription) {
           try {
-            const { doc, updateDoc, getDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
+            // Initialize Firebase Admin if not already initialized
+            if (getApps().length === 0) {
+              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+                try {
+                  const { initializeApp, cert } = await import('firebase-admin/app');
+                  initializeApp({
+                    credential: cert({
+                      projectId: process.env.FIREBASE_PROJECT_ID,
+                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    }),
+                  });
+                } catch (error: any) {
+                  if (error.code !== 'app/duplicate-app') {
+                    console.error('❌ Firebase Admin initialization error:', error);
+                  }
+                }
+              }
+            }
             
+            const { getFirestore } = await import('firebase-admin/firestore');
+            const db = getFirestore();
+
             if (!db) {
-              console.error('❌ Firebase not initialized in webhook');
-              return NextResponse.json({ error: 'Firebase not available' }, { status: 500 });
+              console.error('❌ Firebase Admin not initialized in webhook');
+              return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
             }
             
             // Get subscription details to find user ID
@@ -272,9 +351,9 @@ export async function POST(request: NextRequest) {
             const userId = subscription.metadata?.userId;
             
             if (userId) {
-              const userDocRef = doc(db, 'users', userId);
+              const userDocRef = db.collection('users').doc(userId);
               
-              await updateDoc(userDocRef, {
+              await userDocRef.update({
                 subscriptionStatus: 'active',
                 updatedAt: new Date()
               });
@@ -295,12 +374,32 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status for failed payments
         if (failedInvoice.subscription) {
           try {
-            const { doc, updateDoc } = await import('firebase/firestore');
-            const { db } = await import('@/lib/firebase');
+            // Initialize Firebase Admin if not already initialized
+            if (getApps().length === 0) {
+              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+                try {
+                  const { initializeApp, cert } = await import('firebase-admin/app');
+                  initializeApp({
+                    credential: cert({
+                      projectId: process.env.FIREBASE_PROJECT_ID,
+                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    }),
+                  });
+                } catch (error: any) {
+                  if (error.code !== 'app/duplicate-app') {
+                    console.error('❌ Firebase Admin initialization error:', error);
+                  }
+                }
+              }
+            }
             
+            const { getFirestore } = await import('firebase-admin/firestore');
+            const db = getFirestore();
+
             if (!db) {
-              console.error('❌ Firebase not initialized in webhook');
-              return NextResponse.json({ error: 'Firebase not available' }, { status: 500 });
+              console.error('❌ Firebase Admin not initialized in webhook');
+              return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
             }
             
             // Get subscription details to find user ID
@@ -308,9 +407,9 @@ export async function POST(request: NextRequest) {
             const userId = subscription.metadata?.userId;
             
             if (userId) {
-              const userDocRef = doc(db, 'users', userId);
+              const userDocRef = db.collection('users').doc(userId);
               
-              await updateDoc(userDocRef, {
+              await userDocRef.update({
                 subscriptionStatus: 'past_due',
                 updatedAt: new Date()
               });
