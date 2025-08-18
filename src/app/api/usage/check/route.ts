@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
           osirionPulls: { monthly: 10, oneTime: false }
         };
         
-        if (userData.subscriptionTier === 'standard') {
+        if (userData?.subscriptionTier === 'standard') {
           limits = {
             matches: { monthly: 45, oneTime: false }, // 45 matches/month (≈1000 credits = ~€2 worth, safe)
             aiMessages: { monthly: 225, oneTime: false }, // 225 messages/month (light weight on API)
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
             computeRequests: { monthly: 50, oneTime: false }, // 50 × 10 credits = 500 credits ≈ €1
             osirionPulls: { monthly: 50, oneTime: false } // 50 pulls/month
           };
-        } else if (userData.subscriptionTier === 'pro') {
+        } else if (userData?.subscriptionTier === 'pro') {
           limits = {
             matches: { monthly: 225, oneTime: false }, // 225 matches/month (≈5000 credits = ~€10)
             aiMessages: { monthly: 650, oneTime: false }, // 650 messages/month
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
             osirion: {
               pullsPerMonth: limits.osirionPulls.monthly,
               resetsMonthly: !limits.osirionPulls.oneTime,
-              description: `Osirion API pulls per month (${userData.subscriptionTier || 'free'} tier)`
+              description: `Osirion API pulls per month (${userData?.subscriptionTier || 'free'} tier)`
             },
             matches: limits.matches,
             aiMessages: limits.aiMessages,
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
           osirionPulls: { monthly: 10, oneTime: false }
         };
         
-        if (userData.subscriptionTier === 'standard') {
+        if (userData?.subscriptionTier === 'standard') {
           limits = {
             matches: { monthly: 45, oneTime: false }, // 45 matches/month (≈1000 credits = ~€2 worth, safe)
             aiMessages: { monthly: 225, oneTime: false }, // 225 messages/month (light weight on API)
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
             computeRequests: { monthly: 50, oneTime: false }, // 50 × 10 credits = 500 credits ≈ €1
             osirionPulls: { monthly: 50, oneTime: false } // 50 pulls/month
           };
-        } else if (userData.subscriptionTier === 'pro') {
+        } else if (userData?.subscriptionTier === 'pro') {
           limits = {
             matches: { monthly: 225, oneTime: false }, // 225 matches/month (≈5000 credits = ~€10)
             aiMessages: { monthly: 650, oneTime: false }, // 650 messages/month
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
             osirion: {
               pullsPerMonth: limits.osirionPulls.monthly,
               resetsMonthly: !limits.osirionPulls.oneTime,
-              description: `Osirion API pulls per month (${userData.subscriptionTier || 'free'} tier)`
+              description: `Osirion API pulls per month (${userData?.subscriptionTier || 'free'} tier)`
             },
             matches: limits.matches,
             aiMessages: limits.aiMessages,
