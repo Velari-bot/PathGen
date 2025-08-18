@@ -3,18 +3,35 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 
 // Initialize Firebase Admin if not already initialized
-if (getApps().length === 0) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+let firebaseAdminInitialized = false;
+
+function initializeFirebaseAdmin() {
+  if (firebaseAdminInitialized || getApps().length > 0) {
+    return;
+  }
+  
+  // Only initialize if we have the required environment variables
+  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+    try {
+      initializeApp({
+        credential: cert({
+          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        }),
+      });
+      firebaseAdminInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize Firebase Admin:', error);
+    }
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Firebase Admin when the API is actually called
+    initializeFirebaseAdmin();
+    
     const { userId } = await request.json();
 
     if (!userId) {

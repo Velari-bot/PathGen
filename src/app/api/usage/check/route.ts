@@ -6,22 +6,25 @@ export async function GET(request: NextRequest) {
   try {
     // Initialize Firebase Admin if not already initialized
     if (getApps().length === 0) {
-      try {
-        initializeApp({
-          credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-          }),
-        });
-      } catch (error: any) {
-        if (error.code !== 'app/duplicate-app') {
-          console.error('❌ Firebase Admin initialization error:', error);
-          return NextResponse.json({
-            success: false,
-            error: 'Firebase initialization failed',
-            details: error.message
-          }, { status: 500 });
+      // Only initialize if we have the required environment variables
+      if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        try {
+          initializeApp({
+            credential: cert({
+              projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
+              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+              privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            }),
+          });
+        } catch (error: any) {
+          if (error.code !== 'app/duplicate-app') {
+            console.error('❌ Firebase Admin initialization error:', error);
+            return NextResponse.json({
+              success: false,
+              error: 'Firebase initialization failed',
+              details: error.message
+            }, { status: 500 });
+          }
         }
       }
     }
