@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
+import { getApps } from 'firebase-admin/app';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -77,12 +78,33 @@ export async function POST(request: NextRequest) {
         // Update Firebase user subscription status
         if (session.metadata?.userId) {
           try {
-            const { doc, updateDoc } = await import('firebase/firestore');
-                        const { db } = await import('@/lib/firebase');
+            // Initialize Firebase Admin if not already initialized
+            if (getApps().length === 0) {
+              if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+                try {
+                  const { initializeApp, cert } = await import('firebase-admin/app');
+                  initializeApp({
+                    credential: cert({
+                      projectId: process.env.FIREBASE_PROJECT_ID,
+                      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+                    }),
+                  });
+                } catch (error: any) {
+                  if (error.code !== 'app/duplicate-app') {
+                    console.error('❌ Firebase Admin initialization error:', error);
+                  }
+                }
+              }
+            }
+            
+            const { doc, updateDoc } = await import('firebase-admin/firestore');
+            const { getFirestore } = await import('firebase-admin/firestore');
+            const db = getFirestore();
 
             if (!db) {
-              console.error('❌ Firebase not initialized in webhook');
-              return NextResponse.json({ error: 'Firebase not available' }, { status: 500 });
+              console.error('❌ Firebase Admin not initialized in webhook');
+              return NextResponse.json({ error: 'Firebase Admin not available' }, { status: 500 });
             }
 
             const userDocRef = doc(db, 'users', session.metadata.userId);
