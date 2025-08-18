@@ -1,23 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { doc, getDoc, getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
+import { getApps } from 'firebase-admin/app';
 
-// Initialize Firebase for API route
-const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
+// Initialize Firebase Admin if not already initialized
+let firebaseAdminInitialized = false;
 
-let app: any;
-let db: any;
+function initializeFirebaseAdmin() {
+  if (firebaseAdminInitialized || getApps().length > 0) {
+    return;
+  }
 
-if (firebaseConfig.apiKey) {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
+  // Only initialize if we have the required environment variables
+  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
+    try {
+      const { initializeApp, cert } = require('firebase-admin/app');
+      initializeApp({
+        credential: cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        }),
+      });
+      firebaseAdminInitialized = true;
+      console.log('✅ Firebase Admin initialized successfully in check-subscription');
+    } catch (error) {
+      console.error('Failed to initialize Firebase Admin:', error);
+    }
+  } else {
+    console.error('❌ Missing Firebase Admin environment variables');
+  }
 }
 
 // Subscription plan limits
@@ -62,23 +72,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Firebase not initialized' },
-        { status: 500 }
-      );
-    }
+    // Initialize Firebase Admin
+    initializeFirebaseAdmin();
 
     try {
+      const { getFirestore } = require('firebase-admin/firestore');
+      const db = getFirestore();
+
+      if (!db) {
+        return NextResponse.json(
+          { error: 'Firebase Admin not initialized' },
+          { status: 500 }
+        );
+      }
+
       // Get user document from Firestore
-      const userDoc = await getDoc(doc(db, 'users', userId));
+      const userDoc = await db.collection('users').doc(userId).get();
       
       // Also check subscriptions collection
-      const subscriptionsQuery = query(
-        collection(db, 'subscriptions'),
-        where('userId', '==', userId)
-      );
-      const subscriptionsSnapshot = await getDocs(subscriptionsQuery);
+      const subscriptionsSnapshot = await db.collection('subscriptions')
+        .where('userId', '==', userId)
+        .get();
       
       let subscriptionData = null;
       if (!subscriptionsSnapshot.empty) {
@@ -86,7 +100,7 @@ export async function POST(request: NextRequest) {
         console.log('Found subscription in subscriptions collection:', subscriptionData);
       }
 
-      if (!userDoc.exists()) {
+      if (!userDoc.exists) {
         // Return free tier for new users
         return NextResponse.json({
           hasActiveSubscription: true, // Free users can access dashboard

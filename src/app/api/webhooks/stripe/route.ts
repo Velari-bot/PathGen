@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
             let subscriptionStatus = 'active';
             
             if (session.metadata.tier === 'paid') {
-              subscriptionTier = 'paid';
+              subscriptionTier = 'standard';
             } else if (session.metadata.tier === 'pro') {
               subscriptionTier = 'pro';
             }
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
               const priceId = subscription.items.data[0].price.id;
               // Map your Stripe price IDs to tiers
                              if (priceId === 'price_1RvsvqCitWuvPenEw9TefOig') { // Standard tier
-                subscriptionTier = 'paid';
+                subscriptionTier = 'standard';
                                                              } else if (priceId === 'price_1RvsyxCitWuvPenEOtFzt5FC') { // Pro tier
                 subscriptionTier = 'pro';
               }
