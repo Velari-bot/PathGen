@@ -71,22 +71,39 @@ export async function GET(request: NextRequest) {
           console.log('🔄 Reset monthly usage counter for new month');
         }
         
+        // Get user's subscription tier to determine limits
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        
+        // Determine limits based on subscription tier
+        let monthlyLimit = 10; // Free tier default
+        let pullsPerMonth = 10;
+        
+        if (userData.subscriptionTier === 'standard') {
+          monthlyLimit = 50;
+          pullsPerMonth = 50;
+        } else if (userData.subscriptionTier === 'pro') {
+          monthlyLimit = 500;
+          pullsPerMonth = 500;
+        }
+        
         return NextResponse.json({
           success: true,
           usage: {
             userId: userId,
             currentMonth: currentMonth,
             osirionPulls: osirionPulls,
-            osirionPullsRemaining: 10 - osirionPulls,
-            monthlyLimit: 10,
+            osirionPullsRemaining: monthlyLimit - osirionPulls,
+            monthlyLimit: monthlyLimit,
             lastReset: lastReset,
             lastPull: usageData?.lastPull || null
           },
           limits: {
             osirion: {
-              pullsPerMonth: 10,
+              pullsPerMonth: pullsPerMonth,
               resetsMonthly: true,
-              description: 'Osirion API pulls per month'
+              description: `Osirion API pulls per month (${userData.subscriptionTier || 'free'} tier)`
             }
           }
         });
@@ -100,22 +117,39 @@ export async function GET(request: NextRequest) {
         
         await usageRef.set(newUsage);
         
+        // Get user's subscription tier to determine limits
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+        
+        // Determine limits based on subscription tier
+        let monthlyLimit = 10; // Free tier default
+        let pullsPerMonth = 10;
+        
+        if (userData.subscriptionTier === 'standard') {
+          monthlyLimit = 50;
+          pullsPerMonth = 50;
+        } else if (userData.subscriptionTier === 'pro') {
+          monthlyLimit = 500;
+          pullsPerMonth = 500;
+        }
+        
         return NextResponse.json({
           success: true,
           usage: {
             userId: userId,
             currentMonth: currentMonth,
             osirionPulls: 0,
-            osirionPullsRemaining: 10,
-            monthlyLimit: 10,
+            osirionPullsRemaining: monthlyLimit,
+            monthlyLimit: monthlyLimit,
             lastReset: new Date(),
             lastPull: null
           },
           limits: {
             osirion: {
-              pullsPerMonth: 10,
+              pullsPerMonth: pullsPerMonth,
               resetsMonthly: true,
-              description: 'Osirion API pulls per month'
+              description: `Osirion API pulls per month (${userData.subscriptionTier || 'free'} tier)`
             }
           },
           message: 'Usage tracking initialized for new user'
