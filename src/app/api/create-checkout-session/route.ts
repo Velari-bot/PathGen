@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
     console.log('📧 User Email:', userEmail);
     console.log('🎫 Promo Code:', promoCode);
     console.log('🏷️ Tier:', tier);
+    console.log('🔑 Stripe Key (first 10 chars):', process.env.STRIPE_SECRET_KEY?.substring(0, 10));
+    console.log('🌍 Environment:', process.env.NODE_ENV);
 
     if (!priceId || !userId) {
       console.error('❌ Missing required fields:', { priceId, userId });

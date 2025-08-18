@@ -11,19 +11,22 @@ function initializeFirebaseAdmin() {
   }
   
   // Only initialize if we have the required environment variables
-  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
     try {
       initializeApp({
         credential: cert({
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+          projectId: process.env.FIREBASE_PROJECT_ID,
           clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
           privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
         }),
       });
       firebaseAdminInitialized = true;
+      console.log('✅ Firebase Admin initialized successfully');
     } catch (error) {
       console.error('Failed to initialize Firebase Admin:', error);
     }
+  } else {
+    console.error('❌ Missing Firebase Admin environment variables');
   }
 }
 
@@ -52,26 +55,26 @@ export async function POST(request: NextRequest) {
     const db = getFirestore();
 
     try {
-      // Update the user's subscription status to PRO
+      // Update the user's subscription status to STANDARD (paid)
       const userRef = db.collection('users').doc(userId);
       await userRef.update({
-        'subscription.tier': 'pro',
-        'subscription.status': 'pro',
-        'subscriptionTier': 'pro',
-        'subscriptionStatus': 'pro',
+        'subscription.tier': 'standard',
+        'subscription.status': 'active',
+        'subscriptionTier': 'standard',
+        'subscriptionStatus': 'active',
         updatedAt: new Date()
       });
 
-      console.log(`✅ User ${userId} subscription updated to PRO`);
+      console.log(`✅ User ${userId} subscription updated to STANDARD`);
 
       return NextResponse.json({
         success: true,
-        message: 'Subscription updated to PRO successfully',
+        message: 'Subscription updated to STANDARD successfully',
         updatedFields: {
-          'subscription.tier': 'pro',
-          'subscription.status': 'pro',
-          'subscriptionTier': 'pro',
-          'subscriptionStatus': 'pro'
+          'subscription.tier': 'standard',
+          'subscription.status': 'active',
+          'subscriptionTier': 'standard',
+          'subscriptionStatus': 'active'
         }
       });
 
