@@ -1004,6 +1004,13 @@ export const tipsAndTricks = `
 - **Ocean Awareness:** Zones won't center over water - use this for predictions
 - **Llama Spots:** In Chapter 2 Remix, Llamas reveal next zone location
 
+## 🤖 Drone Spawn Strategy Tips
+- **Supernova & Shogun:** High competition, high reward - perfect for aggressive players
+- **Kappa Kappa & Canyon:** Lower competition, still guaranteed epic+ loot - ideal for passive players
+- **Spawn Timing:** All drones spawn once per game, same rate across locations
+- **Tournament Value:** Essential for consistent high-tier loadouts in competitive play
+- **Risk Assessment:** High risk due to guaranteed spawns attracting multiple teams
+
 ## Landing Spot Tips
 - **High-Tier POIs:** Martial Maneuvers, Rocky Rus, Swarmy Stash (9300 loot, 62% survival)
 - **Low Competition:** Fighting Frogs, First Order Base (0.48 avg teams, good for passive play)
@@ -1270,6 +1277,41 @@ export const advancedMechanics = `
 // Tournament Information - Current tournament details and strategies
 export const tournamentInfo = `
 # 🏆 Current Tournament Information & Strategy
+
+## 🏆 EU FNCS DIVISIONAL CUPS - WEEK 2 🏆
+
+### 📅 Day 1 Results (Complete)
+- **Division 1:** Top 33 - 669 points (was 660, +30min extension had limited impact)
+- **Division 2:** Top 40 - 698 points (was 675, +30min extension matched predictions)
+- **Division 3:** Top 300 - 573 points (was 560, +30min extension minimal impact)
+
+### ⏰ 30-Minute Extension Analysis
+- **Div 1:** Many teams exhausted games, extension had low impact
+- **Div 2:** ~50% of teams had extra games, extension worked as expected
+- **Div 3:** Only ~25% of teams had games left, minimal impact
+
+### 🎯 Day 2 Targets (Current)
+- **Division 1:** Cumulative Top 33 - 675 points (estimate: 655-695)
+- **Division 2:** Cumulative Top 40 - 685 points (estimate: 675-695)
+- **Division 3:** Cumulative Top 300 - 560 points (estimate: 553-567)
+
+### 📊 Point Inflation Patterns
+- **Div 1:** +50 points per 30 minutes (when teams have games)
+- **Div 2:** +50 points per 30 minutes (when teams have games)
+- **Div 3:** +40 points per 30 minutes (when teams have games)
+
+### 🔄 Current Status
+- **Elo Resets:** All players start at 0 points for matchmaking
+- **Queue Times:** Div 1 (6min), Div 2 (2min), Div 3 (6min)
+- **Live Updates:** Coming every hour during play
+
+### 💡 Strategic Insights
+- **Drone spawns** provide guaranteed high-tier loot for consistent performance
+- **Extension impact** varies by division based on remaining games
+- **Point targets** are dynamic - monitor live updates during play
+- **Queue management** is critical - re-queue if waiting too long
+
+---
 
 ## 🏆 C6S4 CONSOLE VICTORY CASH CUP 🏆
 

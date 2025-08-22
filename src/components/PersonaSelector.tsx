@@ -63,7 +63,7 @@ const additionalFeatures = [
     )
   },
   {
-    title: 'Community Challenges',
+            title: 'Tournament Challenges',
     description: 'Compete with other players in weekly events',
     icon: (
       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">

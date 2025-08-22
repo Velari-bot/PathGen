@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { FortniteData } from '@/lib/firebase-service';
+import { DRONE_SPAWN_DATA } from '@/lib/drone-spawn-data';
 
 interface FortniteStatsDisplayProps {
   stats: FortniteData | null;
@@ -270,6 +271,13 @@ Notes: ${stats.notes || 'None'}`;
            📥 Export Stats (TXT)
          </button>
          
+         <button
+           onClick={() => setShowDetailed(!showDetailed)}
+           className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+         >
+           🤖 {showDetailed ? 'Hide' : 'Show'} Drone Spawns
+         </button>
+         
          {stats.rawOsirionData?.matches && (
            <button
              onClick={() => setShowMatchDetails(!showMatchDetails)}
@@ -449,6 +457,79 @@ Notes: ${stats.notes || 'None'}`;
                       return totalEdits > 0 ? Math.round(totalTime / totalEdits / 1000000) : 0;
                     })()}ms
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Drone Spawn Locations Section */}
+        {showDetailed && (
+          <div className="bg-gray-800/50 rounded-lg p-6 space-y-4">
+            <h4 className="text-lg font-semibold text-white text-center">🤖 Drone Spawn Locations</h4>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {DRONE_SPAWN_DATA.locations.map((location, index) => (
+                <div key={index} className="bg-gray-700/50 rounded-lg p-4 border-l-4 border-blue-500">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-lg font-semibold text-white">{location.name}</h5>
+                    <div className={`px-2 py-1 rounded text-xs font-medium ${
+                      location.strategicValue === 'high' ? 'bg-green-600 text-white' :
+                      location.strategicValue === 'medium' ? 'bg-yellow-600 text-white' :
+                      'bg-red-600 text-white'
+                    }`}>
+                      {location.strategicValue.toUpperCase()}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Spawn Rate:</span>
+                      <span className="text-white font-medium">{location.spawnRate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Loot Tier:</span>
+                      <span className="text-white font-medium">{location.lootTier}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Frequency:</span>
+                      <span className="text-white font-medium">{location.spawnFrequency.replace(/_/g, ' ')}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3">
+                    <h6 className="text-sm font-medium text-gray-300 mb-2">Strategic Notes:</h6>
+                    <ul className="text-xs text-gray-400 space-y-1">
+                      {location.notes.map((note, noteIndex) => (
+                        <li key={noteIndex} className="flex items-start">
+                          <span className="text-blue-400 mr-2">•</span>
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="bg-gray-700/50 rounded-lg p-4 mt-4">
+              <h5 className="text-md font-semibold text-white mb-3">Tournament Strategy</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Early Game:</span>
+                  <div className="text-white font-medium">{DRONE_SPAWN_DATA.tournamentStrategy.earlyGame}</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Mid Game:</span>
+                  <div className="text-white font-medium">{DRONE_SPAWN_DATA.tournamentStrategy.midGame}</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">End Game:</span>
+                  <div className="text-white font-medium">{DRONE_SPAWN_DATA.tournamentStrategy.endGame}</div>
+                </div>
+                <div>
+                  <span className="text-gray-400">Risk Assessment:</span>
+                  <div className="text-white font-medium">{DRONE_SPAWN_DATA.tournamentStrategy.riskAssessment}</div>
                 </div>
               </div>
             </div>

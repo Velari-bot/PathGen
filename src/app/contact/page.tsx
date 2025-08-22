@@ -213,8 +213,8 @@ export default function ContactUs() {
             
             <div className="text-center p-4">
               <div className="text-3xl mb-2">💬</div>
-              <h3 className="text-lg font-semibold text-white mb-2">Community</h3>
-              <p className="text-secondary-text text-sm">Join our Discord for community support</p>
+              <h3 className="text-lg font-semibold text-white mb-2">Support</h3>
+              <p className="text-secondary-text text-sm">Join our Discord for support and updates</p>
             </div>
           </div>
         </div>

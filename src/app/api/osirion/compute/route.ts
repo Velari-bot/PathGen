@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OsirionService, UsageTracker, SUBSCRIPTION_TIERS } from '@/lib/osirion';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,8 +13,47 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check user's subscription tier
-    const userTier = 'free' as keyof typeof SUBSCRIPTION_TIERS; // Would come from database
+    // Initialize Firebase Admin if not already initialized
+    if (getApps().length === 0) {
+      if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+        try {
+          initializeApp({
+            credential: cert({
+              projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
+              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+              privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            }),
+          });
+        } catch (error: any) {
+          if (error.code !== 'app/duplicate-app') {
+            console.error('❌ Firebase Admin initialization error:', error);
+            return NextResponse.json({
+              success: false,
+              error: 'Firebase initialization failed',
+              details: error.message
+            }, { status: 500 });
+          }
+        }
+      }
+    }
+
+    const db = getFirestore();
+    
+    // Get user's actual subscription tier from database
+    let userTier: keyof typeof SUBSCRIPTION_TIERS = 'free';
+    try {
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        const subscriptionTier = userData?.subscriptionTier || 'free';
+        // Map subscription tier names to match SUBSCRIPTION_TIERS expectations
+        userTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+      }
+    } catch (error) {
+      console.warn('Could not get user subscription tier, defaulting to free:', error);
+    }
+    
     const limits = SUBSCRIPTION_TIERS[userTier].limits;
 
     // Check if user can make compute requests

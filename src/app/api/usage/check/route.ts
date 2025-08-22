@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
+// Import the UsageTracker to get proper limits
+import { UsageTracker } from '@/lib/usage-tracker';
+
 export async function GET(request: NextRequest) {
   try {
     // Initialize Firebase Admin if not already initialized
@@ -76,32 +79,38 @@ export async function GET(request: NextRequest) {
         const userDoc = await userRef.get();
         const userData = userDoc.exists ? userDoc.data() : {};
         
-        // Determine limits based on subscription tier - Credit-Efficient Limits
-        let limits = {
-          matches: { monthly: 6, oneTime: true },
-          aiMessages: { monthly: 45, oneTime: true },
-          replayUploads: { monthly: 0, oneTime: false },
-          computeRequests: { monthly: 0, oneTime: false },
-          osirionPulls: { monthly: 10, oneTime: false }
-        };
+        // Get the user's subscription tier (default to 'free' if not set)
+        const subscriptionTier = userData?.subscriptionTier || 'free';
         
-        if (userData?.subscriptionTier === 'standard') {
-          limits = {
-            matches: { monthly: 45, oneTime: false }, // 45 matches/month (≈1000 credits = ~€2 worth, safe)
-            aiMessages: { monthly: 225, oneTime: false }, // 225 messages/month (light weight on API)
-            replayUploads: { monthly: 5, oneTime: false }, // 5 × 20 credits = 100 credits ≈ €0.20
-            computeRequests: { monthly: 50, oneTime: false }, // 50 × 10 credits = 500 credits ≈ €1
-            osirionPulls: { monthly: 50, oneTime: false } // 50 pulls/month
-          };
-        } else if (userData?.subscriptionTier === 'pro') {
-          limits = {
-            matches: { monthly: 225, oneTime: false }, // 225 matches/month (≈5000 credits = ~€10)
-            aiMessages: { monthly: 650, oneTime: false }, // 650 messages/month
-            replayUploads: { monthly: 175, oneTime: false }, // 175 × 20 credits = 3500 credits = ~€7
-            computeRequests: { monthly: 275, oneTime: false }, // 275 × 10 credits = 2750 credits = ~€5.5
-            osirionPulls: { monthly: 500, oneTime: false } // 500 pulls/month
-          };
-        }
+        // Map subscription tier names to match UsageTracker expectations
+        const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+        
+        // Use UsageTracker to get proper limits for the subscription tier
+        const limits = UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro');
+        
+        // Map the limits to the expected format for the dashboard
+        const dashboardLimits = {
+          matches: { 
+            monthly: limits.osirion.matchesPerMonth, 
+            oneTime: limits.osirion.matchesPerMonth === -1 ? false : true 
+          },
+          aiMessages: { 
+            monthly: limits.ai.messagesPerMonth, 
+            oneTime: limits.ai.messagesPerMonth === -1 ? false : true 
+          },
+          replayUploads: { 
+            monthly: limits.osirion.replayUploadsPerMonth, 
+            oneTime: limits.osirion.replayUploadsPerMonth === -1 ? false : true 
+          },
+          computeRequests: { 
+            monthly: limits.osirion.computeRequestsPerMonth, 
+            oneTime: limits.osirion.computeRequestsPerMonth === -1 ? false : true 
+          },
+          osirionPulls: { 
+            monthly: limits.osirion.matchesPerMonth, // Use matches as the main metric
+            oneTime: limits.osirion.matchesPerMonth === -1 ? false : true 
+          }
+        };
         
         return NextResponse.json({
           success: true,
@@ -109,42 +118,42 @@ export async function GET(request: NextRequest) {
             userId: userId,
             currentMonth: currentMonth,
             osirionPulls: osirionPulls,
-            osirionPullsRemaining: limits.osirionPulls.monthly - osirionPulls,
-            monthlyLimit: limits.osirionPulls.monthly,
+            osirionPullsRemaining: dashboardLimits.osirionPulls.monthly === -1 ? -1 : dashboardLimits.osirionPulls.monthly - osirionPulls,
+            monthlyLimit: dashboardLimits.osirionPulls.monthly === -1 ? '∞' : dashboardLimits.osirionPulls.monthly,
             lastReset: lastReset,
             lastPull: usageData?.lastPull || null,
             // Add all usage metrics
             matches: {
               used: usageData?.matches || 0,
-              limit: limits.matches.monthly,
-              oneTime: limits.matches.oneTime
+              limit: dashboardLimits.matches.monthly === -1 ? '∞' : dashboardLimits.matches.monthly,
+              oneTime: dashboardLimits.matches.oneTime
             },
             aiMessages: {
               used: usageData?.aiMessages || 0,
-              limit: limits.aiMessages.monthly,
-              oneTime: limits.aiMessages.oneTime
+              limit: dashboardLimits.aiMessages.monthly === -1 ? '∞' : dashboardLimits.aiMessages.monthly,
+              oneTime: dashboardLimits.aiMessages.oneTime
             },
             replayUploads: {
               used: usageData?.replayUploads || 0,
-              limit: limits.replayUploads.monthly,
-              oneTime: limits.replayUploads.oneTime
+              limit: dashboardLimits.replayUploads.monthly === -1 ? '∞' : dashboardLimits.replayUploads.monthly,
+              oneTime: dashboardLimits.replayUploads.oneTime
             },
             computeRequests: {
               used: usageData?.computeRequests || 0,
-              limit: limits.computeRequests.monthly,
-              oneTime: limits.computeRequests.oneTime
+              limit: dashboardLimits.computeRequests.monthly === -1 ? '∞' : dashboardLimits.computeRequests.monthly,
+              oneTime: dashboardLimits.computeRequests.oneTime
             }
           },
           limits: {
             osirion: {
-              pullsPerMonth: limits.osirionPulls.monthly,
-              resetsMonthly: !limits.osirionPulls.oneTime,
-              description: `Osirion API pulls per month (${userData?.subscriptionTier || 'free'} tier)`
+              pullsPerMonth: dashboardLimits.osirionPulls.monthly === -1 ? '∞' : dashboardLimits.osirionPulls.monthly,
+              resetsMonthly: !dashboardLimits.osirionPulls.oneTime,
+              description: `Osirion API pulls per month (${subscriptionTier} tier)`
             },
-            matches: limits.matches,
-            aiMessages: limits.aiMessages,
-            replayUploads: limits.replayUploads,
-            computeRequests: limits.computeRequests
+            matches: dashboardLimits.matches,
+            aiMessages: dashboardLimits.aiMessages,
+            replayUploads: dashboardLimits.replayUploads,
+            computeRequests: dashboardLimits.computeRequests
           }
         });
       } else {
@@ -162,32 +171,38 @@ export async function GET(request: NextRequest) {
         const userDoc = await userRef.get();
         const userData = userDoc.exists ? userDoc.data() : {};
         
-        // Determine limits based on subscription tier - Credit-Efficient Limits
-        let limits = {
-          matches: { monthly: 6, oneTime: true },
-          aiMessages: { monthly: 45, oneTime: true },
-          replayUploads: { monthly: 0, oneTime: false },
-          computeRequests: { monthly: 0, oneTime: false },
-          osirionPulls: { monthly: 10, oneTime: false }
-        };
+        // Get the user's subscription tier (default to 'free' if not set)
+        const subscriptionTier = userData?.subscriptionTier || 'free';
         
-        if (userData?.subscriptionTier === 'standard') {
-          limits = {
-            matches: { monthly: 45, oneTime: false }, // 45 matches/month (≈1000 credits = ~€2 worth, safe)
-            aiMessages: { monthly: 225, oneTime: false }, // 225 messages/month (light weight on API)
-            replayUploads: { monthly: 5, oneTime: false }, // 5 × 20 credits = 100 credits ≈ €0.20
-            computeRequests: { monthly: 50, oneTime: false }, // 50 × 10 credits = 500 credits ≈ €1
-            osirionPulls: { monthly: 50, oneTime: false } // 50 pulls/month
-          };
-        } else if (userData?.subscriptionTier === 'pro') {
-          limits = {
-            matches: { monthly: 225, oneTime: false }, // 225 matches/month (≈5000 credits = ~€10)
-            aiMessages: { monthly: 650, oneTime: false }, // 650 messages/month
-            replayUploads: { monthly: 175, oneTime: false }, // 175 × 20 credits = 3500 credits = ~€7
-            computeRequests: { monthly: 275, oneTime: false }, // 275 × 10 credits = 2750 credits = ~€5.5
-            osirionPulls: { monthly: 500, oneTime: false } // 500 pulls/month
-          };
-        }
+        // Map subscription tier names to match UsageTracker expectations
+        const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+        
+        // Use UsageTracker to get proper limits for the subscription tier
+        const limits = UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro');
+        
+        // Map the limits to the expected format for the dashboard
+        const dashboardLimits = {
+          matches: { 
+            monthly: limits.osirion.matchesPerMonth, 
+            oneTime: limits.osirion.matchesPerMonth === -1 ? false : true 
+          },
+          aiMessages: { 
+            monthly: limits.ai.messagesPerMonth, 
+            oneTime: limits.ai.messagesPerMonth === -1 ? false : true 
+          },
+          replayUploads: { 
+            monthly: limits.osirion.replayUploadsPerMonth, 
+            oneTime: limits.osirion.replayUploadsPerMonth === -1 ? false : true 
+          },
+          computeRequests: { 
+            monthly: limits.osirion.computeRequestsPerMonth, 
+            oneTime: limits.osirion.computeRequestsPerMonth === -1 ? false : true 
+          },
+          osirionPulls: { 
+            monthly: limits.osirion.matchesPerMonth, // Use matches as the main metric
+            oneTime: limits.osirion.matchesPerMonth === -1 ? false : true 
+          }
+        };
         
         return NextResponse.json({
           success: true,
@@ -195,42 +210,42 @@ export async function GET(request: NextRequest) {
             userId: userId,
             currentMonth: currentMonth,
             osirionPulls: 0,
-            osirionPullsRemaining: limits.osirionPulls.monthly,
-            monthlyLimit: limits.osirionPulls.monthly,
+            osirionPullsRemaining: dashboardLimits.osirionPulls.monthly === -1 ? -1 : dashboardLimits.osirionPulls.monthly,
+            monthlyLimit: dashboardLimits.osirionPulls.monthly === -1 ? '∞' : dashboardLimits.osirionPulls.monthly,
             lastReset: new Date(),
             lastPull: null,
             // Add all usage metrics
             matches: {
               used: 0,
-              limit: limits.matches.monthly,
-              oneTime: limits.matches.oneTime
+              limit: dashboardLimits.matches.monthly === -1 ? '∞' : dashboardLimits.matches.monthly,
+              oneTime: dashboardLimits.matches.oneTime
             },
             aiMessages: {
               used: 0,
-              limit: limits.aiMessages.monthly,
-              oneTime: limits.aiMessages.oneTime
+              limit: dashboardLimits.aiMessages.monthly === -1 ? '∞' : dashboardLimits.aiMessages.monthly,
+              oneTime: dashboardLimits.aiMessages.oneTime
             },
             replayUploads: {
               used: 0,
-              limit: limits.replayUploads.monthly,
-              oneTime: limits.replayUploads.oneTime
+              limit: dashboardLimits.replayUploads.monthly === -1 ? '∞' : dashboardLimits.replayUploads.monthly,
+              oneTime: dashboardLimits.replayUploads.oneTime
             },
             computeRequests: {
               used: 0,
-              limit: limits.computeRequests.monthly,
-              oneTime: limits.computeRequests.oneTime
+              limit: dashboardLimits.computeRequests.monthly === -1 ? '∞' : dashboardLimits.computeRequests.monthly,
+              oneTime: dashboardLimits.computeRequests.oneTime
             }
           },
           limits: {
             osirion: {
-              pullsPerMonth: limits.osirionPulls.monthly,
-              resetsMonthly: !limits.osirionPulls.oneTime,
-              description: `Osirion API pulls per month (${userData?.subscriptionTier || 'free'} tier)`
+              pullsPerMonth: dashboardLimits.osirionPulls.monthly === -1 ? '∞' : dashboardLimits.osirionPulls.monthly,
+              resetsMonthly: !dashboardLimits.osirionPulls.oneTime,
+              description: `Osirion API pulls per month (${subscriptionTier} tier)`
             },
-            matches: limits.matches,
-            aiMessages: limits.aiMessages,
-            replayUploads: limits.replayUploads,
-            computeRequests: limits.computeRequests
+            matches: dashboardLimits.matches,
+            aiMessages: dashboardLimits.aiMessages,
+            replayUploads: dashboardLimits.replayUploads,
+            computeRequests: dashboardLimits.computeRequests
           },
           message: 'Usage tracking initialized for new user'
         });

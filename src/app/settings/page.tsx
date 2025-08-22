@@ -81,7 +81,11 @@ export default function SettingsPage() {
     try {
       // Get the current subscription tier from userProfile or default to free
       const currentTier = userProfile?.subscriptionTier || 'free';
-      const usageSummary = await UsageTracker.getUsageSummary(user.uid, currentTier as 'free' | 'paid' | 'pro');
+      
+      // Map subscription tier names to match UsageTracker expectations
+      const mappedTier = currentTier === 'standard' ? 'paid' : currentTier;
+      
+      const usageSummary = await UsageTracker.getUsageSummary(user.uid, mappedTier as 'free' | 'paid' | 'pro');
       
       // Set the usage data directly
       if (usageSummary) {
@@ -92,6 +96,10 @@ export default function SettingsPage() {
       // Set default usage data if there's a permission error
       if (error instanceof Error && error.message?.includes('permissions')) {
         const currentTier = userProfile?.subscriptionTier || 'free';
+        
+        // Map subscription tier names to match UsageTracker expectations
+        const mappedTier = currentTier === 'standard' ? 'paid' : currentTier;
+        
         setUsageData({
           usage: {
             subscriptionTier: currentTier,
@@ -100,7 +108,7 @@ export default function SettingsPage() {
             epic: { lastSync: null, syncCount: 0, statsPulled: 0 },
             totalSessions: 0
           },
-          limits: UsageTracker.getLimitsForTier(currentTier as 'free' | 'paid' | 'pro')
+          limits: UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro')
         });
       }
     } finally {

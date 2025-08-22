@@ -116,7 +116,7 @@ export default function HeroSection() {
         <div className="hero-buttons flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button className="btn-primary text-lg px-8 py-4 group">
             <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
-              Start Free Trial
+              Try for Free Now
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-white to-gray-200 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </button>
@@ -131,16 +131,16 @@ export default function HeroSection() {
         {/* Stats */}
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">10K+</div>
-            <div className="text-secondary-text">Active Players</div>
+            <div className="text-3xl md:text-4xl font-bold text-white mb-2">1,000+</div>
+            <div className="text-secondary-text">Matches Broken Down</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl md:text-4xl font-bold text-white mb-2">500+</div>
+            <div className="text-secondary-text">Replay Insights Generated</div>
           </div>
           <div className="text-center">
             <div className="text-3xl md:text-4xl font-bold text-white mb-2">95%</div>
-            <div className="text-secondary-text">Success Rate</div>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">24/7</div>
-            <div className="text-secondary-text">AI Support</div>
+            <div className="text-secondary-text">Accuracy in AI Match Analysis</div>
           </div>
         </div>
       </div>

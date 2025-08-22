@@ -3,6 +3,7 @@ import { OsirionService } from '@/lib/osirion';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
+import { UsageTracker } from '@/lib/usage-tracker';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,8 +59,23 @@ export async function POST(request: NextRequest) {
 
     const db = getFirestore();
     
-    // Check monthly usage limit (10 pulls per month per user)
+    // Check monthly usage limit based on subscription tier
     try {
+      // Get user's subscription tier to determine limits
+      const userRef = db.collection('users').doc(userId);
+      const userDoc = await userRef.get();
+      const userData = userDoc.exists ? userDoc.data() : {};
+      
+      // Get the user's subscription tier (default to 'free' if not set)
+      const subscriptionTier = userData?.subscriptionTier || 'free';
+      
+      // Map subscription tier names to match UsageTracker expectations
+      const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+      
+      // Get proper limits for the subscription tier
+      const limits = UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro');
+      const monthlyLimit = limits.osirion.matchesPerMonth;
+      
       const usageRef = db.collection('usage').doc(userId);
       const usageDoc = await usageRef.get();
       
@@ -79,20 +95,23 @@ export async function POST(request: NextRequest) {
         }
         
         const currentPulls = usageData?.osirionPulls || 0;
-        if (currentPulls >= 10) {
-          console.log(`❌ Monthly limit reached: ${currentPulls}/10 pulls used`);
+        
+        // Check if user has reached their monthly limit (skip check for unlimited users)
+        if (monthlyLimit !== -1 && currentPulls >= monthlyLimit) {
+          console.log(`❌ Monthly limit reached: ${currentPulls}/${monthlyLimit} pulls used (${subscriptionTier} tier)`);
           return NextResponse.json({
             success: false,
             blocked: true,
             message: 'Monthly limit reached',
-            error: 'You have used all 10 monthly Osirion pulls',
+            error: `You have used all ${monthlyLimit} monthly Osirion pulls for your ${subscriptionTier} tier`,
             currentUsage: currentPulls,
-            limit: 10,
+            limit: monthlyLimit,
+            subscriptionTier: subscriptionTier,
             suggestion: 'Wait until next month or upgrade your plan for more pulls',
             fallback: {
               manualCheckUrl: `https://osirion.gg/profile/${epicId}`,
               instructions: [
-                'Monthly limit reached - please check your stats manually on Osirion',
+                `Monthly limit reached (${monthlyLimit} pulls) - please check your stats manually on Osirion`,
                 'You can still view cached stats if available',
                 'Limit resets at the beginning of each month'
               ]
@@ -100,7 +119,7 @@ export async function POST(request: NextRequest) {
           });
         }
         
-        console.log(`📊 Current monthly usage: ${currentPulls}/10 pulls`);
+        console.log(`📊 Current monthly usage: ${currentPulls}/${monthlyLimit} pulls (${subscriptionTier} tier)`);
       } else {
         // First time user, initialize usage
         await usageRef.set({
@@ -108,7 +127,7 @@ export async function POST(request: NextRequest) {
           osirionPulls: 0,
           lastReset: new Date()
         });
-        console.log('🆕 Initialized usage tracking for new user');
+        console.log(`🆕 Initialized usage tracking for new user (${subscriptionTier} tier, ${monthlyLimit} pulls/month)`);
       }
     } catch (usageError) {
       console.error('⚠️ Warning: Could not check usage limits:', usageError);
