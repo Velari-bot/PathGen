@@ -48,11 +48,11 @@ service cloud.firestore {
       allow update, delete: if false; // Only Cloud Functions can modify
     }
     
-    // Webhook events are read-only for admins, write-only for Cloud Functions
+    // Webhook events - allow Cloud Functions to write, admins to read
     match /webhookEvents/{eventId} {
       allow read: if request.auth != null && 
         isAdmin(request.auth.uid);
-      allow write: if false; // Only Cloud Functions can write
+      allow write: if true; // Allow Cloud Functions to write
     }
     
     // Checkout sessions are read-only for users, write-only for Cloud Functions
