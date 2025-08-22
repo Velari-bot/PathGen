@@ -1,0 +1,10 @@
+# Exclude Firebase Functions from Vercel build
+functions/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Exclude build artifacts
+functions/lib/
+functions/.firebase/

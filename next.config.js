@@ -1,59 +1,37 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'cdn.discordapp.com',
-      },
-    ],
-    domains: ['localhost', 'fortnite-api.com'],
-    dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  experimental: {
+    appDir: true,
   },
-  transpilePackages: ['firebase'],
+  // Exclude functions directory from Next.js build
   webpack: (config, { isServer }) => {
-    // Handle undici module parsing issue
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-      crypto: false,
-    };
-    
-    // Ensure proper module resolution for .mjs files
-    config.module.rules.push({
-      test: /\.m?js$/,
-      resolve: {
-        fullySpecified: false,
-      },
-    });
-    
-    // Handle Firebase polyfills
+    // Exclude Firebase Functions from client-side bundle
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
-        crypto: false,
-        stream: false,
-        url: false,
-        zlib: false,
-        http: false,
-        https: false,
-        assert: false,
-        os: false,
-        path: false,
       };
     }
     
+    // Exclude functions directory
+    config.externals = config.externals || [];
+    config.externals.push({
+      'firebase-functions': 'firebase-functions',
+      'firebase-admin': 'firebase-admin',
+    });
+    
     return config;
+  },
+  // Exclude functions from build
+  transpilePackages: [],
+  // Ignore patterns
+  onDemandEntries: {
+    // period (in ms) where the server will keep pages in the buffer
+    maxInactiveAge: 25 * 1000,
+    // number of pages that should be kept simultaneously without being disposed
+    pagesBufferLength: 2,
   },
 }
 

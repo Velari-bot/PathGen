@@ -88,3 +88,7 @@ src/lib/EOS-SDK-CSharp-*/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Firebase Functions build artifacts
+functions/lib/
+functions/.firebase/
