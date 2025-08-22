@@ -42,7 +42,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
 
   // Listen to subscription changes
   useEffect(() => {
-    if (!user) {
+    if (!user || !db) {
       setSubscription(null);
       setUsage(null);
       setLimits(null);
@@ -67,7 +67,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           
           // Set limits based on subscription tier
           if (userSubscription?.tier) {
-            setLimits(PLAN_LIMITS[userSubscription.tier]);
+            setLimits(PLAN_LIMITS[userSubscription.tier as SubscriptionTier]);
           } else {
             setLimits(PLAN_LIMITS.free);
           }

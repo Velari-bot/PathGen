@@ -126,9 +126,12 @@ export function SubscriptionManager({ className = '' }: SubscriptionManagerProps
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
-              {currentStatus === 'active' ? 'Active' : 
-               currentStatus === 'past_due' ? 'Past Due' : 
-               currentStatus === 'canceled' ? 'Canceled' : 'Free'}
+              {currentStatus === 'free' ? 'Free' :
+               currentStatus === 'standard' ? 'Standard' :
+               currentStatus === 'pro' ? 'Pro' :
+               currentStatus === 'past_due' ? 'Past Due' :
+               currentStatus === 'canceled' ? 'Canceled' :
+               currentStatus === 'unpaid' ? 'Unpaid' : 'Free'}
             </div>
             <div className="text-sm text-gray-600">Status</div>
           </div>

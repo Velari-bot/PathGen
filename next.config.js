@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
   // Exclude functions directory from Next.js build
   webpack: (config, { isServer }) => {
     // Exclude Firebase Functions from client-side bundle
