@@ -47,5 +47,13 @@ export function getDb() {
   return firestoreInstance;
 }
 
-// For backward compatibility, export db as a function that returns the instance
-export const db = getDb();
+// For backward compatibility, export db as a getter that only initializes when accessed
+export const db = new Proxy({} as any, {
+  get(target, prop) {
+    const actualDb = getDb();
+    if (typeof actualDb[prop] === 'function') {
+      return actualDb[prop].bind(actualDb);
+    }
+    return actualDb[prop];
+  }
+});
