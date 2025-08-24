@@ -1,11 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
-import { 
-  getPlanFromPriceId, 
-  CheckoutSessionData, 
-  CheckoutSessionResponse 
-} from './types/subscription';
+import { CheckoutSessionData } from './types/subscription';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -112,43 +108,26 @@ export const createCheckoutSession = functions.https.onCall(async (data: Checkou
       locale: 'auto'
     });
 
-    // Log checkout session creation
-    await db.collection('checkoutSessions').doc(session.id).set({
-      userId,
-      sessionId: session.id,
-      priceId,
-      plan,
-      customerId: customer.id,
-      status: 'created',
-      createdAt: admin.firestore.Timestamp.now(),
-      expiresAt: admin.firestore.Timestamp.fromDate(new Date(session.expires_at! * 1000))
-    });
+    console.log(`Checkout session created for user ${userId}: ${session.id}`);
 
-    const response: CheckoutSessionResponse = {
+    return {
       sessionId: session.id,
       url: session.url!
     };
 
-    console.log(`Checkout session created for user ${userId} with plan ${plan}`);
-    return response;
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating checkout session:', error);
     
-    if (error.type === 'StripeCardError') {
-      throw new functions.https.HttpsError('failed-precondition', 'Payment method was declined');
-    } else if (error.type === 'StripeInvalidRequestError') {
-      throw new functions.https.HttpsError('invalid-argument', 'Invalid request to Stripe');
-    } else if (error.type === 'StripeAPIError') {
-      throw new functions.https.HttpsError('unavailable', 'Stripe service temporarily unavailable');
-    } else {
-      throw new functions.https.HttpsError('internal', 'Failed to create checkout session');
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
     }
+    
+    throw new functions.https.HttpsError('internal', 'Failed to create checkout session');
   }
 });
 
-// Create customer portal session for subscription management
-export const createPortalSession = functions.https.onCall(async (data: any, context) => {
+// Create portal session for subscription management
+export const createPortalSession = functions.https.onCall(async (data: { returnUrl?: string }, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
@@ -168,32 +147,31 @@ export const createPortalSession = functions.https.onCall(async (data: any, cont
       throw new functions.https.HttpsError('not-found', 'User data not found');
     }
 
-    const customerId = userData?.subscription?.stripeCustomerId;
-
+    const customerId = userData.subscription?.stripeCustomerId;
     if (!customerId) {
-      throw new functions.https.HttpsError('failed-precondition', 'No Stripe customer found');
+      throw new functions.https.HttpsError('failed-precondition', 'No subscription found');
     }
 
+    // Set default return URL if not provided
+    const defaultReturnUrl = `${functions.config().app.url}/dashboard`;
+    
     // Create portal session
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: returnUrl || `${functions.config().app.url}/dashboard`,
-      configuration: functions.config().stripe.portal_configuration_id || undefined
+      return_url: returnUrl || defaultReturnUrl,
     });
 
-    // Log portal session creation
-    await db.collection('portalSessions').doc(session.id).set({
-      userId,
-      sessionId: session.id,
-      customerId,
-      createdAt: admin.firestore.Timestamp.now()
-    });
+    console.log(`Portal session created for user ${userId}: ${session.id}`);
 
-    console.log(`Portal session created for user ${userId}`);
     return { url: session.url };
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating portal session:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
     throw new functions.https.HttpsError('internal', 'Failed to create portal session');
   }
 });
@@ -207,7 +185,7 @@ export const getSubscriptionInfo = functions.https.onCall(async (data: any, cont
   const userId = context.auth.uid;
 
   try {
-    // Get user subscription data
+    // Get user data
     const userDoc = await db.collection('users').doc(userId).get();
     if (!userDoc.exists) {
       throw new functions.https.HttpsError('not-found', 'User not found');
@@ -218,45 +196,58 @@ export const getSubscriptionInfo = functions.https.onCall(async (data: any, cont
       throw new functions.https.HttpsError('not-found', 'User data not found');
     }
 
-    const subscription = userData?.subscription;
-
-    if (!subscription || !subscription.stripeSubscriptionId) {
-      return { subscription: null };
+    const subscription = userData.subscription;
+    if (!subscription) {
+      return { hasSubscription: false };
     }
 
-    // Get detailed subscription info from Stripe
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
-    
-    // Get upcoming invoice for next billing
-    let upcomingInvoice = null;
-    try {
-      upcomingInvoice = await stripe.invoices.retrieveUpcoming({
-        customer: subscription.stripeCustomerId,
-        subscription: subscription.stripeSubscriptionId
-      });
-    } catch (error) {
-      console.log('No upcoming invoice found');
+    // If user has a Stripe subscription, get additional details
+    if (subscription.stripeSubscriptionId) {
+      try {
+        const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId);
+        
+        return {
+          hasSubscription: true,
+          subscription: {
+            ...subscription,
+            stripeStatus: stripeSubscription.status,
+            currentPeriodEnd: stripeSubscription.current_period_end,
+            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end
+          }
+        };
+      } catch (error) {
+        console.error('Error retrieving Stripe subscription:', error);
+        // Return local subscription data if Stripe call fails
+        return {
+          hasSubscription: true,
+          subscription,
+          stripeError: 'Failed to retrieve subscription details'
+        };
+      }
     }
 
     return {
-      subscription: {
-        ...subscription,
-        stripeData: {
-          status: stripeSubscription.status,
-          currentPeriodStart: stripeSubscription.current_period_start,
-          currentPeriodEnd: stripeSubscription.current_period_end,
-          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-          trialEnd: stripeSubscription.trial_end
-        },
-        upcomingInvoice: upcomingInvoice ? {
-          amountDue: upcomingInvoice.amount_due,
-          nextPaymentAttempt: upcomingInvoice.next_payment_attempt
-        } : null
-      }
+      hasSubscription: true,
+      subscription
     };
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error getting subscription info:', error);
+    
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+    
     throw new functions.https.HttpsError('internal', 'Failed to get subscription information');
   }
 });
+
+// Helper functions
+function getPlanFromPriceId(priceId: string): string {
+  const priceMap: { [key: string]: string } = {
+    'price_free': 'free',
+    'price_1RvsvqCitWuvPenEw9TefOig': 'standard', // PathGen Standard
+    'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro' // PathGen Pro
+  };
+  return priceMap[priceId] || 'free';
+}

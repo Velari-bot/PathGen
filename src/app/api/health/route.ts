@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      nodeEnvironment: process.env.NODE_ENV || 'development',
+      environment: process.env.NODE_ENV || 'development',
       apis: {
         placeholder: {
           status: '✅ Working',
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
 
     const allApisWorking = criticalApis.every(api => {
       const apiPath = api.split('.');
-      let current: any = healthStatus.apis;
+      let current = healthStatus.apis;
       for (const path of apiPath) {
         if (current[path] && current[path].status === '✅ Working') {
           return true;

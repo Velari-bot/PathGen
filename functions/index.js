@@ -8,40 +8,77 @@ const db = admin.firestore();
 
 // Stripe webhook handler for subscription events
 exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+  console.log(`Webhook received: ${req.method} ${req.url}`);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  
   const sig = req.headers['stripe-signature'];
   const endpointSecret = functions.config().stripe.webhook_secret;
+
+  if (!endpointSecret) {
+    console.error('Webhook secret not configured');
+    return res.status(500).json({ error: 'Webhook secret not configured' });
+  }
 
   let event;
 
   try {
     event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    console.log(`Event verified: ${event.type} (ID: ${event.id})`);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   // Handle the event
-  switch (event.type) {
-    case 'customer.subscription.created':
-      await handleSubscriptionCreated(event.data.object);
-      break;
-    case 'customer.subscription.updated':
-      await handleSubscriptionUpdated(event.data.object);
-      break;
-    case 'customer.subscription.deleted':
-      await handleSubscriptionDeleted(event.data.object);
-      break;
-    case 'invoice.payment_succeeded':
-      await handlePaymentSucceeded(event.data.object);
-      break;
-    case 'invoice.payment_failed':
-      await handlePaymentFailed(event.data.object);
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await handleCheckoutCompleted(event.data.object);
+        break;
+      case 'customer.subscription.created':
+        await handleSubscriptionCreated(event.data.object);
+        break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object);
+        break;
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object);
+        break;
+      case 'invoice.payment_succeeded':
+        await handlePaymentSucceeded(event.data.object);
+        break;
+      case 'invoice.payment_failed':
+        await handlePaymentFailed(event.data.object);
+        break;
+      case 'customer.created':
+        await handleCustomerCreated(event.data.object);
+        break;
+      case 'payment_method.attached':
+        await handlePaymentMethodAttached(event.data.object);
+        break;
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
 
-  res.json({ received: true });
+    // Always return a success response
+    res.status(200).json({ 
+      received: true, 
+      event_type: event.type,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error(`Error processing webhook event ${event.type}:`, error);
+    
+    // Return 200 even on error to prevent Stripe from retrying
+    // This is important for webhook reliability
+    res.status(200).json({ 
+      received: true, 
+      error: error.message,
+      event_type: event.type,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Handle new subscription creation
@@ -155,6 +192,81 @@ async function handlePaymentFailed(invoice) {
     }
   } catch (error) {
     console.error('Error handling payment failure:', error);
+  }
+}
+
+// Handle checkout session completion
+async function handleCheckoutCompleted(session) {
+  try {
+    console.log(`Checkout session completed: ${session.id}`);
+    
+    // If this is a subscription checkout, the subscription.created event will handle the rest
+    if (session.mode === 'subscription') {
+      console.log(`Subscription checkout completed for customer: ${session.customer}`);
+      
+      // Update user's subscription status if we have userId in metadata
+      if (session.metadata && session.metadata.userId) {
+        await db.collection('users').doc(session.metadata.userId).update({
+          'subscription.status': 'pending',
+          'subscription.stripeCustomerId': session.customer,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`Updated user ${session.metadata.userId} with pending subscription`);
+      }
+    }
+    
+    // Log the checkout completion
+    await db.collection('webhookLogs').add({
+      eventType: 'checkout.session.completed',
+      sessionId: session.id,
+      customerId: session.customer,
+      mode: session.mode,
+      amount: session.amount_total,
+      currency: session.currency,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      metadata: session.metadata || {}
+    });
+    
+  } catch (error) {
+    console.error('Error handling checkout completion:', error);
+  }
+}
+
+// Handle customer creation
+async function handleCustomerCreated(customer) {
+  try {
+    console.log(`Customer created: ${customer.id}`);
+    
+    // Log customer creation
+    await db.collection('webhookLogs').add({
+      eventType: 'customer.created',
+      customerId: customer.id,
+      email: customer.email,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      metadata: customer.metadata || {}
+    });
+    
+  } catch (error) {
+    console.error('Error handling customer creation:', error);
+  }
+}
+
+// Handle payment method attachment
+async function handlePaymentMethodAttached(paymentMethod) {
+  try {
+    console.log(`Payment method attached: ${paymentMethod.id}`);
+    
+    // Log payment method attachment
+    await db.collection('webhookLogs').add({
+      eventType: 'payment_method.attached',
+      paymentMethodId: paymentMethod.id,
+      customerId: paymentMethod.customer,
+      type: paymentMethod.type,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+  } catch (error) {
+    console.error('Error handling payment method attachment:', error);
   }
 }
 

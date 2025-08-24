@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
-import { FirebaseService, EpicAccount, FortniteStats, FortniteData } from '@/lib/firebase-service';
+import { FirebaseService, EpicAccount, FortniteStats } from '@/lib/firebase-service';
 import OnboardingModal from '@/components/OnboardingModal';
-import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
@@ -16,13 +15,10 @@ export default function DashboardPage() {
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [epicAccount, setEpicAccount] = useState<any>(null);
-  const [fortniteStats, setFortniteStats] = useState<FortniteData | null>(null);
+  const [fortniteStats, setFortniteStats] = useState<any>(null);
   const [replayUploads, setReplayUploads] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showAllMatches, setShowAllMatches] = useState(false);
-  const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null);
-  const [usageInfo, setUsageInfo] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -35,21 +31,7 @@ export default function DashboardPage() {
       checkSubscription();
       loadEpicAccount();
       loadUserProfile();
-      checkUsage();
     }
-  }, [user]);
-
-  // Check for subscription updates when user returns to dashboard
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        checkSubscription();
-        checkUsage();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
   useEffect(() => {
@@ -70,7 +52,7 @@ export default function DashboardPage() {
         const userDoc = await FirebaseService.getUserProfile(user.uid);
         if (userDoc) {
           setUserProfile(userDoc);
-
+          console.log('✅ User profile loaded from Firebase:', userDoc);
           
           // Check if user needs onboarding (no gaming preferences set)
           if (!userDoc.gaming || !userDoc.gaming.favoriteGame) {
@@ -95,14 +77,13 @@ export default function DashboardPage() {
         const firebaseEpicAccount = await FirebaseService.getEpicAccount(user.uid);
         if (firebaseEpicAccount) {
           setEpicAccount(firebaseEpicAccount);
-
+          console.log('✅ Epic account loaded from Firebase');
           
-          // Load stats from Firebase using new fortniteData collection
-          const firebaseStats = await FirebaseService.getFortniteData(user.uid);
-          
+          // Load stats from Firebase
+          const firebaseStats = await FirebaseService.getFortniteStats(user.uid);
           if (firebaseStats) {
             setFortniteStats(firebaseStats);
-
+            console.log('✅ Fortnite stats loaded from Firebase');
           }
           return;
         }
@@ -117,7 +98,7 @@ export default function DashboardPage() {
         // Load stats if account is connected
         if (parsed.id) {
             // Use the new function to pull stats immediately
-            pullStatsFromOsirion();
+            pullStatsFromOsirion(parsed);
         }
       } catch (error) {
         console.error('Failed to parse Epic account data:', error);
@@ -157,30 +138,13 @@ export default function DashboardPage() {
         localStorage.setItem('epicAccountData', JSON.stringify(data.epicAccount));
         setEpicAccount(data.epicAccount);
         // Immediately pull stats from Osirion API after successful OAuth
-        await pullStatsFromOsirion();
+        await pullStatsFromOsirion(data.epicAccount);
         // Clear URL parameters
         window.history.replaceState({}, document.title, '/dashboard');
       }
     } catch (error) {
       console.error('Epic OAuth callback error:', error);
       alert('Failed to connect Epic account. Please try again.');
-    }
-  };
-
-  const checkUsage = async () => {
-    try {
-      if (!user?.uid) return;
-      
-      const response = await fetch(`/api/usage/check?userId=${user.uid}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUsageInfo(data.usage);
-
-      } else {
-        console.error('Usage check failed:', response.status);
-      }
-    } catch (error) {
-      console.error('Error checking usage:', error);
     }
   };
 
@@ -203,25 +167,24 @@ export default function DashboardPage() {
         // Allow access for free tier users
         const canAccess = data.hasActiveSubscription || data.subscriptionTier === 'free';
         setHasActiveSubscription(canAccess);
-        setSubscriptionInfo(data); // Store subscription info
-
+        console.log('Subscription check result:', { 
+          hasActiveSubscription: data.hasActiveSubscription, 
+          subscriptionTier: data.subscriptionTier,
+          canAccess 
+        });
       } else {
         console.error('Subscription check failed:', response.status);
         // Default to allowing access for free users
         setHasActiveSubscription(true);
-        setSubscriptionInfo(null); // Clear subscription info on failure
       }
     } catch (error) {
       console.error('Error checking subscription:', error);
       // Default to allowing access for free users
       setHasActiveSubscription(true);
-      setSubscriptionInfo(null); // Clear subscription info on error
     } finally {
       setIsLoading(false);
     }
   };
-
-
 
   const handleOnboardingComplete = async () => {
     setShowOnboarding(false);
@@ -266,230 +229,197 @@ export default function DashboardPage() {
     localStorage.removeItem('epicAccountData');
   };
 
-  // Helper function to get proper plan display name
-  const getPlanDisplayName = (tier: string | undefined) => {
-    if (!tier) return 'FREE';
-    
-    switch (tier.toLowerCase()) {
-      case 'pro':
-        return 'PRO';
-      case 'standard':
-        return 'STANDARD';
-      case 'paid':
-        return 'STANDARD'; // Map 'paid' to 'STANDARD' for display
-      case 'free':
-        return 'FREE';
-      default:
-        return tier.toUpperCase();
-    }
-  };
-
-  const pullStatsFromOsirion = async () => {
-    if (!epicAccount || !user) {
-      alert('Please connect your Epic Games account first');
-      return;
-    }
-    
-    // Check if user has reached monthly limit
-    if (usageInfo && usageInfo.osirionPulls >= usageInfo.monthlyLimit) {
-      alert('⚠️ Monthly API limit reached. You have used all your Osirion API pulls for this month. Please upgrade your plan or wait until next month.');
-      return;
-    }
+  const pullStatsFromOsirion = async (account: any) => {
+    if (!account || !user) return;
     
     try {
-
+      console.log('🔄 Immediately pulling stats from Osirion API after OAuth success...');
       
-      // Pull stats from Osirion API using the connected Epic account
-      const requestBody = { 
-        epicId: epicAccount.epicId || epicAccount.id,
+      // First, save the Epic account to Firebase with expanded fields
+      const epicAccountData: EpicAccount = {
+        id: FirebaseService.generateId(),
+        epicId: account.id,
+        displayName: account.displayName,
+        platform: account.platform || 'Epic',
         userId: user.uid,
-        platform: 'pc'
+        linkedAt: new Date(),
+        isReal: account.isReal || false,
+        note: account.note,
+        // Additional Epic account fields
+        accountId: account.accountId,
+        country: account.country,
+        preferredLanguage: account.preferredLanguage,
+        email: account.email,
+        lastLogin: new Date(),
+        status: 'active' as const,
+        verificationStatus: 'verified' as const
       };
       
+      await FirebaseService.saveEpicAccount(epicAccountData);
+      console.log('✅ Epic account saved to Firebase');
       
+      // Track Epic account usage in Firebase
+      try {
+        const { UsageTracker } = await import('@/lib/usage-tracker');
+        await UsageTracker.incrementUsage(user.uid, 'epicSync');
+        console.log('✅ Epic account sync usage tracked in Firebase');
+      } catch (error) {
+        console.warn('⚠️ Could not track Epic account usage:', error);
+      }
       
+      // Now pull stats from Osirion API
       const response = await fetch('/api/osirion/stats', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ 
+          epicId: account.id,
+          userId: user.uid,
+          platform: 'pc'
+        }),
       });
 
       if (response.ok) {
-        try {
-          const data = await response.json();
-
+        const data = await response.json();
+        if (data.success) {
+          // Create comprehensive Fortnite stats structure
+          const fortniteStatsData: FortniteStats = {
+            id: FirebaseService.generateId(),
+            userId: user.uid,
+            epicId: account.id,
+            epicName: account.displayName,
+            platform: 'pc',
+            lastUpdated: new Date(),
+            
+            // Overall stats from Osirion API
+            overall: {
+              kd: data.stats?.all?.kd || 0,
+              winRate: data.stats?.all?.winRate || 0,
+              matches: data.stats?.all?.matches || 0,
+              avgPlace: data.stats?.all?.avgPlace || 0,
+              top1: data.stats?.all?.top1 || 0,
+              top3: data.stats?.all?.top3 || 0,
+              top5: data.stats?.all?.top5 || 0,
+              top10: data.stats?.all?.top10 || 0,
+              top25: data.stats?.all?.top25 || 0,
+              kills: data.stats?.all?.kills || 0,
+              deaths: data.stats?.all?.deaths || 0,
+              assists: data.stats?.all?.assists || 0,
+              damageDealt: data.stats?.all?.damageDealt || 0,
+              damageTaken: data.stats?.all?.damageTaken || 0,
+              timeAlive: data.stats?.all?.timeAlive || 0,
+              distanceTraveled: data.stats?.all?.distanceTraveled || 0,
+              materialsGathered: data.stats?.all?.materialsGathered || 0,
+              structuresBuilt: data.stats?.all?.structuresBuilt || 0
+            },
+            
+            // Mode-specific stats (if available)
+            solo: data.stats?.solo ? {
+              kd: data.stats.solo.kd || 0,
+              winRate: data.stats.solo.winRate || 0,
+              matches: data.stats.solo.matches || 0,
+              avgPlace: data.stats.solo.avgPlace || 0,
+              top1: data.stats.solo.top1 || 0,
+              top3: data.stats.solo.top3 || 0,
+              top5: data.stats.solo.top5 || 0,
+              top10: data.stats.solo.top10 || 0,
+              top25: data.stats.solo.top25 || 0,
+              kills: data.stats.solo.kills || 0,
+              deaths: data.stats.solo.deaths || 0,
+              assists: data.stats.solo.assists || 0,
+              damageDealt: data.stats.solo.damageDealt || 0,
+              damageTaken: data.stats.solo.damageTaken || 0,
+              timeAlive: data.stats.solo.timeAlive || 0,
+              distanceTraveled: data.stats.solo.distanceTraveled || 0,
+              materialsGathered: data.stats.solo.materialsGathered || 0,
+              structuresBuilt: data.stats.solo.structuresBuilt || 0
+            } : undefined,
+            
+            duo: data.stats?.duo ? {
+              kd: data.stats.duo.kd || 0,
+              winRate: data.stats.duo.winRate || 0,
+              matches: data.stats.duo.matches || 0,
+              avgPlace: data.stats.duo.avgPlace || 0,
+              top1: data.stats.duo.top1 || 0,
+              top3: data.stats.duo.top3 || 0,
+              top5: data.stats.duo.top5 || 0,
+              top10: data.stats.duo.top10 || 0,
+              top25: data.stats.duo.top25 || 0,
+              kills: data.stats.duo.kills || 0,
+              deaths: data.stats.duo.deaths || 0,
+              assists: data.stats.duo.assists || 0,
+              damageDealt: data.stats.duo.damageDealt || 0,
+              damageTaken: data.stats.duo.damageTaken || 0,
+              timeAlive: data.stats.duo.timeAlive || 0,
+              distanceTraveled: data.stats.duo.distanceTraveled || 0,
+              materialsGathered: data.stats.duo.materialsGathered || 0,
+              structuresBuilt: data.stats.duo.structuresBuilt || 0
+            } : undefined,
+            
+            squad: data.stats?.squad ? {
+              kd: data.stats.squad.kd || 0,
+              winRate: data.stats.squad.winRate || 0,
+              matches: data.stats.squad.matches || 0,
+              avgPlace: data.stats.squad.avgPlace || 0,
+              top1: data.stats.squad.top1 || 0,
+              top3: data.stats.squad.top3 || 0,
+              top5: data.stats.squad.top5 || 0,
+              top10: data.stats.squad.top10 || 0,
+              top25: data.stats.squad.top25 || 0,
+              kills: data.stats.squad.kills || 0,
+              deaths: data.stats.squad.deaths || 0,
+              assists: data.stats.squad.assists || 0,
+              damageDealt: data.stats.squad.damageDealt || 0,
+              damageTaken: data.stats.squad.damageTaken || 0,
+              timeAlive: data.stats.squad.timeAlive || 0,
+              distanceTraveled: data.stats.squad.distanceTraveled || 0,
+              materialsGathered: data.stats.squad.materialsGathered || 0,
+              structuresBuilt: data.stats.squad.structuresBuilt || 0
+            } : undefined,
+            
+            // Usage tracking
+            usage: {
+              current: data.usage?.current || 0,
+              limit: data.usage?.limit || 0,
+              resetDate: data.usage?.resetDate ? new Date(data.usage.resetDate) : new Date(),
+              lastApiCall: new Date(),
+              totalApiCalls: 1
+            },
+            
+            // Metadata
+            metadata: {
+              season: data.metadata?.season || 1,
+              chapter: data.metadata?.chapter || 1,
+              dataSource: 'osirion' as const,
+              dataQuality: 'high' as const,
+              notes: 'Data pulled from Osirion API after Epic OAuth'
+            }
+          };
           
-          if (data.success && data.data) {
-            // Create comprehensive Fortnite data structure
-            const fortniteStatsData: FortniteData = {
-              id: FirebaseService.generateId(),
-              userId: user.uid,
-              epicId: epicAccount.epicId || epicAccount.id,
-              epicName: epicAccount.displayName,
-              syncedAt: new Date(),
-              
-              // Store ALL the raw Osirion data for comprehensive analysis
-              rawOsirionData: {
-                ...data.data,
-                // Enhanced with additional calculated fields
-                performanceMetrics: {
-                  bestPlacement: Math.min(...(data.data.matches?.map((m: any) => m.placement) || [0])),
-                  worstPlacement: Math.max(...(data.data.matches?.map((m: any) => m.placement) || [0])),
-                  totalDamage: data.data.matches?.reduce((sum: number, m: any) => sum + (m.damage || 0), 0) || 0,
-                  avgDamagePerMatch: data.data.matches ? 
-                    data.data.matches.reduce((sum: number, m: any) => sum + (m.damage || 0), 0) / data.data.matches.length : 0,
-                  totalSurvivalTime: data.data.matches?.reduce((sum: number, m: any) => sum + (m.survivalTime || 0), 0) || 0,
-                  avgSurvivalTime: data.data.matches ? 
-                    data.data.matches.reduce((sum: number, m: any) => sum + (m.survivalTime || 0), 0) / data.data.matches.length : 0,
-                  top3Count: data.data.matches?.filter((m: any) => m.placement <= 3).length || 0,
-                  top10Count: data.data.matches?.filter((m: any) => m.placement <= 10).length || 0,
-                  top25Count: data.data.matches?.filter((m: any) => m.placement <= 25).length || 0,
-                  highKillGames: data.data.matches?.filter((m: any) => (m.kills || 0) >= 5).length || 0,
-                  lowKillGames: data.data.matches?.filter((m: any) => (m.kills || 0) <= 1).length || 0
-                }
-              },
-              
-              // Stats from Osirion API
-              stats: {
-                wins: data.data?.stats?.all?.wins || data.data?.all?.top1 || 0,
-                kd: data.data?.stats?.all?.kd || data.data?.all?.kd || 0,
-                placement: data.data?.stats?.all?.avgPlace || data.data?.all?.avgPlace || 0,
-                earnings: 0, // Not available from Osirion
-                matches: data.data?.stats?.all?.matches || data.data?.all?.matches || 0,
-                top1: data.data?.stats?.all?.wins || data.data?.all?.top1 || 0,
-                top3: data.data?.stats?.all?.top3 || data.data?.all?.top3 || 0,
-                top5: data.data?.stats?.all?.top5 || data.data?.all?.top5 || 0,
-                top10: data.data?.stats?.all?.top10 || data.data?.all?.top10 || 0,
-                top25: data.data?.stats?.all?.top25 || data.data?.all?.top25 || 0,
-                kills: data.data?.stats?.all?.kills || data.data?.all?.kills || 0,
-                deaths: data.data?.stats?.all?.deaths || data.data?.all?.deaths || 0,
-                assists: data.data?.stats?.all?.assists || data.data?.all?.assists || 0,
-                damageDealt: data.data?.stats?.all?.damageDealt || data.data?.all?.damageDealt || 0,
-                damageTaken: data.data?.stats?.all?.damageTaken || data.data?.all?.damageTaken || 0,
-                timeAlive: data.data?.stats?.all?.avgSurvivalTime || data.data?.all?.timeAlive || 0,
-                distanceTraveled: data.data?.stats?.all?.distanceTraveled || data.data?.all?.distanceTraveled || 0,
-                materialsGathered: data.data?.stats?.all?.materialsGathered || data.data?.all?.materialsGathered || 0,
-                structuresBuilt: data.data?.stats?.all?.structuresBuilt || data.data?.all?.structuresBuilt || 0
-              },
-              
-              // Mode-specific stats (always provide default values)
-              modes: {
-                solo: {
-                  kd: data.data?.stats?.solo?.kd || data.data?.solo?.kd || data.data?.all?.kd || 0,
-                  winRate: data.data?.stats?.solo?.winRate || data.data?.solo?.winRate || 0,
-                  matches: data.data?.stats?.solo?.matches || data.data?.solo?.matches || Math.max(0, Math.floor((data.data?.stats?.all?.matches || data.data?.all?.matches || 0) / 3)),
-                  avgPlace: data.data?.stats?.solo?.avgPlace || data.data?.solo?.avgPlace || data.data?.all?.avgPlace || 0,
-                  top1: data.data?.stats?.solo?.wins || data.data?.solo?.top1 || Math.max(0, Math.floor((data.data?.stats?.all?.wins || data.data?.all?.top1 || 0) / 3)),
-                  top3: data.data?.stats?.solo?.top3 || data.data?.solo?.top3 || Math.max(0, Math.floor((data.data?.stats?.all?.top10 || data.data?.all?.top10 || 0) / 3)),
-                  top5: data.data?.stats?.solo?.top5 || data.data?.solo?.top5 || Math.max(0, Math.floor((data.data?.stats?.all?.top10 || data.data?.all?.top10 || 0) / 3)),
-                  top10: data.data?.stats?.solo?.top10 || data.data?.solo?.top10 || Math.max(0, Math.floor((data.data?.stats?.all?.top10 || data.data?.all?.top10 || 0) / 3)),
-                  top25: data.data?.stats?.solo?.top25 || data.data?.solo?.top25 || Math.max(0, Math.floor((data.data?.stats?.all?.matches || data.data?.all?.matches || 0) / 4)),
-                  kills: data.data?.stats?.solo?.kills || data.data?.solo?.kills || Math.max(0, Math.floor((data.data?.stats?.all?.kills || data.data?.all?.kills || 0) / 3)),
-                  deaths: data.data?.stats?.solo?.deaths || data.data?.solo?.deaths || Math.max(0, Math.floor((data.data?.stats?.all?.matches || data.data?.all?.matches || 0) / 3)),
-                  assists: data.data?.stats?.solo?.assists || data.data?.solo?.assists || Math.max(0, Math.floor((data.data?.stats?.all?.assists || data.data?.all?.assists || 0) / 3)),
-                  damageDealt: data.data?.stats?.solo?.damageDealt || data.data?.solo?.damageDealt || 0,
-                  damageTaken: data.data?.stats?.solo?.damageTaken || data.data?.solo?.damageTaken || 0,
-                  timeAlive: data.data?.stats?.solo?.avgSurvivalTime || data.data?.solo?.timeAlive || data.data?.all?.timeAlive || 0,
-                  distanceTraveled: data.data?.stats?.solo?.distanceTraveled || data.data?.solo?.distanceTraveled || 0,
-                  materialsGathered: data.data?.stats?.solo?.materialsGathered || data.data?.solo?.materialsGathered || 0,
-                  structuresBuilt: data.data?.stats?.solo?.structuresBuilt || data.data?.solo?.structuresBuilt || 0
-                },
-                
-                duo: {
-                  kd: data.data?.duo?.kd || data.data?.all?.kd || 0,
-                  winRate: data.data?.duo?.winRate || 0,
-                  matches: data.data?.duo?.matches || Math.max(0, Math.floor((data.data?.all?.matches || 0) / 3)),
-                  avgPlace: data.data?.duo?.avgPlace || data.data?.all?.avgPlace || 0,
-                  top1: data.data?.duo?.top1 || Math.max(0, Math.floor((data.data?.all?.top1 || 0) / 3)),
-                  top3: data.data?.duo?.top3 || Math.max(0, Math.floor((data.data?.all?.top10 || 0) / 3)),
-                  top5: data.data?.duo?.top5 || Math.max(0, Math.floor((data.data?.all?.top10 || 0) / 3)),
-                  top10: data.data?.duo?.top10 || Math.max(0, Math.floor((data.data?.all?.top10 || 0) / 3)),
-                  top25: data.data?.duo?.top25 || Math.max(0, Math.floor((data.data?.all?.matches || 0) / 4)),
-                  kills: data.data?.duo?.kills || Math.max(0, Math.floor((data.data?.all?.kills || 0) / 3)),
-                  deaths: data.data?.duo?.deaths || Math.max(0, Math.floor((data.data?.all?.matches || 0) / 3)),
-                  assists: data.data?.duo?.assists || Math.max(0, Math.floor((data.data?.all?.assists || 0) / 3)),
-                  damageDealt: data.data?.duo?.damageDealt || 0,
-                  damageTaken: data.data?.duo?.damageTaken || 0,
-                  timeAlive: data.data?.duo?.timeAlive || data.data?.all?.timeAlive || 0,
-                  distanceTraveled: data.data?.duo?.distanceTraveled || 0,
-                  materialsGathered: data.data?.duo?.materialsGathered || 0,
-                  structuresBuilt: data.data?.duo?.structuresBuilt || 0
-                },
-                
-                squad: {
-                  kd: data.data?.squad?.kd || data.data?.all?.kd || 0,
-                  winRate: data.data?.squad?.winRate || 0,
-                  matches: data.data?.squad?.matches || Math.max(0, Math.floor((data.data?.all?.matches || 0) / 3)),
-                  avgPlace: data.data?.squad?.avgPlace || data.data?.all?.avgPlace || 0,
-                  top1: data.data?.squad?.top1 || Math.max(0, Math.floor((data.data?.all?.top1 || 0) / 3)),
-                  top3: data.data?.squad?.top3 || Math.max(0, Math.floor((data.data?.all?.top10 || 0) / 3)),
-                  top5: data.data?.squad?.top5 || Math.max(0, Math.floor((data.data?.all?.top10 || 0) / 3)),
-                  top10: data.data?.squad?.top10 || Math.max(0, Math.floor((data.data?.all?.top10 || 0) / 3)),
-                  top25: data.data?.squad?.top25 || Math.max(0, Math.floor((data.data?.all?.matches || 0) / 4)),
-                  kills: data.data?.squad?.kills || Math.max(0, Math.floor((data.data?.all?.kills || 0) / 3)),
-                  deaths: data.data?.squad?.deaths || Math.max(0, Math.floor((data.data?.all?.matches || 0) / 3)),
-                  assists: data.data?.squad?.assists || Math.max(0, Math.floor((data.data?.all?.assists || 0) / 3)),
-                  damageDealt: data.data?.squad?.damageDealt || 0,
-                  damageTaken: data.data?.squad?.damageTaken || 0,
-                  timeAlive: data.data?.squad?.timeAlive || data.data?.all?.timeAlive || 0,
-                  distanceTraveled: data.data?.squad?.distanceTraveled || 0,
-                  materialsGathered: data.data?.squad?.materialsGathered || 0,
-                  structuresBuilt: data.data?.squad?.structuresBuilt || 0
-                }
-              },
-              
-              // Additional metadata
-              dataSource: 'osirion',
-              dataQuality: 'high',
-              notes: 'Stats pulled from Osirion API - Enhanced with comprehensive data storage'
-            };
-            
-            await FirebaseService.saveFortniteData(fortniteStatsData);
-    
-            
-            // Update local state
-            setFortniteStats(fortniteStatsData);
-            
-            // Track usage
-            try {
-              const { UsageTracker } = await import('@/lib/usage-tracker');
-              await UsageTracker.incrementUsage(user.uid, 'epicSync');
-            } catch (error) {
-              console.warn('⚠️ Could not track Epic account usage:', error);
-            }
-            
-            // Refresh usage info after successful pull
-            await checkUsage();
-            
-            alert('✅ Fortnite stats successfully updated from Osirion API!');
-            
-          } else {
-            console.error('❌ Osirion API returned error:', data);
-            const errorData = data.error || {};
-            
-            if (errorData.message?.includes('Monthly limit reached')) {
-              alert('⚠️ Monthly API limit reached. You have used all your Osirion API pulls for this month. Please upgrade your plan or wait until next month.');
-            } else if (errorData.message?.includes('API key')) {
-              alert('⚠️ API key issue detected. Please check your Osirion API key configuration.');
-            } else {
-              alert(`⚠️ Failed to load Fortnite stats: ${errorData.message || 'Unknown error'}`);
-            }
-          }
-        } catch (parseError) {
-          console.error('❌ Error parsing Osirion API response:', parseError);
-          alert('❌ Error processing Fortnite stats response. Please try again.');
+                     await FirebaseService.saveFortniteStats(fortniteStatsData);
+           console.log('✅ Comprehensive Fortnite stats saved to Firebase');
+           
+           // Track stats pulled usage in Firebase
+           try {
+             const { UsageTracker } = await import('@/lib/usage-tracker');
+             await UsageTracker.incrementUsage(user.uid, 'epicStats');
+             console.log('✅ Epic stats pulled usage tracked in Firebase');
+           } catch (error) {
+             console.warn('⚠️ Could not track Epic stats usage:', error);
+           }
+           
+           // Update local state with the full data structure
+           setFortniteStats(fortniteStatsData);
+           console.log('✅ Comprehensive stats loaded from Osirion API and saved to Firebase:', fortniteStatsData);
+        } else {
+          console.log('⚠️ Osirion API response not successful:', data);
         }
       } else {
-        console.error('❌ Osirion API request failed:', response.status, response.statusText);
-        alert('❌ Failed to connect to Fortnite stats service. Please try again.');
+        console.error('❌ Failed to fetch stats from Osirion API:', response.status);
       }
     } catch (error) {
-      console.error('❌ Error in pullStatsFromOsirion:', error);
-      alert('❌ Error pulling Fortnite stats. Please try again.');
-    } finally {
-      setIsLoading(false);
+      console.error('❌ Error pulling stats from Osirion API:', error);
     }
   };
 
@@ -497,158 +427,22 @@ export default function DashboardPage() {
     if (!epicAccount || !user) return;
     
     try {
-      
-        
-        const response = await fetch('/api/osirion/stats', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            epicId: epicAccount.epicId, // Use epicId, not id
-            userId: user.uid,
-            platform: 'pc'
-          }),
-        });
+      const response = await fetch('/api/osirion/stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          epicId: epicAccount.id,
+          userId: user.uid,
+          platform: 'pc'
+        }),
+      });
 
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // The Osirion API returns { success: true, data: {...} }
-          // We need to extract the actual stats data
-          if (data.data) {
-            
-            // Transform the Osirion response to match FortniteData structure
-            const transformedStats: FortniteData = {
-              id: FirebaseService.generateId(),
-              userId: user.uid,
-              epicId: epicAccount.epicId,
-              epicName: data.data.account?.name || 'Unknown',
-              syncedAt: new Date(),
-              // Store ALL the raw Osirion data for comprehensive analysis
-              rawOsirionData: {
-                ...data.data,
-                // Enhanced with additional calculated fields
-                performanceMetrics: {
-                  bestPlacement: Math.min(...(data.data.matches?.map((m: any) => m.placement) || [0])),
-                  worstPlacement: Math.max(...(data.data.matches?.map((m: any) => m.placement) || [0])),
-                  totalDamage: data.data.matches?.reduce((sum: number, m: any) => sum + (m.damage || 0), 0) || 0,
-                  avgDamagePerMatch: data.data.matches ? 
-                    data.data.matches.reduce((sum: number, m: any) => sum + (m.damage || 0), 0) / data.data.matches.length : 0,
-                  totalSurvivalTime: data.data.matches?.reduce((sum: number, m: any) => sum + (m.survivalTime || 0), 0) || 0,
-                  avgSurvivalTime: data.data.matches ? 
-                    data.data.matches.reduce((sum: number, m: any) => sum + (m.survivalTime || 0), 0) / data.data.matches.length : 0,
-                  top3Count: data.data.matches?.filter((m: any) => m.placement <= 3).length || 0,
-                  top10Count: data.data.matches?.filter((m: any) => m.placement <= 10).length || 0,
-                  top25Count: data.data.matches?.filter((m: any) => m.placement <= 25).length || 0,
-                  highKillGames: data.data.matches?.filter((m: any) => (m.kills || 0) >= 5).length || 0,
-                  lowKillGames: data.data.matches?.filter((m: any) => (m.kills || 0) <= 1).length || 0
-                }
-              },
-              // Enhanced stats with more detailed calculations from raw match data
-              stats: {
-                wins: data.data.stats?.all?.wins || 0,
-                kd: data.data.stats?.all?.kd || 0,
-                placement: data.data.stats?.all?.avgPlace || 0,
-                earnings: 0, // Not available from Osirion
-                matches: data.data.stats?.all?.matches || 0,
-                top1: data.data.stats?.all?.wins || 0,
-                top3: data.data.stats?.all?.top3 || 0,
-                top5: data.data.stats?.all?.top5 || 0,
-                top10: data.data.stats?.all?.top10 || 0,
-                top25: data.data.stats?.all?.top25 || 0,
-                kills: data.data.stats?.all?.kills || 0,
-                deaths: data.data.stats?.all?.deaths || 0,
-                assists: data.data.stats?.all?.assists || 0,
-                damageDealt: data.data.stats?.all?.damageDealt || 0,
-                damageTaken: data.data.stats?.all?.damageTaken || 0,
-                timeAlive: data.data.stats?.all?.avgSurvivalTime || data.data.preferences?.avgSurvivalTime || 0,
-                distanceTraveled: data.data.stats?.all?.distanceTraveled || 0,
-                materialsGathered: data.data.stats?.all?.materialsGathered || 0,
-                structuresBuilt: data.data.stats?.all?.structuresBuilt || 0
-              },
-              modes: {
-                solo: {
-                  kd: data.data.stats?.solo?.kd || data.data.stats?.all?.kd || 0,
-                  winRate: data.data.stats?.solo?.winRate || 0,
-                  matches: data.data.stats?.solo?.matches || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 3)),
-                  avgPlace: data.data.stats?.solo?.avgPlace || data.data.stats?.all?.avgPlace || 0,
-                  top1: data.data.stats?.solo?.wins || Math.max(0, Math.floor((data.data.stats?.all?.wins || 0) / 3)),
-                  top3: data.data.stats?.solo?.top3 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top5: data.data.stats?.solo?.top5 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top10: data.data.stats?.solo?.top10 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top25: data.data.stats?.solo?.top25 || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 4)),
-                  kills: data.data.stats?.solo?.kills || Math.max(0, Math.floor((data.data.stats?.all?.kills || 0) / 3)),
-                  deaths: data.data.stats?.solo?.deaths || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 3)),
-                  assists: data.data.stats?.solo?.assists || Math.max(0, Math.floor((data.data.stats?.all?.assists || 0) / 3)),
-                  damageDealt: data.data.stats?.solo?.damageDealt || 0,
-                  damageTaken: data.data.stats?.solo?.damageTaken || 0,
-                  timeAlive: data.data.stats?.solo?.avgSurvivalTime || data.data.preferences?.avgSurvivalTime || 0,
-                  distanceTraveled: data.data.stats?.solo?.distanceTraveled || 0,
-                  materialsGathered: data.data.stats?.solo?.materialsGathered || 0,
-                  structuresBuilt: data.data.stats?.solo?.structuresBuilt || 0
-                },
-                duo: {
-                  kd: data.data.stats?.duo?.kd || data.data.stats?.all?.kd || 0,
-                  winRate: data.data.stats?.duo?.winRate || 0,
-                  matches: data.data.stats?.duo?.matches || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 3)),
-                  avgPlace: data.data.stats?.duo?.avgPlace || data.data.stats?.all?.avgPlace || 0,
-                  top1: data.data.stats?.duo?.wins || Math.max(0, Math.floor((data.data.stats?.all?.wins || 0) / 3)),
-                  top3: data.data.stats?.duo?.top3 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top5: data.data.stats?.duo?.top5 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top10: data.data.stats?.duo?.top10 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top25: data.data.stats?.duo?.top25 || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 4)),
-                  kills: data.data.stats?.duo?.kills || Math.max(0, Math.floor((data.data.stats?.all?.kills || 0) / 3)),
-                  deaths: data.data.stats?.duo?.deaths || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 3)),
-                  assists: data.data.stats?.duo?.assists || Math.max(0, Math.floor((data.data.stats?.all?.assists || 0) / 3)),
-                  damageDealt: data.data.stats?.duo?.damageDealt || 0,
-                  damageTaken: data.data.stats?.duo?.damageTaken || 0,
-                  timeAlive: data.data.stats?.duo?.avgSurvivalTime || data.data.preferences?.avgSurvivalTime || 0,
-                  distanceTraveled: data.data.stats?.duo?.distanceTraveled || 0,
-                  materialsGathered: data.data.stats?.duo?.materialsGathered || 0,
-                  structuresBuilt: data.data.stats?.duo?.structuresBuilt || 0
-                },
-                squad: {
-                  kd: data.data.stats?.squad?.kd || data.data.stats?.all?.kd || 0,
-                  winRate: data.data.stats?.squad?.winRate || 0,
-                  matches: data.data.stats?.squad?.matches || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 3)),
-                  avgPlace: data.data.stats?.squad?.avgPlace || data.data.stats?.all?.avgPlace || 0,
-                  top1: data.data.stats?.squad?.wins || Math.max(0, Math.floor((data.data.stats?.all?.wins || 0) / 3)),
-                  top3: data.data.stats?.squad?.top3 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top5: data.data.stats?.squad?.top5 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top10: data.data.stats?.squad?.top10 || Math.max(0, Math.floor((data.data.stats?.all?.top10 || 0) / 3)),
-                  top25: data.data.stats?.squad?.top25 || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 4)),
-                  kills: data.data.stats?.squad?.kills || Math.max(0, Math.floor((data.data.stats?.all?.kills || 0) / 3)),
-                  deaths: data.data.stats?.squad?.deaths || Math.max(0, Math.floor((data.data.stats?.all?.matches || 0) / 3)),
-                  assists: data.data.stats?.squad?.assists || Math.max(0, Math.floor((data.data.stats?.all?.assists || 0) / 3)),
-                  damageDealt: data.data.stats?.squad?.damageDealt || 0,
-                  damageTaken: data.data.stats?.squad?.damageTaken || 0,
-                  timeAlive: data.data.stats?.squad?.avgSurvivalTime || data.data.preferences?.avgSurvivalTime || 0,
-                  distanceTraveled: data.data.stats?.squad?.distanceTraveled || 0,
-                  materialsGathered: data.data.stats?.squad?.materialsGathered || 0,
-                  structuresBuilt: data.data.stats?.squad?.structuresBuilt || 0
-                }
-              },
-              dataSource: 'osirion',
-              dataQuality: 'high',
-              notes: 'Stats pulled from Osirion API - Enhanced with comprehensive data storage'
-            };
-            
-            
-            
-            // Save the transformed stats to Firebase
-            try {
-              await FirebaseService.saveFortniteData(transformedStats);
-      
-            } catch (firebaseError) {
-              console.error('❌ Error saving stats to Firebase:', firebaseError);
-            }
-            
-            // Update local state
-            setFortniteStats(transformedStats);
-          } else {
-            console.error('❌ Osirion API response missing data property');
-          }
+          setFortniteStats(data);
         }
       }
     } catch (error) {
@@ -683,59 +477,6 @@ export default function DashboardPage() {
     }, 2000);
   };
 
-  const exportComprehensiveData = () => {
-    if (!fortniteStats?.rawOsirionData?.matches) return;
-    
-    // Create CSV content with all match data
-    const headers = [
-      'Match #', 'Match ID', 'Placement', 'Kills', 'Assists', 'Damage', 
-      'Survival Time (seconds)', 'Survival Time (minutes)', 'Performance Rating'
-    ];
-    
-    const csvContent = [
-      headers.join(','),
-      ...fortniteStats.rawOsirionData.matches.map((match: any, index: number) => [
-        index + 1,
-        match.id || 'N/A',
-        match.placement,
-        match.kills || 0,
-        match.assists || 0,
-        Math.round(match.damage || 0),
-        Math.round(match.survivalTime || 0),
-        Math.round((match.survivalTime || 0) / 60),
-        match.placement <= 3 ? 'Elite' : 
-        match.placement <= 10 ? 'Strong' : 
-        match.placement <= 25 ? 'Good' : 'Average'
-      ].join(','))
-    ].join('\n');
-    
-    // Add summary data
-    const summaryData = `
-Summary Statistics:
-Total Matches: ${fortniteStats.rawOsirionData.matches.length}
-Wins: ${fortniteStats.rawOsirionData.matches.filter((m: any) => m.placement === 1).length}
-Top 3: ${fortniteStats.rawOsirionData.matches.filter((m: any) => m.placement <= 3).length}
-Top 10: ${fortniteStats.rawOsirionData.matches.filter((m: any) => m.placement <= 10).length}
-Total Kills: ${fortniteStats.rawOsirionData.matches.reduce((sum: number, m: any) => sum + (m.kills || 0), 0)}
-Total Assists: ${fortniteStats.rawOsirionData.matches.reduce((sum: number, m: any) => sum + (m.assists || 0), 0)}
-Total Damage: ${Math.round(fortniteStats.rawOsirionData.matches.reduce((sum: number, m: any) => sum + (m.damage || 0), 0))}
-Average Placement: ${(fortniteStats.rawOsirionData.matches.reduce((sum: number, m: any) => sum + m.placement, 0) / fortniteStats.rawOsirionData.matches.length).toFixed(2)}
-Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce((sum: number, m: any) => sum + (m.survivalTime || 0), 0) / fortniteStats.rawOsirionData.matches.length / 60)} minutes
-`;
-    
-    const fullContent = csvContent + summaryData;
-    
-    const blob = new Blob([fullContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fortnite-comprehensive-stats-${fortniteStats.epicName}-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   if (loading || isLoading) {
     return (
       <div className="min-h-screen bg-gradient-dark flex items-center justify-center">
@@ -748,7 +489,6 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
                 fill
                 sizes="48px"
                 className="object-contain"
-                priority
               />
             </div>
           </div>
@@ -795,41 +535,13 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
                   <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
                   <p><span className="text-white/60">Platform:</span> {epicAccount.platform || 'Epic'}</p>
                   <p><span className="text-white/60">Connected:</span> {new Date(epicAccount.linkedAt || '').toLocaleDateString()}</p>
-                  {usageInfo && (
-                    <p><span className="text-white/60">API Pulls:</span> 
-                      <span className={`ml-1 ${usageInfo.osirionPulls >= usageInfo.monthlyLimit ? 'text-red-400' : 'text-green-400'}`}>
-                        {usageInfo.osirionPulls}/{usageInfo.monthlyLimit}
-                      </span>
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-2">
-                    💾 All comprehensive stats are automatically saved to Firebase for AI coaching
-                  </p>
                 </div>
-                <div className="flex space-x-3 mt-3">
-                  <button
-                    onClick={disconnectEpicAccount}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
-                  >
-                    Disconnect Account
-                  </button>
-                  <button
-                    onClick={pullStatsFromOsirion}
-                    disabled={isLoading || (usageInfo && usageInfo.osirionPulls >= usageInfo.monthlyLimit)}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white rounded-lg text-sm transition-colors"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
-                        Pulling Stats...
-                      </>
-                    ) : usageInfo && usageInfo.osirionPulls >= usageInfo.monthlyLimit ? (
-                      '❌ Monthly Limit Reached'
-                    ) : (
-                      '🔄 Pull Latest Stats'
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={disconnectEpicAccount}
+                  className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                >
+                  Disconnect Account
+                </button>
               </div>
             ) : (
               <div className="text-center space-y-4">
@@ -844,299 +556,7 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
             )}
           </div>
 
-          {/* Key Stats Display */}
-          {epicAccount && fortniteStats && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">📊 Key Performance Stats</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center border border-gray-700">
-                  <div className="text-2xl font-bold text-blue-400">
-                    {fortniteStats.stats?.kd?.toFixed(2) || '0.00'}
-                  </div>
-                  <div className="text-sm text-gray-400">K/D Ratio</div>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center border border-gray-700">
-                  <div className="text-2xl font-bold text-green-400">
-                    {fortniteStats.stats?.wins || 0}
-                  </div>
-                  <div className="text-sm text-gray-400">Wins</div>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center border border-gray-700">
-                  <div className="text-2xl font-bold text-yellow-400">
-                    {fortniteStats.stats?.top10 || 0}
-                  </div>
-                  <div className="text-sm text-gray-400">Top 10</div>
-                </div>
-                <div className="bg-gray-800/50 rounded-lg p-4 text-center border border-gray-700">
-                  <div className="text-2xl font-bold text-purple-400">
-                    {fortniteStats.stats?.matches || 0}
-                  </div>
-                  <div className="text-sm text-gray-400">Matches</div>
-                </div>
-              </div>
-              
-              {/* Data Source Info */}
-              <div className="mt-4 text-center text-sm text-gray-400">
-                <p>📡 Data pulled from Osirion API • All comprehensive stats stored in Firebase for AI coaching</p>
-                <p className="mt-1">Last updated: {fortniteStats.syncedAt ? new Date(fortniteStats.syncedAt).toLocaleString() : 'Never'}</p>
-              </div>
-            </div>
-          )}
-
-          {/* No Stats Yet - Prompt to Pull Stats */}
-          {epicAccount && !fortniteStats && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">📊 Fortnite Stats</h3>
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-center">
-                <p className="text-blue-300 text-sm mb-3">
-                  Ready to see your Fortnite performance stats? Click "Pull Latest Stats" above to get started!
-                </p>
-                <p className="text-gray-400 text-xs">
-                  All comprehensive data will be stored in Firebase for AI coaching analysis
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Stats Loading Status */}
-          {epicAccount && !fortniteStats && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">📊 Fortnite Stats Status</h3>
-              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-                <div className="flex items-center space-x-3">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-500"></div>
-                  <div>
-                    <h4 className="text-yellow-400 font-semibold">Loading Fortnite Stats</h4>
-                    <p className="text-yellow-300 text-sm">
-                      Fetching your stats from Osirion API... This may take a few moments.
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* Subscription Status Section */}
-          {subscriptionInfo && (
-            <div className="glass-card p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-white">💎 Subscription Status</h3>
-                <button
-                  onClick={checkSubscription}
-                  disabled={isLoading}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white text-xs rounded transition-colors"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white inline-block mr-1"></div>
-                      Refreshing...
-                    </>
-                  ) : (
-                    '🔄 Refresh'
-                  )}
-                </button>
-              </div>
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-blue-400 font-semibold">
-                    Current Plan: {getPlanDisplayName(subscriptionInfo.subscriptionTier)}
-                  </h4>
-                  <span className={`px-3 py-1 text-white text-xs rounded-full ${
-                    subscriptionInfo.subscriptionTier === 'pro' ? 'bg-purple-500' :
-                    subscriptionInfo.subscriptionTier === 'standard' ? 'bg-blue-500' :
-                    'bg-green-500'
-                  }`}>
-                    {getPlanDisplayName(subscriptionInfo.subscriptionTier)}
-                  </span>
-                </div>
-                <div className="text-sm text-white/80 space-y-2">
-                  <p><span className="text-white/60">Status:</span> {subscriptionInfo.hasActiveSubscription ? 'Active' : 'Inactive'}</p>
-                  <p><span className="text-white/60">Member Since:</span> {subscriptionInfo.startDate ? new Date(subscriptionInfo.startDate).toLocaleDateString() : 'N/A'}</p>
-                  <p><span className="text-white/60">Plan Duration:</span> Monthly Subscription</p>
-                  <p><span className="text-white/60">Next billing cycle:</span> {subscriptionInfo.startDate ? new Date(new Date(subscriptionInfo.startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() : 'N/A'}</p>
-                </div>
-                {subscriptionInfo.subscriptionTier === 'free' && (
-                  <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                    <p className="text-yellow-400 text-sm">
-                      💡 Upgrade to Pro for unlimited AI coaching, advanced analytics, and tournament strategies!
-                    </p>
-                    <button
-                      onClick={() => router.push('/pricing')}
-                      className="mt-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm transition-colors"
-                    >
-                      View Pricing Plans
-                    </button>
-                  </div>
-                )}
-                
-                {/* Payment completion note */}
-                <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-blue-400 text-sm">
-                    💳 Just completed payment? Click "Refresh" above to update your subscription status!
-                  </p>
-                </div>
-                
-
-              </div>
-            </div>
-          )}
-
-          {/* Credit-Efficient Usage Limits */}
-          {usageInfo && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">🎯 Credit-Efficient Usage Limits</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Osirion API Usage */}
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <span className="text-pink-400 mr-2">⚡</span>
-                    Osirion API Usage
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Matches:</span>
-                      <span className="text-white font-medium">{usageInfo.matches?.used || 0}/{usageInfo.matches?.monthly || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Replay Uploads:</span>
-                      <span className="text-white font-medium">{usageInfo.replayUploads?.used || 0}/{usageInfo.replayUploads?.monthly || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Compute Requests:</span>
-                      <span className="text-white font-medium">{usageInfo.computeRequests?.used || 0}/{usageInfo.computeRequests?.monthly || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Event Types:</span>
-                      <span className="text-white font-medium">{usageInfo.matches?.eventTypes || 1}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Coaching Usage */}
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <span className="text-purple-400 mr-2">🤖</span>
-                    AI Coaching Usage
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">AI Messages:</span>
-                      <span className="text-white font-medium">{usageInfo.aiMessages?.used || 0}/{usageInfo.aiMessages?.monthly || 0}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Conversations:</span>
-                      <span className="text-white font-medium">{usageInfo.aiMessages?.conversations || 0}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Epic Account Sync */}
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <span className="text-blue-400 mr-2">🎮</span>
-                    Epic Account Sync
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Last Sync:</span>
-                      <span className="text-white font-medium">{epicAccount ? 'Connected' : 'Never'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Sync Count:</span>
-                      <span className="text-white font-medium">{epicAccount ? '1' : '0'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Stats Pulled:</span>
-                      <span className="text-white font-medium">{fortniteStats ? '1' : '0'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Total Sessions:</span>
-                      <span className="text-white font-medium">{fortniteStats ? '1' : '0'}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Usage Tracking Section */}
-          {usageInfo && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">📊 Monthly Usage</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Osirion API Usage */}
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-lg font-semibold text-white mb-3">Osirion API Pulls</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Used This Month:</span>
-                      <span className="text-white font-medium">{usageInfo.osirionPulls}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Remaining:</span>
-                      <span className="text-white font-medium">{usageInfo.osirionPullsRemaining}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Monthly Limit:</span>
-                      <span className="text-white font-medium">{usageInfo.monthlyLimit}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Last Pull:</span>
-                      <span className="text-white font-medium">
-                        {usageInfo.lastPull ? new Date(usageInfo.lastPull).toLocaleDateString() : 'Never'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Progress Bar */}
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs text-gray-400 mb-1">
-                      <span>Progress</span>
-                      <span>{usageInfo.osirionPulls}/{usageInfo.monthlyLimit}</span>
-                    </div>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          usageInfo.osirionPulls >= usageInfo.monthlyLimit 
-                            ? 'bg-red-500' 
-                            : usageInfo.osirionPulls >= usageInfo.monthlyLimit * 0.8 
-                            ? 'bg-yellow-500' 
-                            : 'bg-green-500'
-                        }`}
-                        style={{ width: `${Math.min((usageInfo.osirionPulls / usageInfo.monthlyLimit) * 100, 100)}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Usage Info */}
-                <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-lg font-semibold text-white mb-3">Usage Information</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Current Month:</span>
-                      <span className="text-white font-medium">{usageInfo.currentMonth}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Last Reset:</span>
-                      <span className="text-white font-medium">
-                        {usageInfo.lastReset ? new Date(usageInfo.lastReset).toLocaleDateString() : 'Never'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Resets Next Month:</span>
-                      <span className="text-white font-medium">Yes</span>
-                    </div>
-                  </div>
-                  
-
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* User Profile Section */}
+                     {/* User Profile Section */}
            {userProfile && (
              <div className="glass-card p-6">
                <h3 className="text-xl font-semibold text-white mb-4">👤 User Profile</h3>
@@ -1265,7 +685,173 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
             )}
           </div>
 
+          {/* Fortnite Tools Section */}
+          <div className="glass-card p-6">
+            <h3 className="text-xl font-semibold text-white mb-4">🎮 Fortnite Tools</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link href="/shop" className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors duration-200">
+                <div className="text-2xl mb-2">🛍️</div>
+                <div className="font-semibold">Shop</div>
+                <div className="text-sm opacity-80">Current Fortnite shop items</div>
+              </Link>
+              
+              <Link href="/news" className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center transition-colors duration-200">
+                <div className="text-2xl mb-2">📰</div>
+                <div className="font-semibold">News</div>
+                <div className="text-sm opacity-80">Latest Fortnite updates</div>
+              </Link>
+              
+              
+              
+              <Link href="/cosmetics" className="bg-pink-600 hover:bg-pink-700 text-white p-4 rounded-lg text-center transition-colors duration-200">
+                <div className="text-2xl mb-2">🎨</div>
+                <div className="font-semibold">Cosmetics</div>
+                <div className="text-sm opacity-80">All available items</div>
+              </Link>
+            </div>
+          </div>
 
+          {/* Fortnite Stats Section */}
+          {epicAccount && (
+            <div className="glass-card p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">📊 Fortnite Performance Stats</h3>
+              {fortniteStats ? (
+                <div className="space-y-6">
+                  {/* Overall Stats */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-white mb-3">Overall Performance</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-blue-400">{fortniteStats.overall?.kd?.toFixed(2) || 'N/A'}</div>
+                        <div className="text-xs text-blue-300">K/D Ratio</div>
+                      </div>
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-green-400">{fortniteStats.overall?.winRate?.toFixed(1) || 'N/A'}%</div>
+                        <div className="text-xs text-green-300">Win Rate</div>
+                      </div>
+                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-purple-400">{fortniteStats.overall?.matches || 'N/A'}</div>
+                        <div className="text-xs text-purple-300">Matches</div>
+                      </div>
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-orange-400">{fortniteStats.overall?.avgPlace?.toFixed(1) || 'N/A'}</div>
+                        <div className="text-xs text-orange-300">Avg Placement</div>
+                      </div>
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-red-400">{fortniteStats.overall?.kills || 'N/A'}</div>
+                        <div className="text-xs text-red-300">Total Kills</div>
+                      </div>
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
+                        <div className="text-xl font-bold text-yellow-400">{fortniteStats.overall?.top1 || 'N/A'}</div>
+                        <div className="text-xs text-yellow-300">Victories</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mode-specific Stats */}
+                  {(fortniteStats.solo || fortniteStats.duo || fortniteStats.squad) && (
+                    <div>
+                      <h4 className="text-lg font-semibold text-white mb-3">Mode Breakdown</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {fortniteStats.solo && (
+                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                            <h5 className="text-md font-semibold text-blue-300 mb-2">Solo</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-white/60">K/D:</span>
+                                <span className="text-white">{fortniteStats.solo.kd?.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/60">Win Rate:</span>
+                                <span className="text-white">{fortniteStats.solo.winRate?.toFixed(1)}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/60">Matches:</span>
+                                <span className="text-white">{fortniteStats.solo.matches}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {fortniteStats.duo && (
+                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                            <h5 className="text-md font-semibold text-green-300 mb-2">Duo</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-white/60">K/D:</span>
+                                <span className="text-white">{fortniteStats.duo.kd?.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/60">Win Rate:</span>
+                                <span className="text-white">{fortniteStats.duo.winRate?.toFixed(1)}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/60">Matches:</span>
+                                <span className="text-white">{fortniteStats.duo.matches}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {fortniteStats.squad && (
+                          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                            <h5 className="text-md font-semibold text-purple-300 mb-2">Squad</h5>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-white/60">K/D:</span>
+                                <span className="text-white">{fortniteStats.squad.kd?.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/60">Win Rate:</span>
+                                <span className="text-white">{fortniteStats.squad.winRate?.toFixed(1)}%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-white/60">Matches:</span>
+                                <span className="text-white">{fortniteStats.squad.matches}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Stats */}
+                  <div>
+                    <h4 className="text-lg font-semibold text-white mb-3">Additional Metrics</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-indigo-400">{fortniteStats.overall?.damageDealt?.toLocaleString() || 'N/A'}</div>
+                        <div className="text-xs text-indigo-300">Damage Dealt</div>
+                      </div>
+                      <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-pink-400">{fortniteStats.overall?.structuresBuilt?.toLocaleString() || 'N/A'}</div>
+                        <div className="text-xs text-pink-300">Structures Built</div>
+                      </div>
+                      <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-teal-400">{fortniteStats.overall?.materialsGathered?.toLocaleString() || 'N/A'}</div>
+                        <div className="text-xs text-teal-300">Materials</div>
+                  </div>
+                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
+                        <div className="text-lg font-bold text-amber-400">{fortniteStats.overall?.distanceTraveled?.toFixed(0) || 'N/A'}</div>
+                        <div className="text-xs text-amber-300">Distance (m)</div>
+                  </div>
+                  </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-white/60 mb-4">Loading your comprehensive Fortnite stats...</p>
+                  <button
+                    onClick={refreshStats}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    Refresh Stats
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Replay Upload Section */}
           {epicAccount && (
@@ -1333,45 +919,53 @@ Average Survival Time: ${Math.round(fortniteStats.rawOsirionData.matches.reduce(
              </div>
            </div>
         </div>
-      </div>
 
-      {/* Payment Gate Overlay */}
-      {(!hasActiveSubscription && !isLoading) && (
-        <div className="absolute inset-0 bg-dark-charcoal/90 backdrop-blur-md flex items-center justify-center z-30">
-          <div className="text-center p-8 rounded-xl bg-dark-charcoal border border-white/10 shadow-lg max-w-md mx-auto">
-            <div className="text-6xl mb-4 flex justify-center">
-              <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0 1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10z"/>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-4">Premium Features</h2>
-            <p className="text-secondary-text mb-6">
-              Unlock the full potential of PathGen AI with our premium subscription. Get unlimited AI coaching, advanced analytics, and personalized strategies.
-            </p>
-            <div className="space-y-3">
-              <Link href="/pricing" className="w-full btn-primary py-3 block">
-                Subscribe Now - $6.99/month
-              </Link>
-
-              <button
-                onClick={() => router.push('/')}
-                className="w-full btn-secondary py-3"
-              >
-                Back to Home
-              </button>
+        {/* Payment Gate Overlay */}
+        {(!hasActiveSubscription && !isLoading) && (
+          <div className="absolute inset-0 bg-dark-charcoal/90 backdrop-blur-md flex items-center justify-center z-30">
+            <div className="text-center p-8 rounded-xl bg-dark-charcoal border border-white/10 shadow-lg max-w-md mx-auto">
+              <div className="text-6xl mb-4 flex justify-center">
+                <svg className="w-24 h-24 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0 1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10z"/>
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-4">Premium Features</h2>
+              <p className="text-secondary-text mb-6">
+                Unlock the full potential of PathGen AI with our premium subscription. Get unlimited AI coaching, advanced analytics, and personalized strategies.
+              </p>
+              <div className="space-y-3">
+                <Link href="/pricing" className="w-full btn-primary py-3 block">
+                  Subscribe Now - $3.99/month
+                </Link>
+                <button
+                  onClick={checkSubscription}
+                  className="w-full bg-white text-dark-charcoal hover:bg-gray-100 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+                  </svg>
+                  Refresh Subscription Status
+                </button>
+                <button
+                  onClick={() => router.push('/')}
+                  className="w-full btn-secondary py-3"
+                >
+                  Back to Home
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+                 )}
+       </div>
 
-      {/* Onboarding Modal */}
-      <OnboardingModal
-        isOpen={showOnboarding}
-        onComplete={handleOnboardingComplete}
-        userId={user?.uid || ''}
-        userEmail={user?.email || ''}
-        userDisplayName={user?.displayName || ''}
-      />
-    </div>
-  );
-}
+       {/* Onboarding Modal */}
+       <OnboardingModal
+         isOpen={showOnboarding}
+         onComplete={handleOnboardingComplete}
+         userId={user?.uid || ''}
+         userEmail={user?.email || ''}
+         userDisplayName={user?.displayName || ''}
+       />
+     </div>
+   );
+ }

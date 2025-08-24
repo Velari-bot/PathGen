@@ -77,12 +77,12 @@ export default function Navbar() {
                                                    <Link href="/map" className="text-secondary-text hover:text-white transition-colors duration-300">
                    POI Analysis
                   </Link>
-                          <Link href="/tournaments" className="text-secondary-text hover:text-white transition-colors duration-300">
-          Tournaments
-        </Link>
-        <Link href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
-          Settings
-        </Link>
+                  <Link href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
+                    Tournament
+                  </Link>
+                <Link href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
+                  Settings
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="btn-secondary"
@@ -137,12 +137,12 @@ export default function Navbar() {
                                        <Link href="/poi-analysis" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
                       POI Analysis
                     </Link>
-                            <Link href="/tournaments" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
-          Tournaments
-        </Link>
-        <Link href="/settings" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
-          Settings
-        </Link>
+                    <Link href="/tournament-strategy" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                      Tournament
+                    </Link>
+                  <Link href="/settings" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                    Settings
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300"

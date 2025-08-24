@@ -1025,6 +1025,14 @@ export const tipsAndTricks = `
 - **Key vs Stacked:** Choose key game, avoid busy areas, get free placement points
 - **Starting Late:** No advantage/disadvantage, but avoid if placement points are crucial
 
+## 🏆 Reload Icon Cup Strategy Tips 🏆
+- **Points fluctuate** during tournaments - monitor live updates
+- **Queue bugs** can lower point thresholds by 10-15 points
+- **Aim higher** than current threshold for safety (e.g., if 142 needed, aim for 146+)
+- **Queue timing** is critical - 1-2 minutes for safe queue, re-queue if waiting too long
+- **No region lock** means higher competition - expect point inflation
+- **10 games max** - use them wisely, don't waste games on queue bugs
+
 ## 🐛 **CRITICAL QUEUE BUG TIPS** 🐛
 - **Div 1:** Re-queue if queue exceeds 6 minutes
 - **Div 2:** Re-queue if queue exceeds 2 minutes (most sensitive division)
@@ -1277,6 +1285,55 @@ export const advancedMechanics = `
 // Tournament Information - Current tournament details and strategies
 export const tournamentInfo = `
 # 🏆 Current Tournament Information & Strategy
+
+## 🏆 BUGHA RELOAD ICON CUP & CLIX RELOAD ICON CUP 🏆
+
+### 📊 Tournament Format & Rules
+- **Format:** Points-based matchmaking (ELO)
+- **Region Lock:** No region lock
+- **Games:** 10 games maximum
+- **Matchmaking:** ELO system for balanced lobbies
+
+### 🎯 BUGHA RELOAD ICON CUP - NA Results
+**Top 650 Qualification Thresholds:**
+- **8/22/2025 8:05 PM:** 142 points
+- **8/22/2025 8:37 PM:** 142 points  
+- **8/22/2025 9:18 PM:** 141 points
+- **8/22/2025 12:12 PM:** 142 points (139+ for any chance, 146+ to be fully safe)
+- **8/22/2025 4:11 PM:** 141 points (Top 1000)
+- **8/22/2025 4:36 PM:** 125-130 points (queue problems lowered points by 10-15)
+- **8/22/2025 5:22 PM:** 136 points (heading for 133, but extra games from queue issues)
+
+**Queue Strategy:** 1-2 minutes for safe queue time if no queue bugs
+
+### 🎯 CLIX RELOAD ICON CUP - EU Results
+**Top 1000 Qualification Thresholds:**
+- **8/22/2025 1:59 PM:** 137 points
+- **8/22/2025 2:51 PM:** 145 points (more players, higher points)
+- **8/22/2025 3:02 PM:** 155 points (matchmaking more relaxed, aiming for 160+)
+- **8/22/2025 3:27 PM:** 147 points (not going crazy anymore)
+- **8/23/2025 8:44 AM:** 147 points (heading for under 150)
+- **8/23/2025 10:04 AM:** 146 points
+- **8/23/2025 10:33 AM:** 142 points (no change)
+- **8/23/2025 11:15 AM:** 142 points (139+ for any chance, 145 to be safe)
+
+**Queue Strategy:** 1-2 minutes for safe queue time, 5 minutes if queue bugs occur
+
+### 🚨 Critical Queue Bug Information
+**The Infinite Queue Bug:**
+- Affects all tournaments including Reload Icon Cups
+- No visual warning - you won't know until it's too late
+- **Solution:** Re-queue if waiting too long (unready and ready again)
+- **Time Limits:** 2-6 minutes depending on tournament type
+
+### 💡 Strategic Insights
+- **Points fluctuate** based on player count and matchmaking
+- **Queue problems** can significantly impact point thresholds
+- **Aim higher** than the current threshold for safety
+- **Monitor live updates** during tournaments for real-time data
+- **Queue timing** is critical - avoid queue bugs
+
+---
 
 ## 🏆 EU FNCS DIVISIONAL CUPS - WEEK 2 🏆
 

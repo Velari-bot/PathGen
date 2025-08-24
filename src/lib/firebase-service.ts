@@ -11,224 +11,12 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
-  Timestamp,
-  addDoc,
-  increment
+  Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Type assertion for db - we know it will be available at runtime
 const firestoreDb = db!;
-
-// New interfaces for the enhanced database structure
-export interface Chat {
-  id: string;
-  userId: string;
-  title: string;
-  createdAt: Date;
-  updatedAt: Date;
-  messageCount: number;
-  
-  // Chat metadata
-  type: 'coaching' | 'analysis' | 'strategy' | 'general' | 'tournament';
-  status: 'active' | 'archived' | 'deleted';
-  tags: string[];
-  
-  // Linked Fortnite data
-  linkedFortniteData?: {
-    epicId?: string;
-    epicName?: string;
-    stats?: Partial<FortniteStats>;
-    lastSync?: Date;
-  };
-  
-  // AI coaching specific
-  coachingSession?: {
-    focusArea: 'building' | 'aim' | 'positioning' | 'gameSense' | 'mechanics' | 'general';
-    skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
-    goals: string[];
-    progress: number;
-    nextSteps: string[];
-  };
-  
-  // Performance tracking
-  performance?: {
-    beforeStats?: Partial<FortniteStats>;
-    afterStats?: Partial<FortniteStats>;
-    improvementAreas: string[];
-    goalsMet: string[];
-    goalsMissed: string[];
-  };
-}
-
-export interface ChatMessage {
-  id: string;
-  chatId: string;
-  userId: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  
-  // Message metadata
-  type: 'text' | 'image' | 'file' | 'stats' | 'analysis';
-  
-  // AI-specific fields
-  aiResponse?: {
-    model: string;
-    confidence: number;
-    suggestions: string[];
-    relatedTopics: string[];
-    followUpQuestions: string[];
-    tokensUsed: number;
-  };
-  
-  // User message metadata
-  userMessage?: {
-    intent: string;
-    sentiment: 'positive' | 'negative' | 'neutral';
-    containsStats: boolean;
-    containsReplay: boolean;
-    questionType?: 'how-to' | 'why' | 'what-if' | 'comparison' | 'general';
-  };
-  
-  // Attachments
-  attachments?: {
-    type: 'image' | 'file' | 'stats' | 'replay';
-    url?: string;
-    filename?: string;
-    size?: number;
-    metadata?: any;
-  }[];
-  
-  // Context
-  context?: {
-    previousMessages: string[];
-    currentTopic: string;
-    userStats?: Partial<FortniteStats>;
-    sessionGoals?: string[];
-  };
-}
-
-export interface UsageLog {
-  id: string;
-  userId: string;
-  timestamp: Date;
-  requestType: 'chat' | 'data_pull' | 'stats_analysis' | 'replay_upload' | 'tournament_strategy';
-  tokensUsed: number;
-  cost: number;
-  
-  // Request details
-  details: {
-    endpoint?: string;
-    duration?: number;
-    success: boolean;
-    errorMessage?: string;
-    metadata?: any;
-  };
-  
-  // Subscription context
-  subscriptionTier: 'free' | 'standard' | 'pro';
-  remainingTokens: number;
-}
-
-export interface Subscription {
-  id: string;
-  userId: string;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
-  plan: 'free' | 'standard' | 'pro';
-  status: 'active' | 'canceled' | 'paused' | 'past_due' | 'unpaid';
-  
-  // Billing details
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  cancelAtPeriodEnd: boolean;
-  canceledAt?: Date;
-  
-  // Plan limits
-  limits: {
-    monthlyMessages: number;
-    monthlyTokens: number;
-    monthlyDataPulls: number;
-    replayUploads: number;
-    tournamentStrategies: number;
-    prioritySupport: boolean;
-    advancedAnalytics: boolean;
-  };
-  
-  // Usage tracking
-  usage: {
-    messagesUsed: number;
-    tokensUsed: number;
-    dataPullsUsed: number;
-    replayUploadsUsed: number;
-    tournamentStrategiesUsed: number;
-    resetDate: Date;
-  };
-  
-  // Metadata
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface FortniteData {
-  id: string;
-  userId: string;
-  epicId: string;
-  epicName: string;
-  syncedAt: Date;
-  
-  // Raw data from APIs for comprehensive analysis
-  rawOsirionData?: any; // Complete Osirion API response
-  rawEpicData?: any; // Complete Epic API response
-  
-  // Stats
-  stats: {
-    wins: number;
-    kd: number;
-    placement: number;
-    earnings: number;
-    matches: number;
-    top1: number;
-    top3: number;
-    top5: number;
-    top10: number;
-    top25: number;
-    kills: number;
-    deaths: number;
-    assists: number;
-    damageDealt: number;
-    damageTaken: number;
-    timeAlive: number;
-    distanceTraveled: number;
-    materialsGathered: number;
-    structuresBuilt: number;
-  };
-  
-  // Mode-specific data
-  modes: {
-    solo?: Partial<FortniteStats['solo']>;
-    duo?: Partial<FortniteStats['duo']>;
-    squad?: Partial<FortniteStats['squad']>;
-    arena?: Partial<FortniteStats['arena']>;
-  };
-  
-  // Tournament data
-  tournaments?: {
-    totalTournaments: number;
-    bestPlacement: number;
-    totalWinnings: number;
-    averagePlacement: number;
-    tournamentsWon: number;
-    top3Finishes: number;
-    top10Finishes: number;
-  };
-  
-  // Data source
-  dataSource: 'osirion' | 'epic' | 'manual';
-  dataQuality: 'high' | 'medium' | 'low';
-  notes?: string;
-}
 
 export interface EpicAccount {
   id: string;
@@ -646,8 +434,8 @@ export class FirebaseService {
       const docRef = doc(firestoreDb, 'epicAccounts', epicAccount.id);
       await setDoc(docRef, {
         ...epicAccount,
-        linkedAt: new Date(),
-        updatedAt: new Date()
+        linkedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       console.log('✅ Epic account saved to Firebase');
     } catch (error) {
@@ -692,8 +480,8 @@ export class FirebaseService {
       const docRef = doc(firestoreDb, 'fortniteStats', stats.id);
       await setDoc(docRef, {
         ...stats,
-        lastUpdated: new Date(),
-        updatedAt: new Date()
+        lastUpdated: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       console.log('✅ Fortnite stats saved to Firebase');
     } catch (error) {
@@ -745,9 +533,9 @@ export class FirebaseService {
       const docRef = doc(firestoreDb, 'users', profile.id);
       await setDoc(docRef, {
         ...profile,
-        createdAt: profile.createdAt || new Date(),
-        lastLogin: new Date(),
-        updatedAt: new Date()
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       console.log('✅ User profile saved to Firebase');
     } catch (error) {
@@ -771,12 +559,12 @@ export class FirebaseService {
           lastLogin: data.lastLogin?.toDate() || new Date(),
           profile: data.profile || {
             language: 'en',
-            avatar: null,
-            bio: null,
-            location: null,
-            timezone: null,
-            dateOfBirth: null,
-            gender: null
+            avatar: undefined,
+            bio: undefined,
+            location: undefined,
+            timezone: undefined,
+            dateOfBirth: undefined,
+            gender: undefined
           },
           gaming: data.gaming || {
             favoriteGame: 'Fortnite',
@@ -790,11 +578,11 @@ export class FirebaseService {
             status: data.subscriptionStatus || 'free',
             tier: data.subscriptionTier || 'free',
             startDate: data.createdAt?.toDate() || new Date(),
-            endDate: null,
+            endDate: undefined,
             autoRenew: false,
-            paymentMethod: null,
-            stripeCustomerId: data.stripeCustomerId || null,
-            stripeSubscriptionId: null
+            paymentMethod: undefined,
+            stripeCustomerId: data.stripeCustomerId || undefined,
+            stripeSubscriptionId: undefined
           },
           settings: data.settings || {
             notifications: {
@@ -841,34 +629,34 @@ export class FirebaseService {
       const usageRef = doc(firestoreDb, 'usage', userId);
       await setDoc(usageRef, {
         userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         
         // AI usage tracking
         ai: {
           conversationsCreated: 0,
           messagesUsed: 0,
-          lastReset: new Date()
+          lastReset: serverTimestamp()
         },
         
         // Epic account usage
         epic: {
-          lastSync: new Date(),
+          lastSync: serverTimestamp(),
           statsPulled: 0,
           syncCount: 0,
-          lastActivity: new Date()
+          lastActivity: serverTimestamp()
         },
         
         // Osirion API usage
         osirion: {
           computeRequestsUsed: 0,
           eventTypesUsed: 0,
-          lastReset: new Date(),
+          lastReset: serverTimestamp(),
           matchesUsed: 0,
           replayUploadsUsed: 0,
           subscriptionTier: 'free',
           totalSessions: 0,
-          updatedAt: new Date()
+          updatedAt: serverTimestamp()
         }
       });
       
@@ -885,8 +673,8 @@ export class FirebaseService {
       const docRef = doc(firestoreDb, 'replayUploads', upload.id);
       await setDoc(docRef, {
         ...upload,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       console.log('✅ Replay upload saved to Firebase');
     } catch (error) {
@@ -919,17 +707,15 @@ export class FirebaseService {
   }
 
   // Conversation Management
-  static async saveConversation(conversation: Omit<Conversation, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  static async saveConversation(conversation: Conversation): Promise<void> {
     try {
-      const conversationData = {
+      const docRef = doc(firestoreDb, 'conversations', conversation.id);
+      await setDoc(docRef, {
         ...conversation,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      const docRef = await addDoc(collection(firestoreDb, 'conversations'), conversationData);
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
       console.log('✅ Conversation saved to Firebase');
-      return docRef.id;
     } catch (error) {
       console.error('❌ Error saving conversation to Firebase:', error);
       throw error;
@@ -959,32 +745,16 @@ export class FirebaseService {
     }
   }
 
-  static async updateConversation(conversationId: string, updates: Partial<Conversation>): Promise<void> {
+  static async saveMessage(conversationId: string, message: Message): Promise<void> {
     try {
-      const docRef = doc(firestoreDb, 'conversations', conversationId);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: new Date()
-      });
-      console.log('✅ Conversation updated in Firebase');
-    } catch (error) {
-      console.error('❌ Error updating conversation in Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async addConversationMessage(conversationId: string, message: Omit<Message, 'id' | 'timestamp'>): Promise<string> {
-    try {
-      const messageData = {
+      const docRef = doc(firestoreDb, 'conversations', conversationId, 'messages', message.id);
+      await setDoc(docRef, {
         ...message,
-        timestamp: new Date()
-      };
-      
-      const docRef = await addDoc(collection(firestoreDb, 'conversations', conversationId, 'messages'), messageData);
-      console.log('✅ Message added to Firebase');
-      return docRef.id;
+        timestamp: serverTimestamp()
+      });
+      console.log('✅ Message saved to Firebase');
     } catch (error) {
-      console.error('❌ Error adding message to Firebase:', error);
+      console.error('❌ Error saving message to Firebase:', error);
       throw error;
     }
   }
@@ -1020,7 +790,7 @@ export class FirebaseService {
       const docRef = doc(firestoreDb, 'conversations', conversationId);
       await updateDoc(docRef, {
         title,
-        updatedAt: new Date()
+        updatedAt: serverTimestamp()
       });
       console.log('✅ Conversation title updated in Firebase');
     } catch (error) {
@@ -1091,525 +861,5 @@ export class FirebaseService {
     });
     
     return comparison;
-  }
-
-  // Chat Management
-  static async createChat(chat: Omit<Chat, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    try {
-      const chatData = {
-        ...chat,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      const docRef = await addDoc(collection(firestoreDb, 'chats'), chatData);
-      console.log('✅ Chat created in Firebase with ID:', docRef.id);
-      return docRef.id;
-    } catch (error) {
-      console.error('❌ Error creating chat in Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getChats(userId: string): Promise<Chat[]> {
-    try {
-      const q = query(
-        collection(firestoreDb, 'chats'),
-        where('userId', '==', userId),
-        orderBy('updatedAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
-        } as Chat;
-      });
-    } catch (error) {
-      console.error('❌ Error getting chats from Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getChat(chatId: string): Promise<Chat | null> {
-    try {
-      const docRef = doc(firestoreDb, 'chats', chatId);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
-        } as Chat;
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting chat from Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async updateChat(chatId: string, updates: Partial<Chat>): Promise<void> {
-    try {
-      const docRef = doc(firestoreDb, 'chats', chatId);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: new Date()
-      });
-      console.log('✅ Chat updated in Firebase');
-    } catch (error) {
-      console.error('❌ Error updating chat in Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async deleteChat(chatId: string): Promise<void> {
-    try {
-      const docRef = doc(firestoreDb, 'chats', chatId);
-      await deleteDoc(docRef);
-      console.log('✅ Chat deleted from Firebase');
-    } catch (error) {
-      console.error('❌ Error deleting chat from Firebase:', error);
-      throw error;
-    }
-  }
-
-  // Chat Message Management
-  static async addMessage(chatId: string, message: Omit<ChatMessage, 'id' | 'timestamp'>): Promise<string> {
-    try {
-      const messageData = {
-        ...message,
-        timestamp: new Date()
-      };
-      
-      const docRef = await addDoc(collection(firestoreDb, 'chats', chatId, 'messages'), messageData);
-      
-      // Update chat message count
-      await this.updateChat(chatId, { messageCount: 1 });
-      
-      console.log('✅ Message added to chat in Firebase');
-      return docRef.id;
-    } catch (error) {
-      console.error('❌ Error adding message to chat in Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getChatMessages(chatId: string): Promise<ChatMessage[]> {
-    try {
-      const q = query(
-        collection(firestoreDb, 'chats', chatId, 'messages'),
-        orderBy('timestamp', 'asc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: data.timestamp?.toDate() || new Date()
-        } as ChatMessage;
-      });
-    } catch (error) {
-      console.error('❌ Error getting chat messages from Firebase:', error);
-      throw error;
-    }
-  }
-
-  // Usage Log Management
-  static async logUsage(usageLog: Omit<UsageLog, 'id' | 'timestamp'>): Promise<string> {
-    try {
-      const logData = {
-        ...usageLog,
-        timestamp: new Date()
-      };
-      
-      const docRef = await addDoc(collection(firestoreDb, 'usageLogs'), logData);
-      console.log('✅ Usage logged to Firebase');
-      return docRef.id;
-    } catch (error) {
-      console.error('❌ Error logging usage to Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getUserUsageLogs(userId: string, limitCount: number = 100): Promise<UsageLog[]> {
-    try {
-      const q = query(
-        collection(firestoreDb, 'usageLogs'),
-        where('userId', '==', userId),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          timestamp: data.timestamp?.toDate() || new Date()
-        } as UsageLog;
-      });
-    } catch (error) {
-      console.error('❌ Error getting user usage logs from Firebase:', error);
-      throw error;
-    }
-  }
-
-  // Subscription Management
-  static async createSubscription(subscription: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
-    try {
-      const subscriptionData = {
-        ...subscription,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      const docRef = await addDoc(collection(firestoreDb, 'subscriptions'), subscriptionData);
-      console.log('✅ Subscription created in Firebase');
-      return docRef.id;
-    } catch (error) {
-      console.error('❌ Error creating subscription in Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getSubscription(userId: string): Promise<Subscription | null> {
-    try {
-      const q = query(
-        collection(firestoreDb, 'subscriptions'),
-        where('userId', '==', userId),
-        limit(1)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          currentPeriodStart: data.currentPeriodStart?.toDate() || new Date(),
-          currentPeriodEnd: data.currentPeriodEnd?.toDate() || new Date(),
-          canceledAt: data.canceledAt?.toDate(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          usage: {
-            ...data.usage,
-            resetDate: data.usage?.resetDate?.toDate() || new Date()
-          }
-        } as Subscription;
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting subscription from Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async updateSubscription(subscriptionId: string, updates: Partial<Subscription>): Promise<void> {
-    try {
-      const docRef = doc(firestoreDb, 'subscriptions', subscriptionId);
-      await updateDoc(docRef, {
-        ...updates,
-        updatedAt: new Date()
-      });
-      console.log('✅ Subscription updated in Firebase');
-    } catch (error) {
-      console.error('❌ Error updating subscription in Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async updateSubscriptionUsage(subscriptionId: string, usageUpdates: Partial<Subscription['usage']>): Promise<void> {
-    try {
-      const docRef = doc(firestoreDb, 'subscriptions', subscriptionId);
-      const updates: any = { updatedAt: new Date() };
-      
-      // Update usage fields with increment
-      if (usageUpdates.messagesUsed !== undefined) {
-        updates['usage.messagesUsed'] = increment(1);
-      }
-      if (usageUpdates.tokensUsed !== undefined) {
-        const tokensToAdd = typeof usageUpdates.tokensUsed === 'number' ? usageUpdates.tokensUsed : 0;
-        updates['usage.tokensUsed'] = increment(tokensToAdd);
-      }
-      if (usageUpdates.dataPullsUsed !== undefined) {
-        updates['usage.dataPullsUsed'] = increment(1);
-      }
-      if (usageUpdates.replayUploadsUsed !== undefined) {
-        updates['usage.replayUploadsUsed'] = increment(1);
-      }
-      if (usageUpdates.tournamentStrategiesUsed !== undefined) {
-        updates['usage.tournamentStrategiesUsed'] = increment(1);
-      }
-      
-      await updateDoc(docRef, updates);
-      console.log('✅ Subscription usage updated in Firebase');
-    } catch (error) {
-      console.error('❌ Error updating subscription usage in Firebase:', error);
-      throw error;
-    }
-  }
-
-  // Fortnite Data Management
-  static async saveFortniteData(fortniteData: Omit<FortniteData, 'id' | 'syncedAt'>): Promise<string> {
-    try {
-      const data = {
-        ...fortniteData,
-        syncedAt: new Date()
-      };
-      
-      const docRef = await addDoc(collection(firestoreDb, 'fortniteData'), data);
-      console.log('✅ Fortnite data saved to Firebase');
-      return docRef.id;
-    } catch (error) {
-      console.error('❌ Error saving Fortnite data to Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getFortniteData(userId: string): Promise<FortniteData | null> {
-    try {
-      const q = query(
-        collection(firestoreDb, 'fortniteData'),
-        where('userId', '==', userId),
-        orderBy('syncedAt', 'desc'),
-        limit(1)
-      );
-      
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          syncedAt: data.syncedAt?.toDate() || new Date()
-        } as FortniteData;
-      }
-      return null;
-    } catch (error) {
-      console.error('❌ Error getting Fortnite data from Firebase:', error);
-      throw error;
-    }
-  }
-
-  // Subscription Plan Management
-  static getSubscriptionPlanLimits(plan: 'free' | 'standard' | 'pro') {
-    const plans = {
-      free: {
-        monthlyMessages: 10,
-        monthlyTokens: 1000,
-        monthlyDataPulls: 5,
-        replayUploads: 0,
-        tournamentStrategies: 0,
-        prioritySupport: false,
-        advancedAnalytics: false
-      },
-      standard: {
-        monthlyMessages: 100,
-        monthlyTokens: 10000,
-        monthlyDataPulls: 50,
-        replayUploads: 5,
-        tournamentStrategies: 10,
-        prioritySupport: false,
-        advancedAnalytics: true
-      },
-      pro: {
-        monthlyMessages: 1000,
-        monthlyTokens: 100000,
-        monthlyDataPulls: 500,
-        replayUploads: 50,
-        tournamentStrategies: 100,
-        prioritySupport: true,
-        advancedAnalytics: true
-      }
-    };
-    
-    return plans[plan];
-  }
-
-  // Usage Tracking and Limits
-  static async checkUserLimits(userId: string, requestType: UsageLog['requestType']): Promise<{
-    allowed: boolean;
-    remaining: number;
-    limit: number;
-    subscription: Subscription | null;
-  }> {
-    try {
-      const subscription = await this.getSubscription(userId);
-      const plan = subscription?.plan || 'free';
-      const limits = this.getSubscriptionPlanLimits(plan);
-      
-      if (!subscription) {
-        // Create default free subscription
-        const defaultSubscription = await this.createSubscription({
-          userId,
-          plan: 'free',
-          status: 'active',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-          cancelAtPeriodEnd: false,
-          limits,
-          usage: {
-            messagesUsed: 0,
-            tokensUsed: 0,
-            dataPullsUsed: 0,
-            replayUploadsUsed: 0,
-            tournamentStrategiesUsed: 0,
-            resetDate: new Date()
-          }
-        });
-        
-        return {
-          allowed: true,
-          remaining: limits.monthlyMessages,
-          limit: limits.monthlyMessages,
-          subscription: await this.getSubscription(userId)
-        };
-      }
-      
-      // Check if we need to reset monthly usage
-      const now = new Date();
-      const lastReset = subscription.usage.resetDate;
-      const daysSinceReset = Math.floor((now.getTime() - lastReset.getTime()) / (1000 * 60 * 60 * 24));
-      
-      if (daysSinceReset >= 30) {
-        // Reset monthly usage
-        await this.updateSubscription(subscription.id, {
-          usage: {
-            messagesUsed: 0,
-            tokensUsed: 0,
-            dataPullsUsed: 0,
-            replayUploadsUsed: 0,
-            tournamentStrategiesUsed: 0,
-            resetDate: now
-          }
-        });
-        subscription.usage = {
-          messagesUsed: 0,
-          tokensUsed: 0,
-          dataPullsUsed: 0,
-          replayUploadsUsed: 0,
-          tournamentStrategiesUsed: 0,
-          resetDate: now
-        };
-      }
-      
-      // Check limits based on request type
-      let currentUsage = 0;
-      let limit = 0;
-      
-      switch (requestType) {
-        case 'chat':
-          currentUsage = subscription.usage.messagesUsed;
-          limit = subscription.limits.monthlyMessages;
-          break;
-        case 'data_pull':
-          currentUsage = subscription.usage.dataPullsUsed;
-          limit = subscription.limits.monthlyDataPulls;
-          break;
-        case 'replay_upload':
-          currentUsage = subscription.usage.replayUploadsUsed;
-          limit = subscription.limits.replayUploads;
-          break;
-        case 'tournament_strategy':
-          currentUsage = subscription.usage.tournamentStrategiesUsed;
-          limit = subscription.limits.tournamentStrategies;
-          break;
-        default:
-          currentUsage = 0;
-          limit = 0;
-      }
-      
-      const remaining = Math.max(0, limit - currentUsage);
-      const allowed = currentUsage < limit;
-      
-      return {
-        allowed,
-        remaining,
-        limit,
-        subscription
-      };
-    } catch (error) {
-      console.error('❌ Error checking user limits:', error);
-      throw error;
-    }
-  }
-
-  // Analytics and Reporting
-  static async getUserAnalytics(userId: string, days: number = 30): Promise<{
-    totalRequests: number;
-    totalTokens: number;
-    totalCost: number;
-    requestsByType: Record<string, number>;
-    dailyUsage: Array<{ date: string; requests: number; tokens: number }>;
-  }> {
-    try {
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-      
-      const q = query(
-        collection(firestoreDb, 'usageLogs'),
-        where('userId', '==', userId),
-        where('timestamp', '>=', startDate),
-        orderBy('timestamp', 'asc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const logs = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          timestamp: data.timestamp?.toDate() || new Date()
-        } as UsageLog;
-      });
-      
-      // Calculate totals
-      const totalRequests = logs.length;
-      const totalTokens = logs.reduce((sum, log) => sum + log.tokensUsed, 0);
-      const totalCost = logs.reduce((sum, log) => sum + log.cost, 0);
-      
-      // Group by request type
-      const requestsByType = logs.reduce((acc, log) => {
-        acc[log.requestType] = (acc[log.requestType] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      // Group by day
-      const dailyUsage = logs.reduce((acc, log) => {
-        const date = log.timestamp.toISOString().split('T')[0];
-        const existing = acc.find(d => d.date === date);
-        
-        if (existing) {
-          existing.requests += 1;
-          existing.tokens += log.tokensUsed;
-        } else {
-          acc.push({ date, requests: 1, tokens: log.tokensUsed });
-        }
-        
-        return acc;
-      }, [] as Array<{ date: string; requests: number; tokens: number }>);
-      
-      return {
-        totalRequests,
-        totalTokens,
-        totalCost,
-        requestsByType,
-        dailyUsage
-      };
-    } catch (error) {
-      console.error('❌ Error getting user analytics:', error);
-      throw error;
-    }
   }
 }

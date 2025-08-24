@@ -52,15 +52,15 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (type !== 'all') {
-      transformedCosmetics = transformedCosmetics.filter((item: any) => item.type === type);
+      transformedCosmetics = transformedCosmetics.filter(item => item.type === type);
     }
     
     if (rarity !== 'all') {
-      transformedCosmetics = transformedCosmetics.filter((item: any) => item.rarity === rarity);
+      transformedCosmetics = transformedCosmetics.filter(item => item.rarity === rarity);
     }
     
     if (search) {
-      transformedCosmetics = transformedCosmetics.filter((item: any) => 
+      transformedCosmetics = transformedCosmetics.filter(item => 
         item.name.toLowerCase().includes(search.toLowerCase()) ||
         item.description.toLowerCase().includes(search.toLowerCase())
       );

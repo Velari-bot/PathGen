@@ -26,6 +26,15 @@ interface OnboardingData {
   
   // Goals
   goals: string[];
+  
+  // Preferences
+  theme: 'light' | 'dark' | 'auto';
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    discord: boolean;
+  };
 }
 
 const SKILL_LEVELS = [
@@ -73,15 +82,22 @@ const GOAL_OPTIONS = [
 export default function OnboardingModal({ isOpen, onComplete, userId, userEmail, userDisplayName }: OnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [data, setData] = useState<OnboardingData>({
-    displayName: '',
-    language: 'en',
-    timezone: 'UTC',
+    displayName: userDisplayName || '',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    language: 'en-US',
     favoriteGame: 'Fortnite',
     skillLevel: 'beginner',
     playStyle: 'balanced',
     teamSize: 'any',
     preferredModes: ['Battle Royale'],
-    goals: ['Improve K/D ratio', 'Increase win rate']
+    goals: ['Improve K/D ratio', 'Increase win rate'],
+    theme: 'dark',
+    notifications: {
+      email: true,
+      push: false,
+      sms: false,
+      discord: false
+    }
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +109,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
   const updateNestedData = (parent: keyof OnboardingData, field: string, value: any) => {
     setData(prev => ({
       ...prev,
-      [parent]: { ...(prev[parent] as any || {}), [field]: value }
+      [parent]: { ...prev[parent], [field]: value }
     }));
   };
 
@@ -121,7 +137,12 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
         lastLogin: new Date(),
         profile: {
           language: data.language,
-          timezone: data.timezone
+          timezone: data.timezone,
+          avatar: undefined,
+          bio: undefined,
+          location: undefined,
+          dateOfBirth: undefined,
+          gender: undefined
         },
         gaming: {
           favoriteGame: data.favoriteGame,
@@ -131,19 +152,8 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
           teamSize: data.teamSize,
           goals: data.goals
         },
-        subscription: {
-          status: 'free',
-          tier: 'free',
-          startDate: new Date(),
-          autoRenew: false
-        },
         settings: {
-          notifications: {
-            email: true,
-            push: false,
-            sms: false,
-            discord: false
-          },
+          notifications: data.notifications,
           privacy: {
             profilePublic: false,
             statsPublic: false,
@@ -151,7 +161,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
             showOnlineStatus: true
           },
           preferences: {
-            theme: 'dark',
+            theme: data.theme,
             language: data.language,
             timezone: data.timezone,
             dateFormat: 'MM/DD/YYYY',
@@ -422,8 +432,55 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
           {/* Step 4: Preferences */}
           {currentStep === 4 && (
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-white mb-4">Profile Summary</h3>
+              <h3 className="text-xl font-semibold text-white mb-4">Preferences & Settings</h3>
               
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Theme Preference
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: 'light', label: 'Light', icon: '☀️' },
+                    { value: 'dark', label: 'Dark', icon: '🌙' },
+                    { value: 'auto', label: 'Auto', icon: '🔄' }
+                  ].map((theme) => (
+                    <button
+                      key={theme.value}
+                      onClick={() => updateData('theme', theme.value)}
+                      className={`p-4 rounded-lg border transition-all duration-200 text-center ${
+                        data.theme === theme.value
+                          ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                          : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">{theme.icon}</div>
+                      <div className="font-semibold">{theme.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Notification Preferences
+                </label>
+                <div className="space-y-3">
+                  {Object.entries(data.notifications).map(([key, value]) => (
+                    <label key={key} className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(e) => updateNestedData('notifications', key, e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <span className="text-gray-300 capitalize">
+                        {key === 'push' ? 'Push Notifications' : key}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <h4 className="text-blue-400 font-semibold mb-2">🎯 Your Profile Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">

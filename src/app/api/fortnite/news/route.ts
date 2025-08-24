@@ -43,9 +43,9 @@ export async function GET(request: NextRequest) {
     })) || [];
 
     // Filter by type if specified
-        const filteredNews = type === 'all'
-      ? transformedNews
-      : transformedNews.filter((item: any) => item.type === type);
+    const filteredNews = type === 'all' 
+      ? transformedNews 
+      : transformedNews.filter(item => item.type === type);
 
     return NextResponse.json({
       success: true,

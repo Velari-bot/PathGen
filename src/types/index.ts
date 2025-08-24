@@ -260,37 +260,3 @@ export interface CompetitiveStrategy {
   surgeStrategy: string;
   loadoutPriority: string[];
 }
-
-// Drone spawn location types
-export interface DroneSpawnLocation {
-  name: string;
-  coordinates: {
-    x: number;
-    y: number;
-  };
-  spawnRate: 'guaranteed' | 'high' | 'medium' | 'low';
-  spawnFrequency: 'once_per_game' | 'multiple_per_game' | 'random';
-  lootTier: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-  strategicValue: 'high' | 'medium' | 'low';
-  notes: string[];
-}
-
-export interface DroneSpawnData {
-  locations: DroneSpawnLocation[];
-  spawnMechanics: {
-    timing: string;
-    frequency: string;
-    lootQuality: string;
-    strategicAdvantage: string;
-  };
-  tournamentStrategy: {
-    earlyGame: string;
-    midGame: string;
-    endGame: string;
-    riskAssessment: string;
-  };
-}
-
-
-
-

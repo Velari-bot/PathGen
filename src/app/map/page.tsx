@@ -443,13 +443,13 @@ export default function MapPage() {
           ...data.data,
           pois: enhancedPOIs
         });
-        setLoading(false);
+      setLoading(false);
       } catch (error) {
         console.error('Error fetching map data:', error);
         setError('Failed to load map data');
-        setLoading(false);
-      }
-    };
+      setLoading(false);
+    }
+  };
 
     fetchMapData();
   }, []);
@@ -777,7 +777,7 @@ export default function MapPage() {
                     >
                       🏠
                     </button>
-                  </div>
+          </div>
                   
                   {/* Drag Toggle */}
                   <button 
@@ -792,8 +792,8 @@ export default function MapPage() {
                     {isDragEnabled ? '🔒 Locked' : '🖱️ Drag'}
                   </button>
                 </div>
-              </div>
-              
+        </div>
+
               <div 
                 className="relative w-full h-[600px] bg-gray-800 rounded-xl overflow-hidden border border-gray-700 cursor-grab select-none"
                 onPointerDown={onPointerDown}
@@ -827,12 +827,12 @@ export default function MapPage() {
                       }}
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center text-gray-400">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-gray-400">
                         <div className="text-8xl mb-4">🗺️</div>
                         <div className="text-2xl">Map Loading...</div>
-                      </div>
-                    </div>
+              </div>
+            </div>
                   )}
 
                   {/* Render drawn elements */}
@@ -840,7 +840,7 @@ export default function MapPage() {
                     <div
                       key={element.id}
                       className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                      style={{
+                style={{
                         left: `${element.x}px`,
                         top: `${element.y}px`
                       }}
@@ -859,32 +859,32 @@ export default function MapPage() {
               </div>
               <div className="mt-4 text-center text-sm text-gray-400">
                 <p>🔍 Zoom in to explore • 🖱️ Click and drag to pan • Use buttons to zoom</p>
-              </div>
-            </div>
+          </div>
+        </div>
 
-            {/* POIs Grid */}
+        {/* POIs Grid */}
             <div className="bg-gray-900 rounded-xl p-8 border border-gray-800 shadow-2xl">
               <h2 className="text-3xl font-bold text-white mb-6 flex items-center">
                 <span className="mr-3">📍</span>
                 Points of Interest ({mapData?.pois.length || 0})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {mapData?.pois.map((poi) => (
-                  <div
-                    key={poi.id}
+            <div 
+              key={poi.id} 
                     className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-700 hover:border-blue-500/50 ${
                       selectedPOI?.id === poi.id ? 'ring-2 ring-blue-500 shadow-blue-500/25' : ''
-                    }`}
-                    onClick={() => setSelectedPOI(poi)}
-                  >
+              }`}
+              onClick={() => setSelectedPOI(poi)}
+            >
                     {/* POI Header */}
                     <div className="p-5 border-b border-gray-700">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-xl font-semibold text-white">{poi.name}</h3>
                         <span className={`px-3 py-1 text-sm font-semibold text-white rounded-full ${getTypeColor(poi.type || '')}`}>
-                          {poi.type}
-                        </span>
-                      </div>
+                    {poi.type}
+                  </span>
+                </div>
                       <p className="text-gray-300 text-sm mb-4 leading-relaxed">{poi.description}</p>
                       <div className="flex items-center gap-3">
                         <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getLootQualityColor(poi.lootQuality || '')} bg-gray-900`}>
@@ -892,9 +892,9 @@ export default function MapPage() {
                         </span>
                         <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${getPlayerTrafficColor(poi.playerTraffic || '')} bg-gray-900`}>
                           👥 Traffic: {poi.playerTraffic}
-                        </span>
-                      </div>
-                    </div>
+                  </span>
+                </div>
+              </div>
                     {/* POI Coordinates */}
                     <div className="p-4 bg-gray-700">
                       <div className="text-center">
@@ -950,7 +950,7 @@ export default function MapPage() {
                   <h4 className="text-xl font-bold mb-2">⚖️ Balanced</h4>
                   <p className="text-sm">Moderate action, balanced approach</p>
                 </button>
-              </div>
+                  </div>
             </div>
 
             {/* Strategy for Selected Play Style */}
@@ -1093,9 +1093,9 @@ export default function MapPage() {
                         <li>• Play for endgame and placement points</li>
                       </ul>
                     )}
-                  </div>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         ) : (
@@ -1126,7 +1126,7 @@ export default function MapPage() {
                   >
                     🇺🇸 NAC
                   </button>
-                </div>
+        </div>
 
                 {/* Division Selection */}
                 <div className="flex bg-gray-800 rounded-lg p-1">
@@ -1347,16 +1347,16 @@ export default function MapPage() {
                         <span className={`font-semibold ${getLootQualityColor(selectedPOI.lootQuality || '')}`}>
                           {selectedPOI.lootQuality}
                         </span>
-                      </div>
+                        </div>
                       <div className="flex justify-between">
                         <span className="text-gray-400">Player Traffic:</span>
                         <span className={`font-semibold ${getPlayerTrafficColor(selectedPOI.playerTraffic || '')}`}>
                           {selectedPOI.playerTraffic}
                         </span>
                       </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold text-white mb-3 flex items-center">
@@ -1366,7 +1366,7 @@ export default function MapPage() {
                   <p className="text-gray-300 text-lg leading-relaxed bg-gray-800 rounded-xl p-4 border border-gray-700">
                     {selectedPOI.description}
                   </p>
-                </div>
+                  </div>
 
                 {selectedPOI.strategies && (
                   <div>
@@ -1381,7 +1381,7 @@ export default function MapPage() {
                           Drop Strategy
                         </h4>
                         <p className="text-white text-sm leading-relaxed">{selectedPOI.strategies.drop}</p>
-                      </div>
+                </div>
                       <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
                         <h4 className="text-sm font-semibold text-gray-400 mb-2 flex items-center">
                           <span className="mr-1">🔄</span>
