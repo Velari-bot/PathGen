@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
-import { FirebaseService, FortniteData, ChatMessage } from '@/lib/firebase-service';
+import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service';
 import { UsageTracker } from '@/lib/usage-tracker';
 import { DRONE_SPAWN_DATA, getDroneSpawnInfo, getDroneStrategyByPlaystyle } from '@/lib/drone-spawn-data';
 
@@ -14,7 +14,7 @@ import { DRONE_SPAWN_DATA, getDroneSpawnInfo, getDroneStrategyByPlaystyle } from
 export default function AIPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [fortniteStats, setFortniteStats] = useState<FortniteData | null>(null);
+  const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date }>>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -37,7 +37,7 @@ export default function AIPage() {
   const loadFortniteStats = async () => {
     try {
       setIsLoadingStats(true);
-      const stats = await FirebaseService.getFortniteData(user!.uid);
+      const stats = await FirebaseService.getFortniteStats(user!.uid);
       setFortniteStats(stats);
     } catch (error) {
       console.error('Error loading Fortnite stats:', error);
@@ -54,16 +54,8 @@ export default function AIPage() {
       const chatId = `chat_${Date.now()}_${user.uid}`;
       setCurrentChatId(chatId);
       
-      // Create chat document in Firebase
-      await FirebaseService.createChat({
-        userId: user.uid,
-        title: 'AI Coaching Session',
-        messageCount: 0,
-        type: 'coaching',
-        status: 'active',
-        tags: ['fortnite', 'coaching', 'ai']
-      });
-      
+      // For now, just set the chat ID without creating Firebase documents
+      // TODO: Implement chat creation when FirebaseService methods are available
       console.log('✅ New chat session created:', chatId);
     } catch (error) {
       console.error('Error initializing chat:', error);
@@ -84,30 +76,11 @@ export default function AIPage() {
     setIsLoadingResponse(true);
 
     try {
-      // Try to save user message to Firebase, but don't fail if it doesn't work
-      try {
-        await FirebaseService.addMessage(currentChatId, {
-          chatId: currentChatId,
-          userId: user.uid,
-          role: 'user',
-          content: inputMessage,
-          type: 'text'
-        });
-        console.log('✅ User message saved to Firebase');
-      } catch (firebaseError) {
-        console.warn('⚠️ Could not save user message to Firebase:', firebaseError);
-        // Save to local storage as fallback
-        saveMessageToLocalStorage(userMessage);
-      }
-
-      // Track usage for AI messages (optional)
-      try {
-        await UsageTracker.incrementUsage(user.uid, 'messagesUsed');
-      } catch (usageError) {
-        console.warn('⚠️ Could not track usage:', usageError);
-      }
-
-      // Get AI response from API
+      // For now, just save to local storage
+      // TODO: Implement Firebase message saving when FirebaseService methods are available
+      saveMessageToLocalStorage(userMessage);
+      
+      // Generate AI response
       const aiResponse = await generateAIResponse(inputMessage, fortniteStats);
       
       const assistantMessage = {
@@ -115,366 +88,144 @@ export default function AIPage() {
         content: aiResponse,
         timestamp: new Date()
       };
-
+      
       setMessages(prev => [...prev, assistantMessage]);
-
-      // Try to save AI response to Firebase, but don't fail if it doesn't work
-      try {
-        await FirebaseService.addMessage(currentChatId, {
-          chatId: currentChatId,
-          userId: user.uid,
-          role: 'assistant',
-          content: aiResponse,
-          type: 'text',
-          aiResponse: {
-            model: 'pathgen-ai',
-            confidence: 0.9,
-            suggestions: [],
-            relatedTopics: ['fortnite', 'coaching'],
-            followUpQuestions: [],
-            tokensUsed: Math.ceil(aiResponse.length / 4) // Rough estimate
-          }
-        });
-        console.log('✅ AI message saved to Firebase');
-      } catch (firebaseError) {
-        console.warn('⚠️ Could not save AI message to Firebase:', firebaseError);
-        // Save to local storage as fallback
-        saveMessageToLocalStorage(assistantMessage);
-      }
-
-      // Try to update chat message count, but don't fail if it doesn't work
-      try {
-        await FirebaseService.updateChat(currentChatId, {
-          messageCount: messages.length + 2, // +2 for user and AI message
-          updatedAt: new Date()
-        });
-      } catch (updateError) {
-        console.warn('⚠️ Could not update chat count:', updateError);
-      }
-
+      saveMessageToLocalStorage(assistantMessage);
+      
     } catch (error) {
-      console.error('Error generating AI response:', error);
-      
-      // Create a more informative error message
-      let errorContent = 'Sorry, I encountered an error while processing your request. Please try again.';
-      
-      if (error instanceof Error) {
-        if (error.message.includes('OpenAI API')) {
-          errorContent = 'Sorry, there was an issue with the AI service. Please check your connection and try again.';
-        } else if (error.message.includes('Firebase') || error.message.includes('permissions')) {
-          errorContent = 'Sorry, there was an issue saving your message, but I can still help you! The chat will work, but messages won\'t be saved.';
-        } else if (error.message.includes('usage limit')) {
-          errorContent = 'Sorry, you have reached your monthly message limit. Please upgrade your plan to continue.';
-        }
-      }
+      console.error('Error processing message:', error);
       
       const errorMessage = {
         role: 'assistant' as const,
-        content: errorContent,
+        content: 'Sorry, I encountered an error processing your message. Please try again.',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
       
-      // Also show error in console for debugging
-      console.error('Full error details:', error);
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoadingResponse(false);
     }
   };
 
-  const generateAIResponse = async (userQuestion: string, stats: FortniteData | null): Promise<string> => {
+  const generateAIResponse = async (userQuestion: string, stats: FortniteStats | null): Promise<string> => {
     // Enhanced AI coaching logic using comprehensive data
     if (!stats) {
-      return "I don't see any Fortnite stats yet. Connect your Epic account first to get personalized coaching!";
+      return "I don't have access to your Fortnite stats yet. Please make sure your Epic account is linked and stats are loaded.";
     }
 
+    // Access the correct properties from FortniteStats
+    const overallStats = stats.overall;
+    const soloStats = stats.solo;
+    const duoStats = stats.duo;
+    const squadStats = stats.squad;
+    const arenaStats = stats.arena;
+    const tournamentStats = stats.tournaments;
+    const weaponStats = stats.weapons;
+    const buildingStats = stats.building;
+    const performanceStats = stats.performance;
+    const metadata = stats.metadata;
+
+    // Build a comprehensive response based on available stats
+    let response = `Based on your Fortnite stats, here's my analysis:\n\n`;
+    
+    if (overallStats) {
+      response += `**Overall Performance:**\n`;
+      response += `• K/D Ratio: ${overallStats.kd.toFixed(2)}\n`;
+      response += `• Win Rate: ${(overallStats.winRate * 100).toFixed(1)}%\n`;
+      response += `• Matches Played: ${overallStats.matches}\n`;
+      response += `• Average Placement: ${overallStats.avgPlace.toFixed(1)}\n\n`;
+    }
+
+    // Add mode-specific insights
+    if (soloStats && soloStats.matches > 0) {
+      response += `**Solo Mode:**\n`;
+      response += `• Solo K/D: ${soloStats.kd.toFixed(2)}\n`;
+      response += `• Solo Win Rate: ${(soloStats.winRate * 100).toFixed(1)}%\n\n`;
+    }
+
+    if (duoStats && duoStats.matches > 0) {
+      response += `**Duo Mode:**\n`;
+      response += `• Duo K/D: ${duoStats.kd.toFixed(2)}\n`;
+      response += `• Duo Win Rate: ${(duoStats.winRate * 100).toFixed(1)}%\n\n`;
+    }
+
+    if (squadStats && squadStats.matches > 0) {
+      response += `**Squad Mode:**\n`;
+      response += `• Squad K/D: ${squadStats.kd.toFixed(2)}\n`;
+      response += `• Squad Win Rate: ${(squadStats.winRate * 100).toFixed(1)}%\n\n`;
+    }
+
+    // Add specific coaching based on the question
     const question = userQuestion.toLowerCase();
-    const { stats: playerStats, modes, rawOsirionData } = stats;
-
-
-
-    // Analyze performance and provide coaching
+    
     if (question.includes('kd') || question.includes('kill') || question.includes('death')) {
-      const kd = playerStats.kd || 0;
-      if (kd < 1.0) {
-        return `Your current K/D ratio is ${kd.toFixed(2)}. To improve this:\n\n• Focus on survival over aggressive plays\n• Practice building for protection\n• Choose your fights wisely\n• Land in less populated areas to start\n\n**Tournament Context:** For competitive play, you'll need to balance aggression with survival. A 1.5+ K/D is typically needed for higher divisions.\n\nWould you like specific strategies for any of these areas?`;
-      } else if (kd < 2.0) {
-        return `Your K/D ratio of ${kd.toFixed(2)} shows solid fundamentals! To reach the next level:\n\n• Work on advanced building techniques\n• Improve your editing speed\n• Practice piece control\n• Analyze your VODs for positioning mistakes\n\n**Tournament Context:** You're in a good range for Division 2-3. Focus on consistent placements to qualify!`;
+      response += `**K/D Improvement Tips:**\n`;
+      if (overallStats && overallStats.kd < 1.0) {
+        response += `• Focus on survival over kills initially\n`;
+        response += `• Practice building for protection\n`;
+        response += `• Choose landing spots with fewer players\n`;
+      } else if (overallStats && overallStats.kd < 2.0) {
+        response += `• Work on mid-game positioning\n`;
+        response += `• Practice editing and building techniques\n`;
+        response += `• Focus on end-game rotations\n`;
       } else {
-        return `Excellent K/D ratio of ${kd.toFixed(2)}! You're clearly a skilled player. Consider:\n\n• Competitive play and tournaments\n• Coaching other players\n• Advanced strategies like box fighting\n• Optimizing your loadout for your playstyle\n\n**Tournament Context:** With this K/D, you should aim for Division 1! Focus on endgame positioning and rotation strategies.`;
+        response += `• Excellent K/D! Focus on tournament play\n`;
+        response += `• Work on advanced building techniques\n`;
+        response += `• Practice scrims and arena mode\n`;
       }
     }
 
     if (question.includes('win') || question.includes('victory') || question.includes('placement')) {
-      const winRate = (playerStats.top1 / Math.max(playerStats.matches, 1)) * 100;
-      if (winRate < 5) {
-        return `Your win rate is ${winRate.toFixed(1)}%. To increase wins:\n\n• Focus on endgame positioning\n• Practice rotation strategies\n• Improve your building for late-game\n• Work on decision making under pressure\n\n**Tournament Context:** For competitive play, focus on consistent top 25s rather than wins. Top 25s with 1-2 elims are often better than risky plays for wins.`;
-      } else if (winRate < 15) {
-        return `Good win rate of ${winRate.toFixed(1)}%! To improve further:\n\n• Analyze your endgame VODs\n• Practice specific scenarios\n• Work on team coordination (if playing squads)\n• Optimize your loadout for different zones\n\n**Tournament Context:** This win rate suggests you can compete in Division 2-3. Focus on maintaining consistency across all games.`;
+      response += `**Victory Royale Tips:**\n`;
+      if (overallStats && overallStats.winRate < 0.05) {
+        response += `• Focus on survival and positioning\n`;
+        response += `• Avoid unnecessary fights early game\n`;
+        response += `• Practice building for protection\n`;
+      } else if (overallStats && overallStats.winRate < 0.15) {
+        response += `• Work on mid-game rotations\n`;
+        response += `• Practice end-game building\n`;
+        response += `• Focus on zone awareness\n`;
       } else {
-        return `Impressive win rate of ${winRate.toFixed(1)}%! You're clearly doing something right. Consider:\n\n• Competitive play\n• Advanced strategies\n• Coaching others\n• Analyzing your gameplay for fine-tuning\n\n**Tournament Context:** With this win rate, you're ready for Division 1! Focus on optimizing your rotations and endgame strategies.`;
+        response += `• Great win rate! Focus on tournament play\n`;
+        response += `• Practice advanced techniques\n`;
+        response += `• Work on competitive strategies\n`;
       }
     }
 
-    if (question.includes('build') || question.includes('building')) {
-      return `Building is crucial in Fortnite! Based on your stats:\n\n• Practice 90s and ramps consistently\n• Work on editing speed and accuracy\n• Learn piece control techniques\n• Practice building under pressure\n\n**Tournament Context:** In competitive play, building efficiency is key. You need to build quickly while conserving materials for endgame. Practice piece control and editing under pressure.\n\nWould you like specific building drills or techniques?`;
-    }
-
-    if (question.includes('rotation') || question.includes('position')) {
-      return `Good rotations are key to consistent placements:\n\n• Always be aware of the storm\n• Plan your route before moving\n• Use natural cover and builds\n• Avoid open areas when possible\n• Practice different rotation strategies for each map\n\n**Tournament Context:** Tournament rotations are more predictable. Study common rotation patterns and practice them. Remember: safe rotations often beat aggressive ones in competitive play.`;
-    }
-
-    if (question.includes('drop') || question.includes('land') || question.includes('poi') || question.includes('location')) {
-      return `🗺️ **POI Drop Analysis** 🗺️\n\n**Best Competitive Drops (Low Rating = Better):**\n• **SuperNova (Rating 13):** High metal (7,700), decent loot, 2.1 teams - Great for building practice\n• **Shogun's (Rating 14):** High loot (48), low metal (200), 1.66 teams - Good for early game fights\n• **Demon's (Rating 19):** High loot (74), low metal (500), 1.73 teams - Balanced option\n• **Outlaw Oasis (Rating 28):** Low teams (0.87), good survival (67%), decent metal (1,900)\n\n**High Survival Rate Drops:**\n• **Superman Icy Biome (81% survival):** Very low teams (0.54), good metal (5,300)\n• **FO Split Drop (79% survival):** Low teams (0.99), good loot (61)\n• **Bottom Right Split (71% survival):** Very low teams (0.23), low metal (200)\n\n**High Metal Locations:**\n• **O.X.R HQ:** 10,000 metal, 1.23 teams, 61% survival\n• **Rebel Base:** 8,300 metal, 1.31 teams, 55% survival\n• **SuperNova:** 7,700 metal, 2.1 teams, 57% survival\n\n**Tournament Strategy:** Choose based on your goals:\n• **Aggressive:** Shogun's, Demon's (higher loot, more fights)\n• **Survival:** Superman Icy Biome, FO Split Drop (higher survival rates)\n• **Building Practice:** O.X.R HQ, Rebel Base (high metal)\n• **Balanced:** SuperNova, Outlaw Oasis (good mix of all factors)\n\nWhat's your playstyle? I can recommend specific POIs!`;
-    }
-
-    if (question.includes('drone') || question.includes('spawn') || question.includes('supernova') || question.includes('shogun') || question.includes('kappa') || question.includes('canyon')) {
-      const droneInfo = DRONE_SPAWN_DATA;
-      let response = `🤖 **DRONE SPAWN LOCATIONS** 🤖\n\n`;
-      
-      response += `**Guaranteed Spawns (Once Per Game):**\n`;
-      droneInfo.locations.forEach(location => {
-        response += `• **${location.name}:** ${location.lootTier} loot, ${location.strategicValue} strategic value\n`;
-        response += `  - ${location.notes[0]}\n`;
-        response += `  - ${location.notes[1]}\n`;
-      });
-      
-      response += `\n**Spawn Mechanics:**\n`;
-      response += `• **Timing:** ${droneInfo.spawnMechanics.timing}\n`;
-      response += `• **Frequency:** ${droneInfo.spawnMechanics.frequency}\n`;
-      response += `• **Loot Quality:** ${droneInfo.spawnMechanics.lootQuality}\n`;
-      response += `• **Strategic Advantage:** ${droneInfo.spawnMechanics.strategicAdvantage}\n`;
-      
-      response += `\n**Tournament Strategy:**\n`;
-      response += `• **Early Game:** ${droneInfo.tournamentStrategy.earlyGame}\n`;
-      response += `• **Mid Game:** ${droneInfo.tournamentStrategy.midGame}\n`;
-      response += `• **End Game:** ${droneInfo.tournamentStrategy.endGame}\n`;
-      response += `• **Risk Assessment:** ${droneInfo.tournamentStrategy.riskAssessment}\n`;
-      
-      response += `\n**Quick Suggestions:**\n`;
-      response += `• Ask for "drone strategy aggressive" for aggressive playstyle tips\n`;
-      response += `• Ask for "drone strategy passive" for survival-focused approach\n`;
-      response += `• Ask for "drone strategy balanced" for hybrid strategies\n`;
-      
-      return response;
-    }
-
-    if (question.includes('drone strategy') && (question.includes('aggressive') || question.includes('w-key') || question.includes('frag'))) {
-      const strategy = getDroneStrategyByPlaystyle('aggressive');
-      let response = `⚔️ **AGGRESSIVE DRONE STRATEGY** ⚔️\n\n`;
-      response += `**Recommended Locations:** ${strategy.recommendedLocations.join(', ')}\n`;
-      response += `**Strategy:** ${strategy.strategy}\n\n`;
-      response += `**Key Tips:**\n`;
-      strategy.tips.forEach(tip => {
-        response += `• ${tip}\n`;
-      });
-      response += `\n**Tournament Impact:** High elim potential but increased early game risk. Perfect for players confident in their mechanical skills and early game fighting ability.`;
-      return response;
-    }
-
-    if (question.includes('drone strategy') && (question.includes('passive') || question.includes('survival') || question.includes('placement'))) {
-      const strategy = getDroneStrategyByPlaystyle('passive');
-      let response = `🛡️ **PASSIVE DRONE STRATEGY** 🛡️\n\n`;
-      response += `**Recommended Locations:** ${strategy.recommendedLocations.join(', ')}\n`;
-      response += `**Strategy:** ${strategy.strategy}\n\n`;
-      response += `**Key Tips:**\n`;
-      strategy.tips.forEach(tip => {
-        response += `• ${tip}\n`;
-      });
-      response += `\n**Tournament Impact:** Consistent loot quality with lower early game risk. Ideal for players prioritizing placement points and consistent performance.`;
-      return response;
-    }
-
-    if (question.includes('drone strategy') && (question.includes('balanced') || question.includes('hybrid') || question.includes('mixed'))) {
-      const strategy = getDroneStrategyByPlaystyle('balanced');
-      let response = `⚖️ **BALANCED DRONE STRATEGY** ⚖️\n\n`;
-      response += `**Recommended Locations:** ${strategy.recommendedLocations.join(', ')}\n`;
-      response += `**Strategy:** ${strategy.strategy}\n\n`;
-      response += `**Key Tips:**\n`;
-      strategy.tips.forEach(tip => {
-        response += `• ${tip}\n`;
-      });
-      response += `\n**Tournament Impact:** Flexible approach that adapts to lobby strength and tournament situation. Best for experienced players who can read the game state.`;
-      return response;
-    }
-
-    // EU Tournament Information Handler
-    if (question.includes('eu') || question.includes('europe') || question.includes('fncs') || question.includes('division') || question.includes('div')) {
-      let response = `🏆 **EU FNCS DIVISIONAL CUPS - WEEK 2** 🏆\n\n`;
-      
-      response += `**📅 Day 1 Results (Complete):**\n`;
-      response += `• **Division 1:** Top 33 - 669 points (was 660, +30min extension had limited impact)\n`;
-      response += `• **Division 2:** Top 40 - 698 points (was 675, +30min extension matched predictions)\n`;
-      response += `• **Division 3:** Top 300 - 573 points (was 560, +30min extension minimal impact)\n\n`;
-      
-      response += `**⏰ 30-Minute Extension Analysis:**\n`;
-      response += `• **Div 1:** Many teams exhausted games, extension had low impact\n`;
-      response += `• **Div 2:** ~50% of teams had extra games, extension worked as expected\n`;
-      response += `• **Div 3:** Only ~25% of teams had games left, minimal impact\n\n`;
-      
-      response += `**🎯 Day 2 Targets (Current):**\n`;
-      response += `• **Division 1:** Cumulative Top 33 - 675 points (estimate: 655-695)\n`;
-      response += `• **Division 2:** Cumulative Top 40 - 685 points (estimate: 675-695)\n`;
-      response += `• **Division 3:** Cumulative Top 300 - 560 points (estimate: 553-567)\n\n`;
-      
-      response += `**📊 Point Inflation Patterns:**\n`;
-      response += `• **Div 1:** +50 points per 30 minutes (when teams have games)\n`;
-      response += `• **Div 2:** +50 points per 30 minutes (when teams have games)\n`;
-      response += `• **Div 3:** +40 points per 30 minutes (when teams have games)\n\n`;
-      
-      response += `**🔄 Current Status:**\n`;
-      response += `• **Elo Resets:** All players start at 0 points for matchmaking\n`;
-      response += `• **Queue Times:** Div 1 (6min), Div 2 (2min), Div 3 (6min)\n`;
-      response += `• **Live Updates:** Coming every hour during play\n\n`;
-      
-      response += `**💡 Strategic Insights:**\n`;
-      response += `• **Drone spawns** provide guaranteed high-tier loot for consistent performance\n`;
-      response += `• **Extension impact** varies by division based on remaining games\n`;
-      response += `• **Point targets** are dynamic - monitor live updates during play\n`;
-      response += `• **Queue management** is critical - re-queue if waiting too long\n\n`;
-      
-      response += `**🤖 Ask me about:**\n`;
-      response += `• "drone spawn locations" for guaranteed loot strategies\n`;
-      response += `• "tournament calculator" to track your progress\n`;
-      response += `• "division targets" for specific qualification goals\n`;
-      
-      return response;
-    }
-
-    // Division Targets and Qualification Handler
-    if (question.includes('division target') || question.includes('qualification') || question.includes('points needed') || question.includes('how many points')) {
-      let response = `🎯 **DIVISION QUALIFICATION TARGETS** 🎯\n\n`;
-      
-      response += `**🏆 EU FNCS Division Cups - Week 2**\n\n`;
-      
-      response += `**Division 1 (Top 33):**\n`;
-      response += `• **Current Target:** 675 points\n`;
-      response += `• **Safe Range:** 690-700 points\n`;
-      response += `• **Day 1 Result:** 669 points\n`;
-      response += `• **Points Needed:** 6+ points to qualify\n\n`;
-      
-      response += `**Division 2 (Top 40):**\n`;
-      response += `• **Current Target:** 685 points\n`;
-      response += `• **Safe Range:** 700-710 points\n`;
-      response += `• **Day 1 Result:** 698 points\n`;
-      response += `• **Points Needed:** Already qualified!\n\n`;
-      
-      response += `**Division 3 (Top 300):**\n`;
-      response += `• **Current Target:** 560 points\n`;
-      response += `• **Safe Range:** 570-580 points\n`;
-      response += `• **Day 1 Result:** 573 points\n`;
-      response += `• **Points Needed:** Already qualified!\n\n`;
-      
-      response += `**📊 Point Inflation:**\n`;
-      response += `• **Div 1 & 2:** +50 points per 30 minutes\n`;
-      response += `• **Div 3:** +40 points per 30 minutes\n`;
-      response += `• **Note:** Only applies when teams have games remaining\n\n`;
-      
-      response += `**💡 Strategy Tips:**\n`;
-      response += `• **Drone spawns** provide guaranteed high-tier loot for consistent performance\n`;
-      response += `• **Monitor live updates** - targets change during play\n`;
-      response += `• **Queue management** - re-queue if waiting too long\n`;
-      response += `• **Use tournament calculator** to track your progress\n\n`;
-      
-      response += `**🤖 Ask me about:**\n`;
-      response += `• "eu fncs division cups" for complete tournament info\n`;
-      response += `• "drone spawn locations" for guaranteed loot strategies\n`;
-      response += `• "tournament calculator" to calculate your needs\n`;
-      
-      return response;
-    }
-
-    if (question.includes('loadout') || question.includes('weapon') || question.includes('inventory')) {
-      return `Your loadout should complement your playstyle:\n\n• AR for medium range\n• Shotgun for close combat\n• SMG for building fights\n• Healing items (shields, medkits)\n• Mobility items (shockwaves, launch pads)\n\n**Tournament Context:** In tournaments, prioritize healing over mobility. You'll often need to heal multiple times per game. Carry at least 6 shield potions and 3 medkits.\n\nWhat's your preferred playstyle? I can suggest specific loadouts.`;
-    }
-
-    // New comprehensive analysis using raw data
-    if (question.includes('analysis') || question.includes('detailed') || question.includes('breakdown') || question.includes('comprehensive')) {
-      let response = `📊 **Comprehensive Performance Analysis**\n\n`;
-      response += `**Core Statistics:**\n`;
-      response += `• ${playerStats.matches} total matches\n`;
-      response += `• ${playerStats.top1} wins (${((playerStats.top1 / playerStats.matches) * 100).toFixed(1)}% win rate)\n`;
-      response += `• K/D ratio: ${playerStats.kd.toFixed(2)}\n`;
-      response += `• Average placement: ${playerStats.placement.toFixed(1)}\n`;
-      response += `• Top 10 rate: ${((playerStats.top10 / playerStats.matches) * 100).toFixed(1)}%\n`;
-      response += `• Total assists: ${playerStats.assists || 0}\n`;
-      response += `• Average survival time: ${Math.round((playerStats.timeAlive || 0) / 60)} minutes\n\n`;
-      
-      if (rawOsirionData?.preferences) {
-        response += `**Player Insights:**\n`;
-        response += `• Preferred drop: ${rawOsirionData.preferences.preferredDrop || 'Unknown'}\n`;
-        response += `• Weakest zone: ${rawOsirionData.preferences.weakestZone || 'Unknown'}\n`;
-        response += `• Best weapon: ${rawOsirionData.preferences.bestWeapon || 'Unknown'}\n`;
-        response += `• Average survival time: ${Math.round((rawOsirionData.preferences.avgSurvivalTime || 0) / 60)} minutes\n\n`;
+    if (question.includes('build') || question.includes('building') || question.includes('structure')) {
+      response += `**Building Tips:**\n`;
+      if (buildingStats) {
+        response += `• You've built ${buildingStats.totalStructuresBuilt} structures\n`;
+        response += `• Building efficiency: ${buildingStats.buildingEfficiency}%\n`;
+        response += `• Edit speed: ${buildingStats.editSpeed}ms\n`;
       }
-      
-      if (rawOsirionData?.matches && rawOsirionData.matches.length > 0) {
-        response += `**Recent Performance:**\n`;
-        const recentMatches = rawOsirionData.matches.slice(0, 5);
-        response += `Last 5 matches:\n`;
-        recentMatches.forEach((match: any, index: number) => {
-          response += `• Match ${index + 1}: #${match.placement} | ${match.kills || 0} kills | ${Math.round(match.damage || 0)} damage\n`;
-        });
-        response += `\n`;
-      }
-      
-      response += `**Recommendations:**\n`;
-      if (playerStats.kd < 1.0) {
-        response += `• Focus on improving K/D ratio through better positioning\n`;
-      }
-      if ((playerStats.top1 / playerStats.matches) < 0.1) {
-        response += `• Work on endgame strategies to increase win rate\n`;
-      }
-      if (playerStats.placement > 15) {
-        response += `• Improve early game survival and rotation strategies\n`;
-      }
-      
-      return response;
+      response += `• Practice 90s and ramps\n`;
+      response += `• Work on editing speed\n`;
+      response += `• Learn advanced building techniques\n`;
     }
 
-    if (question.includes('matches') || question.includes('games') || question.includes('history') || question.includes('recent')) {
-      if (rawOsirionData?.matches && rawOsirionData.matches.length > 0) {
-        let response = `🎮 **Match History Analysis**\n\n`;
-        response += `You've played ${rawOsirionData.matches.length} matches recently.\n\n`;
-        
-        // Calculate insights from match data
-        const placements = rawOsirionData.matches.map((m: any) => m.placement);
-        const kills = rawOsirionData.matches.map((m: any) => m.kills || 0);
-        const damage = rawOsirionData.matches.map((m: any) => m.damage || 0);
-        
-        const bestPlacement = Math.min(...placements);
-        const worstPlacement = Math.max(...placements);
-        const totalKills = kills.reduce((a: number, b: number) => a + b, 0);
-        const totalDamage = damage.reduce((a: number, b: number) => a + b, 0);
-        const avgDamage = totalDamage / rawOsirionData.matches.length;
-        
-        response += `**Performance Range:**\n`;
-        response += `• Best placement: #${bestPlacement}\n`;
-        response += `• Worst placement: #${worstPlacement}\n`;
-        response += `• Total kills: ${totalKills}\n`;
-        response += `• Total damage: ${Math.round(totalDamage)}\n`;
-        response += `• Average damage per match: ${Math.round(avgDamage)}\n\n`;
-        
-        response += `**Consistency Analysis:**\n`;
-        const top10Count = placements.filter((p: number) => p <= 10).length;
-        const top25Count = placements.filter((p: number) => p <= 25).length;
-        response += `• Top 10 finishes: ${top10Count} (${((top10Count / placements.length) * 100).toFixed(1)}%)\n`;
-        response += `• Top 25 finishes: ${top25Count} (${((top25Count / placements.length) * 100).toFixed(1)}%)\n`;
-        
-        // Identify patterns
-        const highKillGames = kills.filter((k: number) => k >= 5).length;
-        const lowKillGames = kills.filter((k: number) => k <= 1).length;
-        response += `• High kill games (5+): ${highKillGames} (${((highKillGames / kills.length) * 100).toFixed(1)}%)\n`;
-        response += `• Low kill games (0-1): ${lowKillGames} (${((lowKillGames / kills.length) * 100).toFixed(1)}%)\n`;
-        
-        return response;
+    if (question.includes('weapon') || question.includes('aim') || question.includes('accuracy')) {
+      response += `**Weapon & Aim Tips:**\n`;
+      if (weaponStats) {
+        response += `• Favorite weapon: ${weaponStats.favoriteWeapon}\n`;
+        response += `• Weapon accuracy: ${weaponStats.weaponAccuracy}%\n`;
+        response += `• Headshot percentage: ${weaponStats.headshotPercentage}%\n`;
       }
+      response += `• Practice aim training maps\n`;
+      response += `• Work on crosshair placement\n`;
+      response += `• Learn weapon recoil patterns\n`;
     }
 
-    // Default response
-    return `I can help you improve your Fortnite skills! I can see you have:\n\n• ${playerStats.matches} total matches\n• ${playerStats.top1} victories\n• ${playerStats.kd?.toFixed(2)} K/D ratio\n• ${((playerStats.top10 / Math.max(playerStats.matches, 1)) * 100).toFixed(1)}% top 10 rate\n\n**Ask me about:**\n• Improving your K/D ratio\n• Building techniques\n• Win strategies\n• Loadout optimization\n• Rotation strategies\n• **Drop locations and POI analysis**\n• **🤖 Drone spawn locations and strategies**\n• **Tournament strategies and qualification targets**\n• **📊 Comprehensive performance analysis**\n• **🎮 Match history breakdown**\n• **📈 Detailed statistics**\n\n**🏆 Tournament Information:**\n• **Icon Reload Cups** (Lachlan, Loserfruit, Bugha, Clix)\n• **EU FNCS Division Cups** - Week 2 Day 2 (Live Updates)\n• **Champion Crystal Cup** - Final Results\n• **Tournament Calculator** - Track your progress!\n\n**🤖 Drone Spawn Locations:**\n• **Supernova, Shogun, Kappa Kappa, Canyon** - Guaranteed epic+ loot\n• **Once per game** - Same spawn rate across all locations\n• **High strategic value** for tournament play\n\n**Current Info:** Check the panels for:\n• Live tournament results and division targets\n• Complete POI drop analysis with ratings, loot, metal, and survival rates\n• Interactive tournament calculator\n\n**New Features:**\n• Ask for "comprehensive analysis" for detailed breakdown\n• Ask for "match history" for recent performance insights\n• Ask about specific tournaments (icon reload, division, champion cup)\n• Ask for "drone spawn locations" for detailed drone strategies\n• Ask for "drone strategy aggressive/passive/balanced" for playstyle-specific tips\n• Ask for "eu fncs division cups" for live tournament updates
-• Ask for "division targets and qualification" for qualification goals
-• Use the tournament calculator to track your progress\n\nWhat would you like to work on?`;
+    // Add general tips if no specific area was asked about
+    if (!question.includes('kd') && !question.includes('win') && !question.includes('build') && !question.includes('weapon')) {
+      response += `**General Improvement Tips:**\n`;
+      response += `• Practice building in creative mode\n`;
+      response += `• Work on game sense and positioning\n`;
+      response += `• Learn from your replays\n`;
+      response += `• Focus on one skill at a time\n`;
+    }
+
+    return response;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -485,19 +236,14 @@ export default function AIPage() {
   };
 
   // Add local storage functionality
-  const saveMessageToLocalStorage = (message: any) => {
+  const saveMessageToLocalStorage = (message: { role: 'user' | 'assistant'; content: string; timestamp: Date }) => {
     try {
-      const storageKey = `pathgen-chat-${currentChatId}`;
-      const existingMessages = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      existingMessages.push({
-        ...message,
-        id: Date.now() + Math.random(), // Simple unique ID
-        savedAt: new Date().toISOString()
-      });
-      localStorage.setItem(storageKey, JSON.stringify(existingMessages));
-      console.log('✅ Message saved to local storage');
+      const existingMessages = localStorage.getItem(`chat_${currentChatId}`);
+      const messages = existingMessages ? JSON.parse(existingMessages) : [];
+      messages.push(message);
+      localStorage.setItem(`chat_${currentChatId}`, JSON.stringify(messages));
     } catch (error) {
-      console.warn('⚠️ Could not save to local storage:', error);
+      console.error('Error saving message to local storage:', error);
     }
   };
 
@@ -679,28 +425,28 @@ export default function AIPage() {
                     <span className="text-white font-bold text-xl">🎮</span>
                   </div>
                   <p className="text-[#BFBFBF] text-sm mb-1">Total Matches</p>
-                  <p className="text-white font-bold text-2xl">{fortniteStats.stats.matches}</p>
-                    </div>
+                  <p className="text-white font-bold text-2xl">{fortniteStats.overall.matches}</p>
+                </div>
                 <div className="text-center">
                   <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-white font-bold text-xl">🏆</span>
                   </div>
                   <p className="text-[#BFBFBF] text-sm mb-1">Wins</p>
-                  <p className="text-white font-bold text-2xl">{fortniteStats.stats.top1}</p>
-                    </div>
+                  <p className="text-white font-bold text-2xl">{fortniteStats.overall.top1}</p>
+                </div>
                 <div className="text-center">
                   <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-white font-bold text-xl">⚔️</span>
                   </div>
                   <p className="text-[#BFBFBF] text-sm mb-1">K/D Ratio</p>
-                  <p className="text-white font-bold text-2xl">{fortniteStats.stats.kd?.toFixed(2) || '0.00'}</p>
-                    </div>
+                  <p className="text-white font-bold text-2xl">{fortniteStats.overall.kd?.toFixed(2) || '0.00'}</p>
+                </div>
                 <div className="text-center">
                   <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
                     <span className="text-white font-bold text-xl">🎯</span>
                   </div>
                   <p className="text-[#BFBFBF] text-sm mb-1">Top 10 Rate</p>
-                  <p className="text-white font-bold text-2xl">{((fortniteStats.stats.top10 / Math.max(fortniteStats.stats.matches, 1)) * 100).toFixed(1)}%</p>
+                  <p className="text-white font-bold text-2xl">{((fortniteStats.overall.top10 / Math.max(fortniteStats.overall.matches, 1)) * 100).toFixed(1)}%</p>
                 </div>
               </div>
             </div>

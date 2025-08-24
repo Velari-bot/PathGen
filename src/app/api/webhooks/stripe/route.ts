@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { db } from '@/lib/firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
+  apiVersion: '2023-10-16',
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -126,6 +126,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   try {
     const customer = await stripe.customers.retrieve(subscription.customer as string);
+    
+    // Check if customer is deleted
+    if (customer.deleted) {
+      console.error('Customer was deleted');
+      return;
+    }
+    
     const userId = customer.metadata.userId;
     
     if (!userId) {

@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { FortniteData } from '@/lib/firebase-service';
+import { FortniteStats } from '@/lib/firebase-service';
 import { DRONE_SPAWN_DATA } from '@/lib/drone-spawn-data';
 
 interface FortniteStatsDisplayProps {
-  stats: FortniteData | null;
+  stats: FortniteStats | null;
   isLoading?: boolean;
   showModes?: boolean;
   compact?: boolean;
@@ -40,15 +40,15 @@ export default function FortniteStatsDisplay({
   }
 
   // Safety check for expected data structure
-  if (!stats.stats) {
-    console.warn('⚠️ FortniteStatsDisplay: stats.stats is undefined, using fallback data');
+  if (!stats.overall) {
+    console.warn('⚠️ FortniteStatsDisplay: stats.overall is undefined, using fallback data');
     return (
       <div className="text-center py-8 text-gray-400">
         <div className="text-4xl mb-2">⚠️</div>
         <p>Stats data structure is incomplete</p>
         <p className="text-sm">Please refresh or reconnect your Epic account</p>
         <div className="mt-4 text-xs text-gray-500">
-          <p>Expected: stats.stats object</p>
+          <p>Expected: stats.overall object</p>
           <p>Received: {JSON.stringify(stats, null, 2)}</p>
         </div>
       </div>
@@ -74,33 +74,33 @@ Account: ${stats.epicName} (${stats.epicId})
 
 OVERALL STATISTICS:
 ==================
-Total Matches: ${stats.stats?.matches || 0}
-Wins: ${stats.stats?.top1 || 0} (${formatPercentage((stats.stats?.top1 || 0) / Math.max(stats.stats?.matches || 1, 1))} Win Rate)
-K/D Ratio: ${stats.stats?.kd?.toFixed(2) || '0.00'}
-Top 3: ${stats.stats?.top3 || 0}
-Top 5: ${stats.stats?.top5 || 0}
-Top 10: ${stats.stats?.top10 || 0} (${formatPercentage((stats.stats?.top10 || 0) / Math.max(stats.stats?.matches || 1, 1))} Rate)
-Top 25: ${stats.stats?.top25 || 0}
-Kills: ${stats.stats?.kills || 0}
-Deaths: ${stats.stats?.deaths || 0}
-Assists: ${stats.stats?.assists || 0}
-Damage Dealt: ${stats.stats?.damageDealt || 0}
-Damage Taken: ${stats.stats?.damageTaken || 0}
-Time Alive: ${stats.stats?.timeAlive || 0} seconds
-Distance Traveled: ${stats.stats?.distanceTraveled || 0} units
-Materials Gathered: ${stats.stats?.materialsGathered || 0}
-Structures Built: ${stats.stats?.structuresBuilt || 0}
+Total Matches: ${stats.overall?.matches || 0}
+Wins: ${stats.overall?.top1 || 0} (${formatPercentage((stats.overall?.top1 || 0) / Math.max(stats.overall?.matches || 1, 1))} Win Rate)
+K/D Ratio: ${stats.overall?.kd?.toFixed(2) || '0.00'}
+Top 3: ${stats.overall?.top3 || 0}
+Top 5: ${stats.overall?.top5 || 0}
+Top 10: ${stats.overall?.top10 || 0} (${formatPercentage((stats.overall?.top10 || 0) / Math.max(stats.overall?.matches || 1, 1))} Rate)
+Top 25: ${stats.overall?.top25 || 0}
+Kills: ${stats.overall?.kills || 0}
+Deaths: ${stats.overall?.deaths || 0}
+Assists: ${stats.overall?.assists || 0}
+Damage Dealt: ${stats.overall?.damageDealt || 0}
+Damage Taken: ${stats.overall?.damageTaken || 0}
+Time Alive: ${stats.overall?.timeAlive || 0} seconds
+Distance Traveled: ${stats.overall?.distanceTraveled || 0} units
+Materials Gathered: ${stats.overall?.materialsGathered || 0}
+Structures Built: ${stats.overall?.structuresBuilt || 0}
 
 MODE BREAKDOWN:
 ===============
-Solo: ${stats.modes?.solo?.matches || 0} matches, ${stats.modes?.solo?.top1 || 0} wins, ${stats.modes?.solo?.kd?.toFixed(2) || '0.00'} K/D
-Duo: ${stats.modes?.duo?.matches || 0} matches, ${stats.modes?.duo?.top1 || 0} wins, ${stats.modes?.duo?.kd?.toFixed(2) || '0.00'} K/D
-Squad: ${stats.modes?.squad?.matches || 0} matches, ${stats.modes?.squad?.top1 || 0} wins, ${stats.modes?.squad?.kd?.toFixed(2) || '0.00'} K/D
+Solo: ${stats.solo?.matches || 0} matches, ${stats.solo?.top1 || 0} wins, ${stats.solo?.kd?.toFixed(2) || '0.00'} K/D
+Duo: ${stats.duo?.matches || 0} matches, ${stats.duo?.top1 || 0} wins, ${stats.duo?.kd?.toFixed(2) || '0.00'} K/D
+Squad: ${stats.squad?.matches || 0} matches, ${stats.squad?.top1 || 0} wins, ${stats.squad?.kd?.toFixed(2) || '0.00'} K/D
 
-Data Source: ${stats.dataSource || 'Unknown'}
-Data Quality: ${stats.dataQuality || 'Unknown'}
-Last Updated: ${stats.syncedAt ? new Date(stats.syncedAt).toLocaleString() : 'Unknown'}
-Notes: ${stats.notes || 'None'}`;
+Data Source: ${stats.metadata?.dataSource || 'Unknown'}
+Data Quality: ${stats.metadata?.dataQuality || 'Unknown'}
+Last Updated: ${stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Unknown'}
+Notes: ${stats.metadata?.notes || 'None'}`;
 
     const blob = new Blob([content], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -161,13 +161,13 @@ Notes: ${stats.notes || 'None'}`;
         <div>
           <h3 className="text-xl font-bold text-white">Fortnite Stats</h3>
           <p className="text-gray-400 text-sm">
-            Last updated: {stats.syncedAt ? new Date(stats.syncedAt).toLocaleDateString() : 'Unknown'}
+            Last updated: {stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Unknown'}
           </p>
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">Data Source</div>
           <div className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">
-            {stats.dataSource?.toUpperCase() || 'OSIRION'}
+            {stats.metadata?.dataSource?.toUpperCase() || 'OSIRION'}
           </div>
         </div>
       </div>
@@ -176,24 +176,24 @@ Notes: ${stats.notes || 'None'}`;
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard 
           title="Total Matches" 
-          value={formatNumber(stats.stats?.matches || 0)} 
+          value={formatNumber(stats.overall?.matches || 0)} 
           color="blue"
         />
         <StatCard 
           title="Wins" 
-          value={formatNumber(stats.stats?.top1 || 0)} 
-          subtitle={`${formatPercentage((stats.stats?.top1 || 0) / Math.max(stats.stats?.matches || 1, 1))} Win Rate`}
+          value={formatNumber(stats.overall?.top1 || 0)} 
+          subtitle={`${formatPercentage((stats.overall?.top1 || 0) / Math.max(stats.overall?.matches || 1, 1))} Win Rate`}
           color="green"
         />
         <StatCard 
           title="K/D Ratio" 
-          value={stats.stats?.kd?.toFixed(2) || '0.00'} 
+          value={stats.overall?.kd?.toFixed(2) || '0.00'} 
           color="yellow"
         />
         <StatCard 
           title="Top 10" 
-          value={formatNumber(stats.stats?.top10 || 0)} 
-          subtitle={`${formatPercentage((stats.stats?.top10 || 0) / Math.max(stats.stats?.matches || 1, 1))} Rate`}
+          value={formatNumber(stats.overall?.top10 || 0)} 
+          subtitle={`${formatPercentage((stats.overall?.top10 || 0) / Math.max(stats.overall?.matches || 1, 1))} Rate`}
           color="purple"
         />
       </div>
@@ -202,32 +202,32 @@ Notes: ${stats.notes || 'None'}`;
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <StatCard 
           title="Kills" 
-          value={formatNumber(stats.stats?.kills || 0)} 
+          value={formatNumber(stats.overall?.kills || 0)} 
           color="green"
         />
         <StatCard 
           title="Deaths" 
-          value={formatNumber(stats.stats?.deaths || 0)} 
+          value={formatNumber(stats.overall?.deaths || 0)} 
           color="red"
         />
         <StatCard 
           title="Damage Dealt" 
-          value={formatNumber(stats.stats?.damageDealt || 0)} 
+          value={formatNumber(stats.overall?.damageDealt || 0)} 
           color="yellow"
         />
         <StatCard 
           title="Top 25" 
-          value={formatNumber(stats.stats?.top25 || 0)} 
+          value={formatNumber(stats.overall?.top25 || 0)} 
           color="blue"
         />
         <StatCard 
           title="Top 5" 
-          value={formatNumber(stats.stats?.top5 || 0)} 
+          value={formatNumber(stats.overall?.top5 || 0)} 
           color="purple"
         />
         <StatCard 
           title="Top 3" 
-          value={formatNumber(stats.stats?.top3 || 0)} 
+          value={formatNumber(stats.overall?.top3 || 0)} 
           color="green"
         />
       </div>
@@ -237,10 +237,10 @@ Notes: ${stats.notes || 'None'}`;
         <div className="space-y-4">
           <h4 className="text-lg font-semibold text-white">Mode Breakdown</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <ModeStats mode={stats.modes?.solo} title="Solo" />
-            <ModeStats mode={stats.modes?.duo} title="Duo" />
-            <ModeStats mode={stats.modes?.squad} title="Squad" />
-            <ModeStats mode={stats.modes?.arena} title="Arena" />
+            <ModeStats mode={stats.solo} title="Solo" />
+            <ModeStats mode={stats.duo} title="Duo" />
+            <ModeStats mode={stats.squad} title="Squad" />
+            <ModeStats mode={stats.arena} title="Arena" />
           </div>
         </div>
       )}
@@ -248,9 +248,9 @@ Notes: ${stats.notes || 'None'}`;
              {/* Data Quality Info */}
        <div className="bg-gray-800/50 rounded-lg p-3 text-center">
          <div className="text-sm text-gray-400">
-           Data Quality: <span className="text-green-400 font-medium">{stats.dataQuality || 'High'}</span>
-           {stats.notes && (
-             <span className="ml-2 text-gray-500">• {stats.notes}</span>
+           Data quality: <span className="text-green-400 font-medium">{stats.metadata?.dataQuality || 'High'}</span>
+           {stats.metadata?.notes && (
+             <span className="ml-2 text-gray-500">• {stats.metadata.notes}</span>
            )}
          </div>
        </div>
@@ -295,19 +295,19 @@ Notes: ${stats.notes || 'None'}`;
            
            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
              <div className="text-center">
-               <div className="text-2xl font-bold text-blue-400">{stats.stats?.damageDealt || 0}</div>
+               <div className="text-2xl font-bold text-blue-400">{stats.overall?.damageDealt || 0}</div>
                <div className="text-xs text-gray-400">Total Damage</div>
              </div>
              <div className="text-center">
-               <div className="text-2xl font-bold text-red-400">{stats.stats?.damageTaken || 0}</div>
+               <div className="text-2xl font-bold text-red-400">{stats.overall?.damageTaken || 0}</div>
                <div className="text-xs text-gray-400">Damage Taken</div>
              </div>
              <div className="text-center">
-               <div className="text-2xl font-bold text-yellow-400">{stats.stats?.materialsGathered || 0}</div>
+               <div className="text-2xl font-bold text-yellow-400">{stats.overall?.materialsGathered || 0}</div>
                <div className="text-xs text-gray-400">Materials</div>
              </div>
              <div className="text-center">
-               <div className="text-2xl font-bold text-purple-400">{stats.stats?.structuresBuilt || 0}</div>
+               <div className="text-2xl font-bold text-purple-400">{stats.overall?.structuresBuilt || 0}</div>
                <div className="text-xs text-gray-400">Structures</div>
              </div>
            </div>
