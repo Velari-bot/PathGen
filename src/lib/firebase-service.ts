@@ -229,6 +229,34 @@ export interface FortniteStats {
     dataQuality: 'high' | 'medium' | 'low';
     notes?: string;
   };
+  
+  // Raw Osirion data for detailed analysis
+  rawOsirionData?: {
+    matches: Array<{
+      id?: string;
+      placement: number;
+      kills: number;
+      assists: number;
+      damage: number;
+      survivalTime?: number;
+      woodFarmed?: number;
+      stoneFarmed?: number;
+      metalFarmed?: number;
+      buildingHits?: number;
+      woodBuildsPlaced?: number;
+      stoneBuildsPlaced?: number;
+      metalBuildsPlaced?: number;
+      buildsEdited?: number;
+      buildsEditedSuccessfully?: number;
+      buildsEditedTotalTime?: number;
+    }>;
+    preferences?: {
+      preferredDrop: string;
+      weakestZone: string;
+      bestWeapon: string;
+      avgSurvivalTime: number;
+    };
+  };
 }
 
 export interface ReplayUpload {

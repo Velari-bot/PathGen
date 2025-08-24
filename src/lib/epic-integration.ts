@@ -26,6 +26,8 @@ export interface EpicFortniteStats {
     distanceTraveled: number;
     materialsGathered: number;
     structuresBuilt: number;
+    winRate: number;
+    avgPlace: number;
   };
   
   // Mode-specific stats
@@ -115,6 +117,33 @@ export interface EpicFortniteStats {
     materialsGathered: number;
     structuresBuilt: number;
   };
+  
+  // Raw data from Osirion
+  matches?: Array<{
+    id?: string;
+    placement: number;
+    kills: number;
+    assists: number;
+    damage: number;
+    survivalTime?: number;
+    woodFarmed?: number;
+    stoneFarmed?: number;
+    metalFarmed?: number;
+    buildingHits?: number;
+    woodBuildsPlaced?: number;
+    stoneBuildsPlaced?: number;
+    metalBuildsPlaced?: number;
+    buildsEdited?: number;
+    buildsEditedSuccessfully?: number;
+    buildsEditedTotalTime?: number;
+  }>;
+  
+  preferences?: {
+    preferredDrop: string;
+    weakestZone: string;
+    bestWeapon: string;
+    avgSurvivalTime: number;
+  };
 }
 
 export class EpicIntegration {
@@ -133,19 +162,36 @@ export class EpicIntegration {
       
       if (stats) {
         // Save to Firebase
-        await FirebaseService.saveFortniteData({
+        await FirebaseService.saveFortniteStats({
+          id: `${userId}_${epicId}`,
           userId,
           epicId,
           epicName,
-          stats: stats.overall,
-          modes: {
-            solo: stats.solo,
-            duo: stats.duo,
-            squad: stats.squad,
-            arena: stats.arena
+          platform: 'epic',
+          lastUpdated: new Date(),
+          overall: stats.overall,
+          solo: stats.solo,
+          duo: stats.duo,
+          squad: stats.squad,
+          arena: stats.arena,
+          usage: {
+            current: 0,
+            limit: 1000,
+            resetDate: new Date(),
+            lastApiCall: new Date(),
+            totalApiCalls: 1
           },
-          dataSource: 'osirion',
-          dataQuality: 'high'
+          metadata: {
+            season: 1,
+            chapter: 1,
+            dataSource: 'osirion',
+            dataQuality: 'high',
+            notes: 'Data pulled from Osirion API'
+          },
+          rawOsirionData: {
+            matches: stats.matches || [],
+            preferences: stats.preferences
+          }
         });
         
         console.log(`✅ Fortnite stats from Osirion saved to Firebase for user: ${userId}`);
@@ -241,13 +287,16 @@ export class EpicIntegration {
    * Extract stats for a specific game mode
    */
   private static extractModeStats(modeStats: any): any {
+    const matches = modeStats.matches || modeStats.gamesPlayed || 0;
+    const top1 = modeStats.top1 || modeStats.victories || 0;
+    
     return {
-      wins: modeStats.wins || modeStats.top1 || 0,
+      wins: top1,
       kd: modeStats.kd || modeStats.killDeathRatio || 0,
       placement: modeStats.avgPlace || modeStats.averagePlacement || 0,
       earnings: modeStats.earnings || 0,
-      matches: modeStats.matches || modeStats.gamesPlayed || 0,
-      top1: modeStats.top1 || modeStats.victories || 0,
+      matches: matches,
+      top1: top1,
       top3: modeStats.top3 || 0,
       top5: modeStats.top5 || 0,
       top10: modeStats.top10 || 0,
@@ -260,7 +309,9 @@ export class EpicIntegration {
       timeAlive: modeStats.timeAlive || modeStats.survivalTime || 0,
       distanceTraveled: modeStats.distanceTraveled || 0,
       materialsGathered: modeStats.materialsGathered || 0,
-      structuresBuilt: modeStats.structuresBuilt || 0
+      structuresBuilt: modeStats.structuresBuilt || 0,
+      winRate: matches > 0 ? top1 / matches : 0,
+      avgPlace: modeStats.avgPlace || modeStats.averagePlacement || 0
     };
   }
   

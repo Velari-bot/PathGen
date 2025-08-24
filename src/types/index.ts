@@ -96,6 +96,33 @@ export interface Persona {
   color: string;
 }
 
+// Drone spawn data types
+export interface DroneSpawnLocation {
+  name: string;
+  coordinates: { x: number; y: number };
+  spawnRate: string;
+  spawnFrequency: string;
+  lootTier: string;
+  strategicValue: 'high' | 'medium' | 'low';
+  notes: string[];
+}
+
+export interface DroneSpawnData {
+  locations: DroneSpawnLocation[];
+  spawnMechanics: {
+    timing: string;
+    frequency: string;
+    lootQuality: string;
+    strategicAdvantage: string;
+  };
+  tournamentStrategy: {
+    earlyGame: string;
+    midGame: string;
+    endGame: string;
+    riskAssessment: string;
+  };
+}
+
 // New Osirion API types
 export interface OsirionMatch {
   id: string;

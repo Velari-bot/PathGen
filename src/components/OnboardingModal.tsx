@@ -107,10 +107,16 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
   };
 
   const updateNestedData = (parent: keyof OnboardingData, field: string, value: any) => {
-    setData(prev => ({
-      ...prev,
-      [parent]: { ...prev[parent], [field]: value }
-    }));
+    setData(prev => {
+      const parentData = prev[parent];
+      if (typeof parentData === 'object' && parentData !== null) {
+        return {
+          ...prev,
+          [parent]: { ...parentData, [field]: value }
+        };
+      }
+      return prev;
+    });
   };
 
   const handleNext = () => {
@@ -151,6 +157,12 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
           preferredModes: data.preferredModes,
           teamSize: data.teamSize,
           goals: data.goals
+        },
+        subscription: {
+          status: 'free',
+          tier: 'free',
+          startDate: new Date(),
+          autoRenew: false
         },
         settings: {
           notifications: data.notifications,
