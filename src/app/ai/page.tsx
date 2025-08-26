@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
 import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service';
 import { UsageTracker } from '@/lib/usage-tracker';
-import { DRONE_SPAWN_DATA, getDroneSpawnInfo, getDroneStrategyByPlaystyle } from '@/lib/drone-spawn-data';
+
 
 
 
@@ -76,12 +76,53 @@ export default function AIPage() {
     setIsLoadingResponse(true);
 
     try {
-      // For now, just save to local storage
-      // TODO: Implement Firebase message saving when FirebaseService methods are available
+      // Save to local storage
       saveMessageToLocalStorage(userMessage);
       
-      // Generate AI response
-      const aiResponse = await generateAIResponse(inputMessage, fortniteStats);
+      // Get Epic account information for context
+      let epicContext = '';
+      let fortniteUsername = '';
+      let userStats = '';
+      
+      try {
+        const epicAccount = await FirebaseService.getEpicAccount(user.uid);
+        if (epicAccount) {
+          epicContext = `Epic Account: ${epicAccount.displayName} (${epicAccount.epicId}), Platform: ${epicAccount.platform}, Linked: ${epicAccount.linkedAt}`;
+          fortniteUsername = epicAccount.displayName;
+        }
+      } catch (error) {
+        console.warn('Could not load Epic account info:', error);
+      }
+      
+      // Prepare user stats context
+      if (fortniteStats) {
+        const overallStats = fortniteStats.overall;
+        if (overallStats) {
+          userStats = `K/D: ${overallStats.kd.toFixed(2)}, Win Rate: ${(overallStats.winRate * 100).toFixed(1)}%, Matches: ${overallStats.matches}, Avg Placement: ${overallStats.avgPlace.toFixed(1)}`;
+        }
+      }
+      
+      // Call the AI API with comprehensive context
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: inputMessage,
+          context: 'You are PathGen AI, a helpful Fortnite improvement coach. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.',
+          fortniteUsername: fortniteUsername,
+          epicContext: epicContext,
+          userStats: userStats
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.response || 'Sorry, I could not generate a response.';
       
       const assistantMessage = {
         role: 'assistant' as const,
@@ -295,7 +336,7 @@ export default function AIPage() {
     <div className="min-h-screen bg-black">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-20 pb-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
@@ -303,104 +344,11 @@ export default function AIPage() {
             <p className="text-xl text-gray-300">
               Your AI Fortnite Coach & Strategy Assistant
             </p>
-            
-            {/* Drone Spawn Info Panel */}
-            <div className="mt-6 bg-[#1A1A1A] rounded-lg p-4 border border-[#2A2A2A] max-w-4xl mx-auto">
-              <h3 className="text-lg font-semibold text-white mb-3">🤖 Drone Spawn Locations</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">S</span>
-                  </div>
-                  <p className="text-white font-medium">Supernova</p>
-                  <p className="text-gray-400 text-xs">Epic+ Loot</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">S</span>
-                  </div>
-                  <p className="text-white font-medium">Shogun</p>
-                  <p className="text-gray-400 text-xs">Epic+ Loot</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">K</span>
-                  </div>
-                  <p className="text-white font-medium">Kappa Kappa</p>
-                  <p className="text-gray-400 text-xs">Epic+ Loot</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">C</span>
-                  </div>
-                  <p className="text-white font-medium">Canyon</p>
-                  <p className="text-gray-400 text-xs">Epic+ Loot</p>
-                </div>
-              </div>
-              <div className="mt-3 text-center">
-                <p className="text-gray-300 text-sm">
-                  <span className="text-green-400 font-medium">✓</span> All locations spawn once per game
-                </p>
-                <p className="text-gray-300 text-sm">
-                  <span className="text-blue-400 font-medium">⚡</span> Same spawn rate across all locations
-                </p>
-                <p className="text-gray-300 text-sm">
-                  <span className="text-yellow-400 font-medium">🏆</span> High strategic value for tournaments
-                </p>
-              </div>
-            </div>
-            
-            {/* Tournament Info Panel */}
-            <div className="mt-4 bg-[#1A1A1A] rounded-lg p-4 border border-[#2A2A2A] max-w-4xl mx-auto">
-              <h3 className="text-lg font-semibold text-white mb-3">🏆 EU FNCS Division Cups - Week 2</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">1</span>
-                  </div>
-                  <p className="text-white font-medium">Division 1</p>
-                  <p className="text-gray-400 text-xs">Top 33: 675 pts</p>
-                  <p className="text-green-400 text-xs">Day 1: 669 pts</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">2</span>
-                  </div>
-                  <p className="text-white font-medium">Division 2</p>
-                  <p className="text-gray-400 text-xs">Top 40: 685 pts</p>
-                  <p className="text-green-400 text-xs">Day 1: 698 pts</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-white font-bold text-lg">3</span>
-                  </div>
-                  <p className="text-white font-medium">Division 3</p>
-                  <p className="text-gray-400 text-xs">Top 300: 560 pts</p>
-                  <p className="text-green-400 text-xs">Day 1: 573 pts</p>
-                </div>
-              </div>
-              <div className="mt-3 text-center">
-                <p className="text-gray-400 text-sm">
-                  <span className="text-yellow-400 font-medium">⏰</span> 30min extension had varying impact per division
-                </p>
-                <p className="text-gray-400 text-sm">
-                  <span className="text-blue-400 font-medium">🔄</span> Elo resets - all players start at 0 points
-                </p>
-                <p className="text-gray-400 text-sm">
-                  <span className="text-green-400 font-medium">📊</span> Live updates every hour during play
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Fortnite Account Section */}
           <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
             <h2 className="text-2xl font-bold text-white mb-4">Fortnite Account</h2>
-            <div className="flex space-x-2 mb-4">
-              <button className="px-4 py-2 bg-[#2A2A2A] text-white rounded-lg border border-[#2A2A2A]">Epic Account</button>
-              <button className="px-4 py-2 bg-[#1A1A1A] text-[#BFBFBF] rounded-lg hover:bg-[#2A2A2A] transition-colors">Manual Input</button>
-              <button className="px-4 py-2 bg-[#1A1A1A] text-[#BFBFBF] rounded-lg hover:bg-[#2A2A2A] transition-colors">Tracker Link</button>
-            </div>
             <div className="flex items-center space-x-4">
               <input
                 type="text"
@@ -459,80 +407,7 @@ export default function AIPage() {
                 Show Chat Log
               </button>
               <span className="text-[#BFBFBF]">1/5 chats</span>
-              <button 
-                onClick={async () => {
-                  try {
-                    // First check if OpenAI API key is configured
-                    if (!process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
-                      alert('⚠️ Warning: OpenAI API key not configured!\n\nPlease add OPENAI_API_KEY to your .env file.');
-                      return;
-                    }
-                    
-                    // Check Firebase Admin SDK credentials
-                    const hasFirebaseAdmin = process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY;
-                    if (!hasFirebaseAdmin) {
-                      alert('⚠️ Warning: Firebase Admin SDK not configured!\n\nPlease add to your .env file:\nFIREBASE_CLIENT_EMAIL=your_service_account_email\nFIREBASE_PRIVATE_KEY="your_private_key"\n\nGet these from Firebase Console > Project Settings > Service Accounts');
-                      return;
-                    }
-                    
-                    // Test create-conversation endpoint
-                    const testData = {
-                      conversation: {
-                        id: 'test-chat-' + Date.now(),
-                        epicName: 'TestUser',
-                        createdAt: new Date().toISOString()
-                      },
-                      userId: 'test-user-id'
-                    };
-                    
-                    console.log('🧪 Testing create-conversation endpoint...');
-                    console.log('📋 Test data:', testData);
-                    console.log('🔑 Firebase Admin configured:', !!hasFirebaseAdmin);
-                    
-                    const createResponse = await fetch('/api/ai/create-conversation', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(testData)
-                    });
-                    
-                    if (createResponse.ok) {
-                      const result = await createResponse.json();
-                      console.log('✅ create-conversation API working:', result);
-                      
-                      // Now test the chat endpoint
-                      console.log('🧪 Testing chat endpoint...');
-                      const chatResponse = await fetch('/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          message: 'Hello, this is a test message',
-                          context: 'You are PathGen AI, a Fortnite coach.'
-                        })
-                      });
-                      
-                      if (chatResponse.ok) {
-                        const chatResult = await chatResponse.json();
-                        console.log('✅ Chat API working:', chatResult);
-                        alert('✅ All APIs are working!\n\n• create-conversation: OK\n• chat: OK\n\nCheck console for details.');
-                      } else {
-                        const chatError = await chatResponse.json().catch(() => ({}));
-                        console.error('❌ Chat API error:', chatResponse.status, chatError);
-                        alert('⚠️ Partial success:\n\n✅ create-conversation: Working\n❌ chat: Error ' + chatResponse.status + '\n\nCheck console for details.');
-                      }
-                    } else {
-                      const errorData = await createResponse.json().catch(() => ({}));
-                      console.error('❌ create-conversation API error:', createResponse.status, errorData);
-                      alert('❌ create-conversation API error: ' + createResponse.status + '\n\nDetails: ' + JSON.stringify(errorData, null, 2) + '\n\nCheck console for full error details.');
-                    }
-                  } catch (error) {
-                    console.error('❌ API test failed:', error);
-                    alert('❌ API test failed: ' + error);
-                  }
-                }}
-                className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-              >
-                Test API
-              </button>
+
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-green-400 text-xs">API Online</span>
@@ -629,24 +504,6 @@ export default function AIPage() {
               <h3 className="text-white font-semibold mb-3">Quick Suggestions</h3>
               <div className="flex flex-wrap gap-2">
                 <button 
-                  onClick={() => setInputMessage('drone spawn locations')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🤖 Drone Spawn Locations
-                </button>
-                <button 
-                  onClick={() => setInputMessage('drone strategy aggressive')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  ⚔️ Aggressive Drone Strategy
-                </button>
-                <button 
-                  onClick={() => setInputMessage('drone strategy passive')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🛡️ Passive Drone Strategy
-                </button>
-                <button 
                   onClick={() => setInputMessage('drop locations and POI analysis')}
                   className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
                 >
@@ -659,16 +516,28 @@ export default function AIPage() {
                   📊 Performance Analysis
                 </button>
                 <button 
-                  onClick={() => setInputMessage('eu fncs division cups')}
+                  onClick={() => setInputMessage('building tips and techniques')}
                   className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
                 >
-                  🏆 EU FNCS Division Cups
+                  🏗️ Building Tips
                 </button>
                 <button 
-                  onClick={() => setInputMessage('division targets and qualification')}
+                  onClick={() => setInputMessage('aim and weapon strategies')}
                   className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
                 >
-                  🎯 Division Targets
+                  🎯 Aim & Weapons
+                </button>
+                <button 
+                  onClick={() => setInputMessage('tournament strategies')}
+                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
+                >
+                  🏆 Tournament Strategies
+                </button>
+                <button 
+                  onClick={() => setInputMessage('game sense and positioning')}
+                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
+                >
+                  🧠 Game Sense
                 </button>
               </div>
             </div>

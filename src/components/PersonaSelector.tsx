@@ -9,11 +9,7 @@ const personas = [
     title: 'Casual Player',
     description: 'Play for fun and improvement',
     features: ['Basic building tips', 'Weapon recommendations', 'Survival strategies', 'Fun gameplay focus'],
-    icon: (
-      <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-10 7H8v3H6v-3H3v-2h3V8h2v3h3v2zm4.5 2c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm4-3c-.83 0-1.5-.67-1.5-1.5S18.67 10 19.5 10s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-      </svg>
-    ),
+    icon: '🎮',
     color: 'white',
     difficulty: 'Beginner',
     timeCommitment: '1-2 hours/week',
@@ -127,22 +123,6 @@ export default function PersonaSelector() {
           <p className="text-xl md:text-2xl text-secondary-text mb-12 max-w-3xl mx-auto leading-relaxed">
             Select your Fortnite persona and get personalized coaching tailored to your goals and skill level.
           </p>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-20">
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="text-3xl font-bold text-white mb-2">10K+</div>
-              <div className="text-secondary-text">Active Players</div>
-            </div>
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="text-3xl font-bold text-white mb-2">95%</div>
-              <div className="text-secondary-text">Success Rate</div>
-            </div>
-            <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-              <div className="text-3xl font-bold text-white mb-2">24/7</div>
-              <div className="text-secondary-text">AI Support</div>
-            </div>
-          </div>
         </div>
 
         {/* Enhanced Persona Cards with more spacing */}

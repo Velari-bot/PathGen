@@ -49,11 +49,12 @@ const stripe = new stripe_1.default(functions.config().stripe.secret_key, {
     apiVersion: '2023-10-16'
 });
 // Create checkout session for subscription
-exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
+exports.createCheckoutSession = functions.https.onCall(async (request, context) => {
     var _a, _b, _c;
-    if (!context.auth) {
+    if (!(context === null || context === void 0 ? void 0 : context.auth)) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
+    const data = request.data;
     const userId = context.auth.uid;
     const { priceId, successUrl, cancelUrl } = data;
     try {
@@ -149,11 +150,12 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     }
 });
 // Create portal session for subscription management
-exports.createPortalSession = functions.https.onCall(async (data, context) => {
+exports.createPortalSession = functions.https.onCall(async (request, context) => {
     var _a;
-    if (!context.auth) {
+    if (!(context === null || context === void 0 ? void 0 : context.auth)) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
+    const data = request.data;
     const userId = context.auth.uid;
     const { returnUrl } = data;
     try {
@@ -189,8 +191,8 @@ exports.createPortalSession = functions.https.onCall(async (data, context) => {
     }
 });
 // Get subscription information
-exports.getSubscriptionInfo = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
+exports.getSubscriptionInfo = functions.https.onCall(async (request, context) => {
+    if (!(context === null || context === void 0 ? void 0 : context.auth)) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
     const userId = context.auth.uid;

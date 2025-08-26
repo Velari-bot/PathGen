@@ -19,8 +19,11 @@ interface TournamentData {
 const TOURNAMENTS: TournamentData[] = [
   { name: 'FNCS Div 1', color: 'bg-red-500', pointsPerGame: 15, maxGames: 10, timeLimit: 3, division: 'div1' },
   { name: 'FNCS Div 2/3', color: 'bg-red-600', pointsPerGame: 12, maxGames: 10, timeLimit: 3, division: 'div2' },
+  { name: 'Console Victory Cash Cup', color: 'bg-blue-500', pointsPerGame: 25, maxGames: 10, timeLimit: 3, division: 'div2' },
+  { name: 'Clix Reload Icon Cup', color: 'bg-purple-500', pointsPerGame: 15, maxGames: 10, timeLimit: 2.5, division: 'div2' },
+  { name: 'Bugha Reload Icon Cup', color: 'bg-orange-500', pointsPerGame: 15, maxGames: 10, timeLimit: 2.5, division: 'div2' },
+  { name: 'Blade of Champions Cup', color: 'bg-yellow-500', pointsPerGame: 3, maxGames: 10, timeLimit: 3, division: 'div2' },
   { name: 'Eval', color: 'bg-green-500', pointsPerGame: 10, maxGames: 10, timeLimit: 2, division: 'div2' },
-  { name: 'Console VCC', color: 'bg-blue-500', pointsPerGame: 8, maxGames: 10, timeLimit: 2, division: 'div2' },
   { name: 'PJ/Crystal/Axe/Surf Cups', color: 'bg-gray-500', pointsPerGame: 6, maxGames: 10, timeLimit: 1.5, division: 'div2' },
   { name: 'Icon Reload Cups', color: 'bg-gray-600', pointsPerGame: 5, maxGames: 10, timeLimit: 1, division: 'div2' },
   { name: 'OG Cup', color: 'bg-gray-700', pointsPerGame: 4, maxGames: 10, timeLimit: 1, division: 'div2' }

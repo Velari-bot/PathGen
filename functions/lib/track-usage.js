@@ -42,10 +42,11 @@ if (!admin.apps.length) {
 }
 const db = admin.firestore();
 // Track usage for a specific feature
-exports.trackUsage = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
+exports.trackUsage = functions.https.onCall(async (request, context) => {
+    if (!(context === null || context === void 0 ? void 0 : context.auth)) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
+    const data = request.data;
     const userId = context.auth.uid;
     const { feature, tokensUsed = 0, metadata = {} } = data;
     try {
@@ -110,8 +111,8 @@ exports.trackUsage = functions.https.onCall(async (data, context) => {
     }
 });
 // Get current usage for a user
-exports.getCurrentUsage = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
+exports.getCurrentUsage = functions.https.onCall(async (request, context) => {
+    if (!(context === null || context === void 0 ? void 0 : context.auth)) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
     const userId = context.auth.uid;
@@ -149,10 +150,11 @@ exports.getCurrentUsage = functions.https.onCall(async (data, context) => {
     }
 });
 // Reset user usage (admin function)
-exports.resetUserUsage = functions.https.onCall(async (data, context) => {
-    if (!context.auth) {
+exports.resetUserUsage = functions.https.onCall(async (request, context) => {
+    if (!(context === null || context === void 0 ? void 0 : context.auth)) {
         throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
     }
+    const data = request.data;
     const adminUserId = context.auth.uid;
     const targetUserId = data.targetUserId || adminUserId;
     try {

@@ -10,11 +10,12 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 // Track usage for a specific feature
-export const trackUsage = functions.https.onCall(async (data: UsageTrackingRequest, context) => {
-  if (!context.auth) {
+export const trackUsage = functions.https.onCall(async (request, context) => {
+  if (!context?.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
+  const data = request.data as UsageTrackingRequest;
   const userId = context.auth.uid;
   const { feature, tokensUsed = 0, metadata = {} } = data;
 
@@ -93,8 +94,8 @@ export const trackUsage = functions.https.onCall(async (data: UsageTrackingReque
 });
 
 // Get current usage for a user
-export const getCurrentUsage = functions.https.onCall(async (data: any, context) => {
-  if (!context.auth) {
+export const getCurrentUsage = functions.https.onCall(async (request, context) => {
+  if (!context?.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
@@ -141,11 +142,12 @@ export const getCurrentUsage = functions.https.onCall(async (data: any, context)
 });
 
 // Reset user usage (admin function)
-export const resetUserUsage = functions.https.onCall(async (data: { targetUserId?: string }, context) => {
-  if (!context.auth) {
+export const resetUserUsage = functions.https.onCall(async (request, context) => {
+  if (!context?.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
   }
 
+  const data = request.data as { targetUserId?: string };
   const adminUserId = context.auth.uid;
   const targetUserId = data.targetUserId || adminUserId;
 

@@ -1,20 +1,24 @@
 @echo off
-echo 🚀 Deploying Firebase configuration...
+echo 🔥 Deploying Firebase Functions with Stripe Webhook Fixes...
 echo.
 
-echo 📋 Deploying Firestore security rules...
-firebase deploy --only firestore:rules
+echo 📦 Installing dependencies...
+cd functions
+npm install
+cd ..
+
+echo 🚀 Deploying functions...
+firebase deploy --only functions
 
 echo.
-echo 📊 Deploying Firestore indexes...
-firebase deploy --only firestore:indexes
-
+echo ✅ Deployment complete!
 echo.
-echo ✅ Firebase deployment complete!
+echo 📋 What was fixed:
+echo • Added raw body configuration for Stripe webhooks
+echo • Enhanced subscription update logic
+echo • Added error handling for user document updates
+echo • Improved payment success handling
 echo.
-echo 📝 Next steps:
-echo 1. Check Firebase Console to verify rules are active
-echo 2. Test the chat functionality
-echo 3. Messages should now save to Firebase
+echo 🔗 Your webhook endpoint: https://us-central1-pathgen-a771b.cloudfunctions.net/stripeWebhook
 echo.
 pause

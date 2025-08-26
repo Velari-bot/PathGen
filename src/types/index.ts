@@ -287,3 +287,70 @@ export interface CompetitiveStrategy {
   surgeStrategy: string;
   loadoutPriority: string[];
 }
+
+// Live Tournament Updates types
+export interface LiveTournamentUpdate {
+  id: string;
+  tournamentName: string;
+  region: 'EU' | 'NA' | 'OCE' | 'ASIA';
+  timestamp: string;
+  updates: TournamentPointUpdate[];
+  queueInfo?: string;
+  notes?: string;
+}
+
+export interface TournamentPointUpdate {
+  rank: string;
+  points: number;
+  timestamp: string;
+  notes?: string;
+}
+
+export interface TournamentBreakdown {
+  rank: string;
+  points: number;
+  example: {
+    wins: number;
+    top5s: number;
+    top10s: number;
+    top20s: number;
+    elimsPerGame: number;
+    spareGames: number;
+  };
+}
+
+export interface IconReloadCup {
+  name: string;
+  format: string;
+  duration: string;
+  games: number;
+  hasElo: boolean;
+  regionLocked: boolean;
+  liveUpdates: LiveTournamentUpdate[];
+}
+
+export interface ConsoleVictoryCashCup {
+  name: string;
+  format: string;
+  duration: string;
+  games: number;
+  hasElo: boolean;
+  regionLocked: boolean;
+  liveUpdates: LiveTournamentUpdate[];
+  breakdown: TournamentBreakdown;
+}
+
+export interface BladeOfChampionsCup {
+  name: string;
+  format: string;
+  duration: string;
+  games: number;
+  hasElo: boolean;
+  regionLocked: boolean;
+  qualification: string;
+  preRoundEstimate: {
+    points: number;
+    range: string;
+    notes: string;
+  };
+}

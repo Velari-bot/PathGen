@@ -1,6 +1,13 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const stripe = require('stripe')(functions.config().stripe.secret_key);
+const express = require('express');
+
+// Initialize Express app for raw body handling
+const app = express();
+
+// CRITICAL: Configure raw body for Stripe webhooks
+app.use('/stripe-webhook', express.raw({ type: 'application/json' }));
 
 admin.initializeApp();
 
@@ -22,7 +29,9 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
   let event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
+    // Use the raw body buffer for signature verification
+    const rawBody = req.body;
+    event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
     console.log(`Event verified: ${event.type} (ID: ${event.id})`);
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
@@ -118,12 +127,34 @@ async function handleSubscriptionCreated(subscription) {
     });
 
     // Update user profile with subscription info
-    await db.collection('users').doc(userId).update({
-      'subscription.status': plan,
-      'subscription.tier': plan,
-      'subscription.stripeCustomerId': subscription.customer,
-      'subscription.stripeSubscriptionId': subscription.id
-    });
+    try {
+      await db.collection('users').doc(userId).update({
+        'subscription.status': plan,
+        'subscription.tier': plan,
+        'subscription.stripeCustomerId': subscription.customer,
+        'subscription.stripeSubscriptionId': subscription.id,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      console.log(`User ${userId} subscription updated to plan ${plan}`);
+    } catch (userError) {
+      console.error(`Error updating user ${userId} subscription:`, userError);
+      // Try to create user document if it doesn't exist
+      try {
+        await db.collection('users').doc(userId).set({
+          subscription: {
+            status: plan,
+            tier: plan,
+            stripeCustomerId: subscription.customer,
+            stripeSubscriptionId: subscription.id
+          },
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        console.log(`Created user document for ${userId} with subscription ${plan}`);
+      } catch (createError) {
+        console.error(`Failed to create user document for ${userId}:`, createError);
+      }
+    }
 
     console.log(`Subscription created for user ${userId} with plan ${plan}`);
   } catch (error) {
@@ -137,6 +168,7 @@ async function handleSubscriptionUpdated(subscription) {
     const plan = getPlanFromPriceId(subscription.items.data[0].price.id);
     const limits = getPlanLimits(plan);
 
+    // Update subscription document
     await db.collection('subscriptions').doc(subscription.id).update({
       plan,
       status: subscription.status,
@@ -146,6 +178,44 @@ async function handleSubscriptionUpdated(subscription) {
       limits,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
+
+    // Get customer to find userId
+    const customer = await stripe.customers.retrieve(subscription.customer);
+    const userId = customer.metadata.userId;
+    
+    if (userId) {
+      // Update user profile with subscription info
+      try {
+        await db.collection('users').doc(userId).update({
+          'subscription.status': plan,
+          'subscription.tier': plan,
+          'subscription.stripeCustomerId': subscription.customer,
+          'subscription.stripeSubscriptionId': subscription.id,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        console.log(`User ${userId} subscription updated to plan ${plan}`);
+      } catch (userError) {
+        console.error(`Error updating user ${userId} subscription:`, userError);
+        // Try to create user document if it doesn't exist
+        try {
+          await db.collection('users').doc(userId).set({
+            subscription: {
+              status: plan,
+              tier: plan,
+              stripeCustomerId: subscription.customer,
+              stripeSubscriptionId: subscription.id
+            },
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
+          console.log(`Created user document for ${userId} with subscription ${plan}`);
+        } catch (createError) {
+          console.error(`Failed to create user document for ${userId}:`, createError);
+        }
+      }
+    } else {
+      console.warn(`No userId found in customer metadata for subscription ${subscription.id}`);
+    }
 
     console.log(`Subscription updated for ${subscription.id} to plan ${plan}`);
   } catch (error) {
@@ -171,10 +241,30 @@ async function handleSubscriptionDeleted(subscription) {
 async function handlePaymentSucceeded(invoice) {
   try {
     if (invoice.subscription) {
+      // Update subscription status
       await db.collection('subscriptions').doc(invoice.subscription).update({
         status: 'active',
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
+
+      // Get subscription details to update user
+      const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+      const customer = await stripe.customers.retrieve(subscription.customer);
+      const userId = customer.metadata.userId;
+      
+      if (userId) {
+        const plan = getPlanFromPriceId(subscription.items.data[0].price.id);
+        try {
+          await db.collection('users').doc(userId).update({
+            'subscription.status': 'active',
+            'subscription.tier': plan,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          });
+          console.log(`User ${userId} payment succeeded, subscription active`);
+        } catch (userError) {
+          console.error(`Error updating user ${userId} payment status:`, userError);
+        }
+      }
     }
   } catch (error) {
     console.error('Error handling payment success:', error);

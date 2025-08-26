@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import SmoothScroll from '@/components/SmoothScroll';
 import TournamentCalculator from '@/components/TournamentCalculator';
+import LiveTournamentUpdates from '@/components/LiveTournamentUpdates';
 import Navbar from '@/components/Navbar';
 
 export default function TournamentsPage() {
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showLiveUpdates, setShowLiveUpdates] = useState(false);
 
   return (
     <SmoothScroll>
@@ -38,13 +40,21 @@ export default function TournamentsPage() {
               </p>
             </div>
             
-            <div className="text-center">
+            <div className="text-center space-y-4">
               <button
                 onClick={() => setShowCalculator(true)}
                 className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 🧮 Open Tournament Calculator
               </button>
+              <div>
+                <button
+                  onClick={() => setShowLiveUpdates(true)}
+                  className="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold rounded-xl text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                >
+                  📊 View Live Tournament Updates
+                </button>
+              </div>
             </div>
           </div>
 
@@ -88,21 +98,40 @@ export default function TournamentsPage() {
               </div>
             </div>
 
-            {/* Console VCC */}
+            {/* Console Victory Cash Cup */}
             <div className="glass-card p-6">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl">🎮</span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">Console VCC</h3>
+                <h3 className="text-xl font-bold text-white mb-3">Console Victory Cash Cup</h3>
                 <p className="text-gray-300 mb-4">
-                  Console-specific tournaments with balanced competition
+                  High-stakes console tournament with detailed breakdowns
                 </p>
                 <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 8 points per game</p>
+                  <p>• 25 points per game</p>
                   <p>• 10 games maximum</p>
-                  <p>• 2 hour time limit</p>
-                  <p>• Console only</p>
+                  <p>• 3 hour time limit</p>
+                  <p>• Live point estimates</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Blade of Champions Cup */}
+            <div className="glass-card p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⚔️</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Blade of Champions Cup</h3>
+                <p className="text-gray-300 mb-4">
+                  Pickaxe reward tournament with ELO system
+                </p>
+                <div className="text-sm text-gray-400 space-y-1">
+                  <p>• 3 points per game</p>
+                  <p>• 10 games maximum</p>
+                  <p>• 3 hour time limit</p>
+                  <p>• Top 750 for pickaxe</p>
                 </div>
               </div>
             </div>
@@ -118,10 +147,48 @@ export default function TournamentsPage() {
                   Quick tournaments with fast-paced action
                 </p>
                 <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 5 points per game</p>
+                  <p>• 15 points per game</p>
                   <p>• 10 games maximum</p>
-                  <p>• 1 hour time limit</p>
-                  <p>• High intensity</p>
+                  <p>• 2.5 hour time limit</p>
+                  <p>• Points based matchmaking</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Clix Reload Icon Cup */}
+            <div className="glass-card p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Clix Reload Icon Cup</h3>
+                <p className="text-gray-300 mb-4">
+                  High-stakes duos tournament with live updates
+                </p>
+                <div className="text-sm text-gray-400 space-y-1">
+                  <p>• 15 points per game</p>
+                  <p>• 10 games maximum</p>
+                  <p>• 2.5 hour time limit</p>
+                  <p>• Live point tracking</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bugha Reload Icon Cup */}
+            <div className="glass-card p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">Bugha Reload Icon Cup</h3>
+                <p className="text-gray-300 mb-4">
+                  Competitive duos with real-time estimates
+                </p>
+                <div className="text-sm text-gray-400 space-y-1">
+                  <p>• 15 points per game</p>
+                  <p>• 10 games maximum</p>
+                  <p>• 2.5 hour time limit</p>
+                  <p>• Queue optimization tips</p>
                 </div>
               </div>
             </div>
@@ -204,6 +271,12 @@ export default function TournamentsPage() {
         <TournamentCalculator 
           isOpen={showCalculator} 
           onClose={() => setShowCalculator(false)} 
+        />
+
+        {/* Live Tournament Updates Modal */}
+        <LiveTournamentUpdates 
+          isOpen={showLiveUpdates} 
+          onClose={() => setShowLiveUpdates(false)} 
         />
       </div>
     </SmoothScroll>

@@ -427,6 +427,8 @@ export default function DashboardPage() {
     if (!epicAccount || !user) return;
     
     try {
+      console.log('🔄 Refreshing stats for Epic account:', epicAccount.id);
+      
       const response = await fetch('/api/osirion/stats', {
         method: 'POST',
         headers: {
@@ -441,12 +443,138 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setFortniteStats(data);
+        console.log('📊 Stats refresh response:', data);
+        
+        if (data.success && data.stats) {
+          // Create the same comprehensive structure as in pullStatsFromOsirion
+          const fortniteStatsData: FortniteStats = {
+            id: FirebaseService.generateId(),
+            userId: user.uid,
+            epicId: epicAccount.id,
+            epicName: epicAccount.displayName,
+            platform: 'pc',
+            lastUpdated: new Date(),
+            
+            // Overall stats from Osirion API
+            overall: {
+              kd: data.stats?.all?.kd || 0,
+              winRate: data.stats?.all?.winRate || 0,
+              matches: data.stats?.all?.matches || 0,
+              avgPlace: data.stats?.all?.avgPlace || 0,
+              top1: data.stats?.all?.top1 || 0,
+              top3: data.stats?.all?.top3 || 0,
+              top5: data.stats?.all?.top5 || 0,
+              top10: data.stats?.all?.top10 || 0,
+              top25: data.stats?.all?.top25 || 0,
+              kills: data.stats?.all?.kills || 0,
+              deaths: data.stats?.all?.deaths || 0,
+              assists: data.stats?.all?.assists || 0,
+              damageDealt: data.stats?.all?.damageDealt || 0,
+              damageTaken: data.stats?.all?.damageTaken || 0,
+              timeAlive: data.stats?.all?.timeAlive || 0,
+              distanceTraveled: data.stats?.all?.distanceTraveled || 0,
+              materialsGathered: data.stats?.all?.materialsGathered || 0,
+              structuresBuilt: data.stats?.all?.structuresBuilt || 0
+            },
+            
+            // Mode-specific stats (if available)
+            solo: data.stats?.solo ? {
+              kd: data.stats.solo.kd || 0,
+              winRate: data.stats.solo.winRate || 0,
+              matches: data.stats.solo.matches || 0,
+              avgPlace: data.stats.solo.avgPlace || 0,
+              top1: data.stats.solo.top1 || 0,
+              top3: data.stats.solo.top3 || 0,
+              top5: data.stats.solo.top5 || 0,
+              top10: data.stats.solo.top10 || 0,
+              top25: data.stats.solo.top25 || 0,
+              kills: data.stats.solo.kills || 0,
+              deaths: data.stats.solo.deaths || 0,
+              assists: data.stats.solo.assists || 0,
+              damageDealt: data.stats.solo.damageDealt || 0,
+              damageTaken: data.stats.solo.damageTaken || 0,
+              timeAlive: data.stats.solo.timeAlive || 0,
+              distanceTraveled: data.stats.solo.distanceTraveled || 0,
+              materialsGathered: data.stats.solo.materialsGathered || 0,
+              structuresBuilt: data.stats.solo.structuresBuilt || 0
+            } : undefined,
+            
+            duo: data.stats?.duo ? {
+              kd: data.stats.duo.kd || 0,
+              winRate: data.stats.duo.winRate || 0,
+              matches: data.stats.duo.matches || 0,
+              avgPlace: data.stats.duo.avgPlace || 0,
+              top1: data.stats.duo.top1 || 0,
+              top3: data.stats.duo.top3 || 0,
+              top5: data.stats.duo.top5 || 0,
+              top10: data.stats.duo.top10 || 0,
+              top25: data.stats.duo.top25 || 0,
+              kills: data.stats.duo.kills || 0,
+              deaths: data.stats.duo.deaths || 0,
+              assists: data.stats.duo.assists || 0,
+              damageDealt: data.stats.duo.damageDealt || 0,
+              damageTaken: data.stats.duo.damageTaken || 0,
+              timeAlive: data.stats.duo.timeAlive || 0,
+              distanceTraveled: data.stats.duo.distanceTraveled || 0,
+              materialsGathered: data.stats.duo.materialsGathered || 0,
+              structuresBuilt: data.stats.duo.structuresBuilt || 0
+            } : undefined,
+            
+            squad: data.stats?.squad ? {
+              kd: data.stats.squad.kd || 0,
+              winRate: data.stats.squad.winRate || 0,
+              matches: data.stats.squad.matches || 0,
+              avgPlace: data.stats.squad.avgPlace || 0,
+              top1: data.stats.squad.top1 || 0,
+              top3: data.stats.squad.top3 || 0,
+              top5: data.stats.squad.top5 || 0,
+              top10: data.stats.squad.top10 || 0,
+              top25: data.stats.squad.top25 || 0,
+              kills: data.stats.squad.kills || 0,
+              deaths: data.stats.squad.deaths || 0,
+              assists: data.stats.squad.assists || 0,
+              damageDealt: data.stats.squad.damageDealt || 0,
+              damageTaken: data.stats.squad.damageTaken || 0,
+              timeAlive: data.stats.squad.timeAlive || 0,
+              distanceTraveled: data.stats.squad.distanceTraveled || 0,
+              materialsGathered: data.stats.squad.materialsGathered || 0,
+              structuresBuilt: data.stats.squad.structuresBuilt || 0
+            } : undefined,
+            
+            // Usage tracking
+            usage: {
+              current: data.usage?.current || 0,
+              limit: data.usage?.limit || 0,
+              resetDate: data.usage?.resetDate ? new Date(data.usage.resetDate) : new Date(),
+              lastApiCall: new Date(),
+              totalApiCalls: 1
+            },
+            
+            // Metadata
+            metadata: {
+              season: data.metadata?.season || 1,
+              chapter: data.metadata?.chapter || 1,
+              dataSource: 'osirion' as const,
+              dataQuality: 'high' as const,
+              notes: 'Data refreshed from Osirion API'
+            }
+          };
+          
+          // Save to Firebase
+          await FirebaseService.saveFortniteStats(fortniteStatsData);
+          console.log('✅ Refreshed stats saved to Firebase');
+          
+          // Update local state
+          setFortniteStats(fortniteStatsData);
+          console.log('✅ Stats state updated with refreshed data');
+        } else {
+          console.log('⚠️ Stats refresh response not successful:', data);
         }
+      } else {
+        console.error('❌ Failed to refresh stats from Osirion API:', response.status);
       }
     } catch (error) {
-      console.error('Error refreshing stats:', error);
+      console.error('❌ Error refreshing stats:', error);
     }
   };
 
@@ -522,36 +650,218 @@ export default function DashboardPage() {
 
         {/* Dashboard Content */}
         <div className="max-w-6xl mx-auto space-y-8">
-          {/* Epic Account Section */}
+          {/* Combined Epic Account, AI Coaching, and Fortnite Stats Section */}
           <div className="glass-card p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">🎮 Epic Games Account</h3>
-            {epicAccount ? (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-green-400 font-semibold">Account Connected</h4>
-                  <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full">Connected</span>
+            <h3 className="text-xl font-semibold text-white mb-6">🎮 Epic Games Account & AI Coaching</h3>
+            
+            {/* Epic Account Status */}
+            <div className="mb-6">
+              {epicAccount ? (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-green-400 font-semibold">Account Connected</h4>
+                    <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full">Connected</span>
+                  </div>
+                  <div className="text-sm text-white/80 space-y-1">
+                    <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
+                    <p><span className="text-white/60">Platform:</span> {epicAccount.platform || 'Epic'}</p>
+                    <p><span className="text-white/60">Connected:</span> {new Date(epicAccount.linkedAt || '').toLocaleDateString()}</p>
+                  </div>
+                  <button
+                    onClick={disconnectEpicAccount}
+                    className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                  >
+                    Disconnect Account
+                  </button>
                 </div>
-                <div className="text-sm text-white/80 space-y-1">
-                  <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
-                  <p><span className="text-white/60">Platform:</span> {epicAccount.platform || 'Epic'}</p>
-                  <p><span className="text-white/60">Connected:</span> {new Date(epicAccount.linkedAt || '').toLocaleDateString()}</p>
+              ) : (
+                <div className="text-center space-y-4">
+                  <p className="text-white/60">Connect your Epic Games account to access personalized Fortnite coaching and stats.</p>
+                  <button
+                    onClick={handleEpicSignIn}
+                    className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                  >
+                    🎮 Sign In with Epic Games
+                  </button>
                 </div>
-                <button
-                  onClick={disconnectEpicAccount}
-                  className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
-                >
-                  Disconnect Account
-                </button>
-              </div>
-            ) : (
-              <div className="text-center space-y-4">
-                <p className="text-white/60">Connect your Epic Games account to access personalized Fortnite coaching and stats.</p>
-                <button
-                  onClick={handleEpicSignIn}
-                  className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                >
-                  🎮 Sign In with Epic Games
-                </button>
+              )}
+            </div>
+
+            {/* AI Coaching Connection Status */}
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold text-white mb-3">🤖 AI Coaching Connection</h4>
+              {epicAccount ? (
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="text-blue-400 font-semibold">AI Coaching Active</h5>
+                    <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full">Connected</span>
+                  </div>
+                  <div className="text-sm text-white/80 space-y-1">
+                    <p><span className="text-white/60">Status:</span> AI coaching is now connected to your Epic account</p>
+                    <p><span className="text-white/60">Personalization:</span> Coaching based on your actual gameplay data</p>
+                    <p><span className="text-white/60">Features:</span> Personalized advice, stat analysis, improvement tracking</p>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <Link
+                      href="/ai"
+                      className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                    >
+                      🚀 Start AI Coaching Session
+                    </Link>
+                    <p className="text-xs text-blue-300">Your AI coach now has access to your Epic account data for personalized advice</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-4">
+                  <p className="text-white/60">Connect your Epic Games account to enable AI coaching with your actual gameplay data.</p>
+                  <div className="text-xs text-white/40 space-y-1">
+                    <p>• Personalized coaching based on your stats</p>
+                    <p>• Real-time performance analysis</p>
+                    <p>• Custom improvement recommendations</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Fortnite Performance Stats */}
+            {epicAccount && (
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-3">📊 Fortnite Performance Stats</h4>
+                {fortniteStats ? (
+                  <div className="space-y-6">
+                    {/* Overall Stats */}
+                    <div>
+                      <h5 className="text-md font-semibold text-white mb-3">Overall Performance</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-blue-400">{fortniteStats.overall?.kd?.toFixed(2) || 'N/A'}</div>
+                          <div className="text-xs text-blue-300">K/D Ratio</div>
+                        </div>
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-green-400">{fortniteStats.overall?.winRate?.toFixed(1) || 'N/A'}%</div>
+                          <div className="text-xs text-green-300">Win Rate</div>
+                        </div>
+                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-purple-400">{fortniteStats.overall?.matches || 'N/A'}</div>
+                          <div className="text-xs text-purple-300">Matches</div>
+                        </div>
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-orange-400">{fortniteStats.overall?.avgPlace?.toFixed(1) || 'N/A'}</div>
+                          <div className="text-xs text-orange-300">Avg Placement</div>
+                        </div>
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-red-400">{fortniteStats.overall?.kills || 'N/A'}</div>
+                          <div className="text-xs text-red-300">Total Kills</div>
+                        </div>
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-yellow-400">{fortniteStats.overall?.top1 || 'N/A'}</div>
+                          <div className="text-xs text-yellow-300">Victories</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mode-specific Stats */}
+                    {(fortniteStats.solo || fortniteStats.duo || fortniteStats.squad) && (
+                      <div>
+                        <h5 className="text-md font-semibold text-white mb-3">Mode Breakdown</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {fortniteStats.solo && (
+                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                              <h6 className="text-sm font-semibold text-blue-300 mb-2">Solo</h6>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">K/D:</span>
+                                  <span className="text-white">{fortniteStats.solo.kd?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">Win Rate:</span>
+                                  <span className="text-white">{fortniteStats.solo.winRate?.toFixed(1)}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">Matches:</span>
+                                  <span className="text-white">{fortniteStats.solo.matches}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {fortniteStats.duo && (
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                              <h6 className="text-sm font-semibold text-green-300 mb-2">Duo</h6>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">K/D:</span>
+                                  <span className="text-white">{fortniteStats.duo.kd?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">Win Rate:</span>
+                                  <span className="text-white">{fortniteStats.duo.winRate?.toFixed(1)}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">Matches:</span>
+                                  <span className="text-white">{fortniteStats.duo.matches}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {fortniteStats.squad && (
+                            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                              <h6 className="text-sm font-semibold text-purple-300 mb-2">Squad</h6>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">K/D:</span>
+                                  <span className="text-white">{fortniteStats.squad.kd?.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">Win Rate:</span>
+                                  <span className="text-white">{fortniteStats.squad.winRate?.toFixed(1)}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-white/60">Matches:</span>
+                                  <span className="text-white">{fortniteStats.squad.matches}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Additional Stats */}
+                    <div>
+                      <h5 className="text-md font-semibold text-white mb-3">Additional Metrics</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-indigo-400">{fortniteStats.overall?.damageDealt?.toLocaleString() || 'N/A'}</div>
+                          <div className="text-xs text-indigo-300">Damage Dealt</div>
+                        </div>
+                        <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-pink-400">{fortniteStats.overall?.structuresBuilt?.toLocaleString() || 'N/A'}</div>
+                          <div className="text-xs text-pink-300">Structures Built</div>
+                        </div>
+                        <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-teal-400">{fortniteStats.overall?.materialsGathered?.toLocaleString() || 'N/A'}</div>
+                          <div className="text-xs text-teal-300">Materials</div>
+                        </div>
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-amber-400">{fortniteStats.overall?.distanceTraveled?.toFixed(0) || 'N/A'}</div>
+                          <div className="text-xs text-amber-300">Distance (m)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-white/60 mb-4">Loading your comprehensive Fortnite stats...</p>
+                    <button
+                      onClick={refreshStats}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                      Refresh Stats
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -649,209 +959,7 @@ export default function DashboardPage() {
              </div>
            )}
 
-           {/* AI Connection Status */}
-           <div className="glass-card p-6">
-             <h3 className="text-xl font-semibold text-white mb-4">🤖 AI Coaching Connection</h3>
-            {epicAccount ? (
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-blue-400 font-semibold">AI Coaching Active</h4>
-                  <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full">Connected</span>
-                </div>
-                <div className="text-sm text-white/80 space-y-1">
-                  <p><span className="text-white/60">Status:</span> AI coaching is now connected to your Epic account</p>
-                  <p><span className="text-white/60">Personalization:</span> Coaching based on your actual gameplay data</p>
-                  <p><span className="text-white/60">Features:</span> Personalized advice, stat analysis, improvement tracking</p>
-                </div>
-                <div className="mt-3 space-y-2">
-                  <Link
-                    href="/ai"
-                    className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
-                  >
-                    🚀 Start AI Coaching Session
-                  </Link>
-                  <p className="text-xs text-blue-300">Your AI coach now has access to your Epic account data for personalized advice</p>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center space-y-4">
-                <p className="text-white/60">Connect your Epic Games account to enable AI coaching with your actual gameplay data.</p>
-                <div className="text-xs text-white/40 space-y-1">
-                  <p>• Personalized coaching based on your stats</p>
-                  <p>• Real-time performance analysis</p>
-                  <p>• Custom improvement recommendations</p>
-                </div>
-              </div>
-            )}
-          </div>
 
-          {/* Fortnite Tools Section */}
-          <div className="glass-card p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">🎮 Fortnite Tools</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link href="/shop" className="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors duration-200">
-                <div className="text-2xl mb-2">🛍️</div>
-                <div className="font-semibold">Shop</div>
-                <div className="text-sm opacity-80">Current Fortnite shop items</div>
-              </Link>
-              
-              <Link href="/news" className="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg text-center transition-colors duration-200">
-                <div className="text-2xl mb-2">📰</div>
-                <div className="font-semibold">News</div>
-                <div className="text-sm opacity-80">Latest Fortnite updates</div>
-              </Link>
-              
-              
-              
-              <Link href="/cosmetics" className="bg-pink-600 hover:bg-pink-700 text-white p-4 rounded-lg text-center transition-colors duration-200">
-                <div className="text-2xl mb-2">🎨</div>
-                <div className="font-semibold">Cosmetics</div>
-                <div className="text-sm opacity-80">All available items</div>
-              </Link>
-            </div>
-          </div>
-
-          {/* Fortnite Stats Section */}
-          {epicAccount && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">📊 Fortnite Performance Stats</h3>
-              {fortniteStats ? (
-                <div className="space-y-6">
-                  {/* Overall Stats */}
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-3">Overall Performance</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
-                        <div className="text-xl font-bold text-blue-400">{fortniteStats.overall?.kd?.toFixed(2) || 'N/A'}</div>
-                        <div className="text-xs text-blue-300">K/D Ratio</div>
-                      </div>
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">
-                        <div className="text-xl font-bold text-green-400">{fortniteStats.overall?.winRate?.toFixed(1) || 'N/A'}%</div>
-                        <div className="text-xs text-green-300">Win Rate</div>
-                      </div>
-                      <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
-                        <div className="text-xl font-bold text-purple-400">{fortniteStats.overall?.matches || 'N/A'}</div>
-                        <div className="text-xs text-purple-300">Matches</div>
-                      </div>
-                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
-                        <div className="text-xl font-bold text-orange-400">{fortniteStats.overall?.avgPlace?.toFixed(1) || 'N/A'}</div>
-                        <div className="text-xs text-orange-300">Avg Placement</div>
-                      </div>
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
-                        <div className="text-xl font-bold text-red-400">{fortniteStats.overall?.kills || 'N/A'}</div>
-                        <div className="text-xs text-red-300">Total Kills</div>
-                      </div>
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
-                        <div className="text-xl font-bold text-yellow-400">{fortniteStats.overall?.top1 || 'N/A'}</div>
-                        <div className="text-xs text-yellow-300">Victories</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mode-specific Stats */}
-                  {(fortniteStats.solo || fortniteStats.duo || fortniteStats.squad) && (
-                    <div>
-                      <h4 className="text-lg font-semibold text-white mb-3">Mode Breakdown</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {fortniteStats.solo && (
-                          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                            <h5 className="text-md font-semibold text-blue-300 mb-2">Solo</h5>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-white/60">K/D:</span>
-                                <span className="text-white">{fortniteStats.solo.kd?.toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/60">Win Rate:</span>
-                                <span className="text-white">{fortniteStats.solo.winRate?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/60">Matches:</span>
-                                <span className="text-white">{fortniteStats.solo.matches}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {fortniteStats.duo && (
-                          <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                            <h5 className="text-md font-semibold text-green-300 mb-2">Duo</h5>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-white/60">K/D:</span>
-                                <span className="text-white">{fortniteStats.duo.kd?.toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/60">Win Rate:</span>
-                                <span className="text-white">{fortniteStats.duo.winRate?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/60">Matches:</span>
-                                <span className="text-white">{fortniteStats.duo.matches}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {fortniteStats.squad && (
-                          <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                            <h5 className="text-md font-semibold text-purple-300 mb-2">Squad</h5>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-white/60">K/D:</span>
-                                <span className="text-white">{fortniteStats.squad.kd?.toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/60">Win Rate:</span>
-                                <span className="text-white">{fortniteStats.squad.winRate?.toFixed(1)}%</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-white/60">Matches:</span>
-                                <span className="text-white">{fortniteStats.squad.matches}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Additional Stats */}
-                  <div>
-                    <h4 className="text-lg font-semibold text-white mb-3">Additional Metrics</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-indigo-400">{fortniteStats.overall?.damageDealt?.toLocaleString() || 'N/A'}</div>
-                        <div className="text-xs text-indigo-300">Damage Dealt</div>
-                      </div>
-                      <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-pink-400">{fortniteStats.overall?.structuresBuilt?.toLocaleString() || 'N/A'}</div>
-                        <div className="text-xs text-pink-300">Structures Built</div>
-                      </div>
-                      <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-teal-400">{fortniteStats.overall?.materialsGathered?.toLocaleString() || 'N/A'}</div>
-                        <div className="text-xs text-teal-300">Materials</div>
-                  </div>
-                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
-                        <div className="text-lg font-bold text-amber-400">{fortniteStats.overall?.distanceTraveled?.toFixed(0) || 'N/A'}</div>
-                        <div className="text-xs text-amber-300">Distance (m)</div>
-                  </div>
-                  </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-white/60 mb-4">Loading your comprehensive Fortnite stats...</p>
-                  <button
-                    onClick={refreshStats}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    Refresh Stats
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Replay Upload Section */}
           {epicAccount && (
@@ -896,24 +1004,24 @@ export default function DashboardPage() {
 
                      {/* Quick Actions */}
            <div className="glass-card p-6">
-             <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
+             <h3 className="text-xl font-semibold text-white mb-4 text-left">Quick Actions</h3>
              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-               <Link href="/ai" className="btn-secondary">
+               <Link href="/ai" className="btn-secondary text-left">
                  New AI Chat
                </Link>
-               <Link href="/settings" className="btn-secondary">
+               <Link href="/settings" className="btn-secondary text-left">
                  Settings
                </Link>
                <button 
                  onClick={() => setShowOnboarding(true)} 
-                 className="btn-secondary"
+                 className="btn-secondary text-left"
                >
                  Update Preferences
                </button>
-               <button onClick={() => router.push('/')} className="btn-secondary">
+               <button onClick={() => router.push('/')} className="btn-secondary text-left">
                  Back to Home
                </button>
-               <button onClick={logout} className="btn-secondary">
+               <button onClick={logout} className="btn-secondary text-left">
                  Logout
                </button>
              </div>
