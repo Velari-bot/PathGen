@@ -586,13 +586,7 @@ export class FirebaseService {
           createdAt: data.createdAt?.toDate() || new Date(),
           lastLogin: data.lastLogin?.toDate() || new Date(),
           profile: data.profile || {
-            language: 'en',
-            avatar: undefined,
-            bio: undefined,
-            location: undefined,
-            timezone: undefined,
-            dateOfBirth: undefined,
-            gender: undefined
+            language: 'en'
           },
           gaming: data.gaming || {
             favoriteGame: 'Fortnite',
@@ -606,11 +600,7 @@ export class FirebaseService {
             status: data.subscriptionStatus || 'free',
             tier: data.subscriptionTier || 'free',
             startDate: data.createdAt?.toDate() || new Date(),
-            endDate: undefined,
-            autoRenew: false,
-            paymentMethod: undefined,
-            stripeCustomerId: data.stripeCustomerId || undefined,
-            stripeSubscriptionId: undefined
+            autoRenew: false
           },
           settings: data.settings || {
             notifications: {

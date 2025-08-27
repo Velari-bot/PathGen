@@ -91,9 +91,9 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
     teamSize: 'any',
     preferredModes: ['Battle Royale'],
     goals: ['Improve K/D ratio', 'Increase win rate'],
-    theme: 'dark',
+    theme: 'dark', // Default theme
     notifications: {
-      email: true,
+      email: true, // Default to email only
       push: false,
       sms: false,
       discord: false
@@ -143,12 +143,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
         lastLogin: new Date(),
         profile: {
           language: data.language,
-          timezone: data.timezone,
-          avatar: undefined,
-          bio: undefined,
-          location: undefined,
-          dateOfBirth: undefined,
-          gender: undefined
+          timezone: data.timezone
         },
         gaming: {
           favoriteGame: data.favoriteGame,
@@ -217,13 +212,13 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
             {/* Progress Bar */}
             <div className="mt-6">
               <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>Step {currentStep} of 4</span>
-                <span>{Math.round((currentStep / 4) * 100)}%</span>
+                <span>Step {currentStep} of 3</span>
+                <span>{Math.round((currentStep / 3) * 100)}%</span>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2">
                 <div 
                   className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentStep / 4) * 100}%` }}
+                  style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
             </div>
@@ -438,60 +433,6 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Step 4: Preferences */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-white mb-4">Preferences & Settings</h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Theme Preference
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: 'light', label: 'Light', icon: '☀️' },
-                    { value: 'dark', label: 'Dark', icon: '🌙' },
-                    { value: 'auto', label: 'Auto', icon: '🔄' }
-                  ].map((theme) => (
-                    <button
-                      key={theme.value}
-                      onClick={() => updateData('theme', theme.value)}
-                      className={`p-4 rounded-lg border transition-all duration-200 text-center ${
-                        data.theme === theme.value
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-400'
-                          : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="text-2xl mb-2">{theme.icon}</div>
-                      <div className="font-semibold">{theme.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Notification Preferences
-                </label>
-                <div className="space-y-3">
-                  {Object.entries(data.notifications).map(([key, value]) => (
-                    <label key={key} className="flex items-center space-x-3">
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={(e) => updateNestedData('notifications', key, e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500 focus:ring-2"
-                      />
-                      <span className="text-gray-300 capitalize">
-                        {key === 'push' ? 'Push Notifications' : key}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
 
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <h4 className="text-blue-400 font-semibold mb-2">🎯 Your Profile Summary</h4>
@@ -520,7 +461,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
               ← Back
             </button>
 
-            {currentStep < 4 ? (
+            {currentStep < 3 ? (
               <button
                 onClick={handleNext}
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
