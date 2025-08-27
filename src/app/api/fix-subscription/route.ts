@@ -1,96 +1,133 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestore } from 'firebase-admin/firestore';
+import Stripe from 'stripe';
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already initialized
-let firebaseAdminInitialized = false;
+let db: any;
 
-function initializeFirebaseAdmin() {
-  if (firebaseAdminInitialized || getApps().length > 0) {
-    return;
-  }
-  
-  // Only initialize if we have the required environment variables
-  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-    try {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
-      firebaseAdminInitialized = true;
-      console.log('✅ Firebase Admin initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize Firebase Admin:', error);
+function initializeFirebase() {
+  if (getApps().length === 0) {
+    if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      try {
+        initializeApp({
+          credential: cert({
+            projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+          }),
+        });
+      } catch (error: any) {
+        if (error.code !== 'app/duplicate-app') {
+          console.error('❌ Firebase Admin initialization error:', error);
+        }
+      }
     }
-  } else {
-    console.error('❌ Missing Firebase Admin environment variables');
   }
+  return getFirestore();
 }
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+});
 
 export async function POST(request: NextRequest) {
   try {
-    // Initialize Firebase Admin when the API is actually called
-    initializeFirebaseAdmin();
-    
     const { userId } = await request.json();
-
+    
     if (!userId) {
-      return NextResponse.json(
-        { error: 'Missing userId' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    // Check if Firebase Admin credentials are configured
-    if (!process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-      return NextResponse.json(
-        { error: 'Firebase Admin credentials not configured' },
-        { status: 500 }
-      );
+    // Initialize Firebase
+    db = initializeFirebase();
+
+    // Find the customer in Stripe by userId metadata
+    const customers = await stripe.customers.list({
+      limit: 100,
+    });
+
+    const customer = customers.data.find(c => c.metadata.userId === userId);
+    
+    if (!customer) {
+      return NextResponse.json({ 
+        error: 'No Stripe customer found for this user',
+        userId 
+      }, { status: 404 });
     }
 
-    const db = getFirestore();
+    console.log(`✅ Found Stripe customer: ${customer.id} for user: ${userId}`);
 
-    try {
-      // Update the user's subscription status to STANDARD (paid)
-      const userRef = db.collection('users').doc(userId);
-      await userRef.update({
-        'subscription.tier': 'standard',
-        'subscription.status': 'active',
-        'subscriptionTier': 'standard',
-        'subscriptionStatus': 'active',
-        updatedAt: new Date()
-      });
+    // Get the customer's subscriptions
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.id,
+      limit: 10,
+    });
 
-      console.log(`✅ User ${userId} subscription updated to STANDARD`);
-
-      return NextResponse.json({
-        success: true,
-        message: 'Subscription updated to STANDARD successfully',
-        updatedFields: {
-          'subscription.tier': 'standard',
-          'subscription.status': 'active',
-          'subscriptionTier': 'standard',
-          'subscriptionStatus': 'active'
-        }
-      });
-
-    } catch (firestoreError: any) {
-      console.error('Firestore error:', firestoreError);
-      return NextResponse.json(
-        { error: `Failed to update subscription: ${firestoreError.message}` },
-        { status: 500 }
-      );
+    if (subscriptions.data.length === 0) {
+      return NextResponse.json({ 
+        error: 'No active subscriptions found for this customer',
+        customerId: customer.id,
+        userId 
+      }, { status: 404 });
     }
+
+    const subscription = subscriptions.data[0]; // Get the most recent subscription
+    console.log(`✅ Found subscription: ${subscription.id} with status: ${subscription.status}`);
+
+    // Map price ID to plan
+    const planMap: { [key: string]: string } = {
+      'price_free': 'free',
+      'price_1RvsvqCitWuvPenEw9TefOig': 'standard', // PathGen Standard
+      'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro' // PathGen Pro
+    };
+
+    const priceId = subscription.items.data[0].price.id;
+    const plan = planMap[priceId] || 'free';
+
+    console.log(`✅ Mapped price ${priceId} to plan: ${plan}`);
+
+    // Update user document in Firebase
+    await db.collection('users').doc(userId).update({
+      'subscription.status': plan,
+      'subscription.tier': plan,
+      'subscription.stripeCustomerId': customer.id,
+      'subscription.stripeSubscriptionId': subscription.id,
+      'subscriptionTier': plan,
+      'subscriptionStatus': 'active',
+      updatedAt: new Date()
+    });
+
+    // Also update/create subscription document
+    await db.collection('subscriptions').doc(subscription.id).set({
+      userId,
+      stripeCustomerId: customer.id,
+      stripeSubscriptionId: subscription.id,
+      plan,
+      status: subscription.status,
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    console.log(`✅ Successfully updated user ${userId} to plan ${plan}`);
+
+    return NextResponse.json({
+      success: true,
+      userId,
+      customerId: customer.id,
+      subscriptionId: subscription.id,
+      plan,
+      status: subscription.status
+    });
 
   } catch (error) {
-    console.error('Error fixing subscription:', error);
-    return NextResponse.json(
-      { error: 'Unable to fix subscription status' },
-      { status: 500 }
-    );
+    console.error('❌ Error fixing subscription:', error);
+    return NextResponse.json({ 
+      error: 'Failed to fix subscription',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

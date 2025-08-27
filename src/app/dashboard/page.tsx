@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { FirebaseService, EpicAccount, FortniteStats } from '@/lib/firebase-service';
+import { UsageTracker } from '@/lib/usage-tracker';
 import OnboardingModal from '@/components/OnboardingModal';
 
 export default function DashboardPage() {
@@ -19,6 +20,8 @@ export default function DashboardPage() {
   const [replayUploads, setReplayUploads] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [usageData, setUsageData] = useState<any>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,6 +34,7 @@ export default function DashboardPage() {
       checkSubscription();
       loadEpicAccount();
       loadUserProfile();
+      loadUsageData();
     }
   }, [user]);
 
@@ -44,6 +48,37 @@ export default function DashboardPage() {
       handleEpicOAuthCallback(code, state);
     }
   }, [user]);
+
+  const loadUsageData = async () => {
+    if (!user) return;
+    
+    setUsageLoading(true);
+    try {
+      // Get user's subscription tier from Firebase
+      const userDoc = await FirebaseService.getUserProfile(user.uid);
+      const subscriptionTier = userDoc?.subscription?.tier || 'free';
+      
+      // Map subscription tier to UsageTracker format
+      const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+      
+      // Get usage summary from UsageTracker
+      const usageSummary = await UsageTracker.getUsageSummary(user.uid, mappedTier as 'free' | 'paid' | 'pro');
+      setUsageData(usageSummary);
+      console.log('✅ Usage data loaded:', usageSummary);
+    } catch (error) {
+      console.error('Error loading usage data:', error);
+      // Set default usage data
+      setUsageData({
+        usage: {
+          osirion: { matchesUsed: 0, replayUploadsUsed: 0, computeRequestsUsed: 0, eventTypesUsed: 0 },
+          ai: { messagesUsed: 0, conversationsCreated: 0 }
+        },
+        limits: UsageTracker.getLimitsForTier('free')
+      });
+    } finally {
+      setUsageLoading(false);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -172,6 +207,9 @@ export default function DashboardPage() {
           subscriptionTier: data.subscriptionTier,
           canAccess 
         });
+        
+        // Reload usage data when subscription changes
+        await loadUsageData();
       } else {
         console.error('Subscription check failed:', response.status);
         // Default to allowing access for free users
@@ -1001,6 +1039,115 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+
+                     {/* Usage Tracking Section */}
+                     {usageLoading ? (
+                       <div className="glass-card p-6">
+                         <h3 className="text-xl font-semibold text-white mb-4">📊 Usage & Limits</h3>
+                         <div className="flex items-center justify-center py-8">
+                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                           <span className="ml-3 text-white/60">Loading usage data...</span>
+                         </div>
+                       </div>
+                     ) : usageData && (
+                       <div className="glass-card p-6">
+                         <h3 className="text-xl font-semibold text-white mb-4">📊 Usage & Limits</h3>
+                         
+                         {/* Osirion API Usage */}
+                         <div className="mb-6">
+                           <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                             <span className="text-pink-400">🎯</span>
+                             Osirion API Usage
+                           </h4>
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Matches Used</p>
+                               <p className="text-white font-semibold">
+                                 {usageData.usage.osirion.matchesUsed} / {usageData.limits.osirion.matchesPerMonth === -1 ? '∞' : usageData.limits.osirion.matchesPerMonth}
+                               </p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Replay Uploads</p>
+                               <p className="text-white font-semibold">
+                                 {usageData.usage.osirion.replayUploadsUsed} / {usageData.limits.osirion.replayUploadsPerMonth === -1 ? '∞' : usageData.limits.osirion.replayUploadsPerMonth}
+                               </p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Compute Requests</p>
+                               <p className="text-white font-semibold">
+                                 {usageData.usage.osirion.computeRequestsUsed} / {usageData.limits.osirion.computeRequestsPerMonth === -1 ? '∞' : usageData.limits.osirion.computeRequestsPerMonth}
+                               </p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Event Types</p>
+                               <p className="text-white font-semibold">
+                                 {usageData.usage.osirion.eventTypesUsed} / {usageData.limits.osirion.eventTypesPerMatch === -1 ? '∞' : usageData.limits.osirion.eventTypesPerMatch}
+                               </p>
+                             </div>
+                           </div>
+                         </div>
+
+                         {/* AI Coaching Usage */}
+                         <div className="mb-6">
+                           <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                             <span className="text-blue-400">🤖</span>
+                             AI Coaching Usage
+                           </h4>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">AI Messages</p>
+                               <p className="text-white font-semibold">
+                                 {usageData.usage.ai.messagesUsed} / {usageData.limits.ai.messagesPerMonth === -1 ? '∞' : usageData.limits.ai.messagesPerMonth}
+                               </p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Conversations</p>
+                               <p className="text-white font-semibold">
+                                 {usageData.usage.ai.conversationsCreated} / {usageData.limits.ai.conversationsPerMonth === -1 ? '∞' : usageData.limits.ai.conversationsPerMonth}
+                               </p>
+                             </div>
+                           </div>
+                         </div>
+
+                         {/* Epic Account Sync */}
+                         <div>
+                           <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                             <span className="text-purple-400">🎮</span>
+                             Epic Account Sync
+                           </h4>
+                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Last Sync</p>
+                               <p className="text-white font-semibold">
+                                 {epicAccount?.linkedAt ? new Date(epicAccount.linkedAt).toLocaleDateString() : 'Never'}
+                               </p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Sync Count</p>
+                               <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Stats Pulled</p>
+                               <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
+                             </div>
+                             <div className="bg-white/5 rounded-lg p-3">
+                               <p className="text-white/60 text-sm">Total Sessions</p>
+                               <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
+                             </div>
+                           </div>
+                         </div>
+
+                         <button
+                           onClick={loadUsageData}
+                           className="w-full mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                         >
+                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                           </svg>
+                           Refresh Usage Data
+                         </button>
+                       </div>
+                     )}
 
                      {/* Quick Actions */}
            <div className="glass-card p-6">
