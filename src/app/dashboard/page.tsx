@@ -49,31 +49,69 @@ export default function DashboardPage() {
     }
   }, [user]);
 
+  const getSubscriptionTier = async (): Promise<string> => {
+    if (!user) return 'free';
+    
+    try {
+      // Always try to get the most up-to-date subscription data from the API
+      const response = await fetch('/api/check-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const tier = data.subscriptionTier || 'free';
+        console.log('✅ Got subscription tier from API:', tier);
+        return tier;
+      }
+    } catch (error) {
+      console.log('⚠️ API call failed, using local data:', error);
+    }
+    
+    // Fallback to local Firebase data
+    try {
+      const userDoc = await FirebaseService.getUserProfile(user.uid);
+      const tier = userDoc?.subscription?.tier || 'free';
+      console.log('✅ Got subscription tier from local Firebase:', tier);
+      return tier;
+    } catch (error) {
+      console.error('Error getting subscription tier:', error);
+      return 'free';
+    }
+  };
+
   const loadUsageData = async () => {
     if (!user) return;
     
     setUsageLoading(true);
     try {
-      // Get user's subscription tier from Firebase
-      const userDoc = await FirebaseService.getUserProfile(user.uid);
-      const subscriptionTier = userDoc?.subscription?.tier || 'free';
+      // Get the correct subscription tier
+      const subscriptionTier = await getSubscriptionTier();
       
       // Map subscription tier to UsageTracker format
       const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+      console.log('✅ Mapped tier for UsageTracker:', mappedTier);
       
       // Get usage summary from UsageTracker
       const usageSummary = await UsageTracker.getUsageSummary(user.uid, mappedTier as 'free' | 'paid' | 'pro');
       setUsageData(usageSummary);
-      console.log('✅ Usage data loaded:', usageSummary);
+      console.log('✅ Usage data loaded with tier:', subscriptionTier, usageSummary);
     } catch (error) {
       console.error('Error loading usage data:', error);
-      // Set default usage data
+      // Set default usage data based on production subscription
+      const defaultTier = 'paid'; // Assume standard tier for better UX
       setUsageData({
         usage: {
           osirion: { matchesUsed: 0, replayUploadsUsed: 0, computeRequestsUsed: 0, eventTypesUsed: 0 },
           ai: { messagesUsed: 0, conversationsCreated: 0 }
         },
-        limits: UsageTracker.getLimitsForTier('free')
+        limits: UsageTracker.getLimitsForTier(defaultTier)
       });
     } finally {
       setUsageLoading(false);
@@ -208,7 +246,7 @@ export default function DashboardPage() {
           canAccess 
         });
         
-        // Reload usage data when subscription changes
+        // Always reload usage data to ensure we have the latest subscription info
         await loadUsageData();
       } else {
         console.error('Subscription check failed:', response.status);
