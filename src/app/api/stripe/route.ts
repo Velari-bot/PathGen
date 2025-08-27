@@ -4,25 +4,28 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin if not already initialized
-if (getApps().length === 0) {
-  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-    try {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
-    } catch (error: any) {
-      if (error.code !== 'app/duplicate-app') {
-        console.error('❌ Firebase Admin initialization error:', error);
+let db: any;
+
+function initializeFirebase() {
+  if (getApps().length === 0) {
+    if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      try {
+        initializeApp({
+          credential: cert({
+            projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+          }),
+        });
+      } catch (error: any) {
+        if (error.code !== 'app/duplicate-app') {
+          console.error('❌ Firebase Admin initialization error:', error);
+        }
       }
     }
   }
+  return getFirestore();
 }
-
-const db = getFirestore();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
 });
@@ -31,6 +34,9 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Firebase when the API route is called
+    db = initializeFirebase();
+    
     const body = await request.text();
     const signature = request.headers.get('stripe-signature');
 
