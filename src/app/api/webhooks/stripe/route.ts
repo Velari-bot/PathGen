@@ -407,7 +407,8 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
 // Helper function to get plan from Stripe price ID
 function getPlanFromPriceId(priceId: string): string {
   const planMap: { [key: string]: string } = {
-    'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro' // PathGen Pro
+    'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro', // PathGen Pro (old)
+    'price_1RvsvqCitWuvPenEw9TefOig': 'pro'   // PathGen Pro (new)
   };
   return planMap[priceId] || 'free';
 }

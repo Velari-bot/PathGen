@@ -202,7 +202,7 @@ export const PLAN_LIMITS: Record<SubscriptionTier, PlanLimits> = {
 // Stripe Price IDs - UPDATE THESE WITH YOUR ACTUAL STRIPE PRICE IDs
 export const STRIPE_PRICE_IDS: Record<SubscriptionTier, string> = {
   free: 'free', // Free plan (no actual Stripe price needed)
-  pro: 'price_1RvsyxCitWuvPenEOtFzt5FC' // PathGen Pro
+  pro: 'price_1RvsvqCitWuvPenEw9TefOig' // PathGen Pro (new)
 };
 
 // Helper function to get plan from Stripe price ID

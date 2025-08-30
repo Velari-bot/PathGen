@@ -300,7 +300,6 @@ export default function DashboardPage() {
         userId: user.uid,
         linkedAt: new Date(),
         isReal: account.isReal || false,
-        note: account.note,
         // Additional Epic account fields
         accountId: account.accountId,
         country: account.country,
@@ -310,6 +309,11 @@ export default function DashboardPage() {
         status: 'active' as const,
         verificationStatus: 'verified' as const
       };
+
+      // Only add note if it has a value
+      if (account.note) {
+        epicAccountData.note = account.note;
+      }
       
       await FirebaseService.saveEpicAccount(epicAccountData);
       console.log('✅ Epic account saved to Firebase');
