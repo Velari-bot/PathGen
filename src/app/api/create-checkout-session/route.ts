@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
       metadata: {
         userId: userId,
@@ -83,6 +83,12 @@ export async function POST(request: NextRequest) {
       customer_email: userEmail,
       // Allow customers to enter promo codes
       allow_promotion_codes: true,
+      // Add billing address collection for better payment processing
+      billing_address_collection: 'auto',
+      // Add tax ID collection if needed
+      tax_id_collection: {
+        enabled: false,
+      },
     });
 
     console.log('✅ Checkout session created successfully');

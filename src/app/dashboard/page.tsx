@@ -42,9 +42,16 @@ export default function DashboardPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     const state = urlParams.get('state');
+    const success = urlParams.get('success');
+    const sessionId = urlParams.get('session_id');
     
     if (code && state && user) {
       handleEpicOAuthCallback(code, state);
+    }
+    
+    // Check if this is a successful payment
+    if (success === 'true' && sessionId && user) {
+      handlePaymentSuccess(sessionId);
     }
   }, [user]);
 
@@ -189,6 +196,48 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Epic OAuth callback error:', error);
       alert('Failed to connect Epic account. Please try again.');
+    }
+  };
+
+  const handlePaymentSuccess = async (sessionId: string) => {
+    try {
+      console.log('🔄 Processing payment success for session:', sessionId);
+      
+      // Test the webhook manually
+      const response = await fetch('/api/test-webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Payment verification successful:', data);
+        
+        if (data.success) {
+          // Reload subscription data
+          await checkSubscription();
+          
+          // Show success message
+          alert('Payment successful! Your Pro subscription is now active.');
+        } else {
+          console.error('❌ Payment verification failed:', data.error);
+          alert('Payment verification failed. Please contact support.');
+        }
+      } else {
+        console.error('❌ Payment verification request failed:', response.statusText);
+        alert('Payment verification failed. Please contact support.');
+      }
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, '/dashboard');
+    } catch (error) {
+      console.error('❌ Error processing payment success:', error);
+      alert('Error processing payment. Please contact support.');
     }
   };
 
