@@ -85,7 +85,7 @@ export const CREDIT_COSTS: CreditCost[] = [
   // Osirion API
   {
     feature: 'osirion_pull_basic',
-    cost: 40,
+    cost: 50,
     description: 'Osirion Pull (basic stats)',
     category: 'osirion'
   },

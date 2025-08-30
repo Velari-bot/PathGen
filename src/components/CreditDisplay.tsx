@@ -234,7 +234,7 @@ export const CreditDisplay: React.FC<CreditDisplayProps> = ({
           </div>
           <div className="flex justify-between">
             <span className="text-gray-300">Osirion Pull</span>
-            <span className="text-white">40 credits</span>
+            <span className="text-white">50 credits</span>
           </div>
         </div>
       </div>
