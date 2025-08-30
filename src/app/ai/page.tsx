@@ -202,17 +202,18 @@ export default function AIPage() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user || !currentChatId) return;
 
-    // Track credit usage for AI chat
+    // Track credit usage for AI chat (temporarily disabled for debugging)
     try {
       await trackUsage({
         feature: 'message',
         tokensUsed: 1,
         metadata: { messageType: 'ai_chat' }
       });
+      console.log('✅ Credit tracking successful');
     } catch (error) {
       console.error('Failed to track credit usage:', error);
-      // You might want to show an error message to the user here
-      return;
+      console.log('⚠️ Continuing without credit tracking for now');
+      // Continue with the message even if credit tracking fails
     }
 
     const userMessage = {
