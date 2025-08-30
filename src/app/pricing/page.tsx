@@ -65,7 +65,7 @@ export default function PricingPage() {
     {
       category: 'AI Coaching',
       features: [
-        { name: 'AI Chat Messages', free: '250/month', pro: '4,000/month', icon: '💬' },
+        { name: 'AI Chat Messages', free: '250/one-time', pro: '4,000/month', icon: '💬' },
         { name: 'Personalized Strategies', free: 'Basic', pro: 'Advanced AI', icon: '🎯' },
         { name: 'Real-time Coaching', free: '❌', pro: '✅', icon: '⚡' },
         { name: 'Performance Analysis', free: 'Basic', pro: 'Deep Insights', icon: '📊' }
@@ -74,7 +74,7 @@ export default function PricingPage() {
     {
       category: 'Fortnite Stats',
       features: [
-        { name: 'Stats Lookup', free: '5/month', pro: '80/month', icon: '📈' },
+        { name: 'Stats Lookup', free: '5/one-time', pro: '80/month', icon: '📈' },
         { name: 'Match History', free: 'Last 10', pro: 'Complete History', icon: '🏆' },
         { name: 'Win Rate Tracking', free: 'Basic', pro: 'Advanced Analytics', icon: '📊' },
         { name: 'Performance Trends', free: '❌', pro: '✅', icon: '📈' }
@@ -83,7 +83,7 @@ export default function PricingPage() {
     {
       category: 'Replay Analysis',
       features: [
-        { name: 'Replay Uploads', free: '12/month', pro: '200/month', icon: '🎬' },
+        { name: 'Replay Uploads', free: '12/one-time', pro: '200/month', icon: '🎬' },
         { name: 'AI Replay Analysis', free: '❌', pro: '✅', icon: '🤖' },
         { name: 'Performance Breakdown', free: '❌', pro: '✅', icon: '📋' },
         { name: 'Improvement Suggestions', free: '❌', pro: '✅', icon: '💡' }
@@ -92,7 +92,7 @@ export default function PricingPage() {
     {
       category: 'Tournament Tools',
       features: [
-        { name: 'Tournament Strategies', free: '25/month', pro: '400/month', icon: '🏅' },
+        { name: 'Tournament Strategies', free: '25/one-time', pro: '400/month', icon: '🏅' },
         { name: 'Meta Analysis', free: '❌', pro: '✅', icon: '🎮' },
         { name: 'Competitive Insights', free: '❌', pro: '✅', icon: '🔍' },
         { name: 'Pro Tips & Tricks', free: '❌', pro: '✅', icon: '💎' }
@@ -161,6 +161,9 @@ export default function PricingPage() {
               <div className="flex items-center justify-center space-x-2">
                 <span className="text-2xl">🏅</span>
                 <span className="text-white font-semibold">25 Tournament Strategies</span>
+              </div>
+              <div className="text-center text-sm text-secondary-text mt-4">
+                One-time trial • No monthly commitment
               </div>
             </div>
 
@@ -232,46 +235,48 @@ export default function PricingPage() {
 
         {/* Detailed Feature Comparison */}
         <div className="max-w-6xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-center text-primary-text mb-12">
-            Free vs Pro - Complete Comparison
-          </h2>
-          
-          <div className="space-y-8">
-            {features.map((category, categoryIndex) => (
-              <div key={categoryIndex} className="glass-card p-6">
-                <h3 className="text-xl font-bold text-white mb-6 text-center">{category.category}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <h4 className="text-lg font-semibold text-secondary-text mb-4">Feature</h4>
+          <div className="glass-card p-8">
+            <h2 className="text-3xl font-bold text-center text-primary-text mb-12">
+              Free vs Pro - Complete Comparison
+            </h2>
+            
+            <div className="space-y-8">
+              {features.map((category, categoryIndex) => (
+                <div key={categoryIndex}>
+                  <h3 className="text-xl font-bold text-white mb-6 text-center">{category.category}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center">
+                      <h4 className="text-lg font-semibold text-secondary-text mb-4">Feature</h4>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-lg font-semibold text-secondary-text mb-4">Free</h4>
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-lg font-semibold text-secondary-text mb-4">Pro</h4>
+                    </div>
+                    
+                    {category.features.map((feature, featureIndex) => (
+                      <React.Fragment key={featureIndex}>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xl">{feature.icon}</span>
+                          <span className="text-white font-medium">{feature.name}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm ${feature.free === '❌' ? 'text-red-400' : 'text-white'}`}>
+                            {feature.free}
+                          </span>
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm ${feature.pro === '✅' ? 'text-green-400' : 'text-white'}`}>
+                            {feature.pro}
+                          </span>
+                        </div>
+                      </React.Fragment>
+                    ))}
                   </div>
-                  <div className="text-center">
-                    <h4 className="text-lg font-semibold text-secondary-text mb-4">Free</h4>
-                  </div>
-                  <div className="text-center">
-                    <h4 className="text-lg font-semibold text-secondary-text mb-4">Pro</h4>
-                  </div>
-                  
-                  {category.features.map((feature, featureIndex) => (
-                    <React.Fragment key={featureIndex}>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xl">{feature.icon}</span>
-                        <span className="text-white font-medium">{feature.name}</span>
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-sm ${feature.free === '❌' ? 'text-red-400' : 'text-white'}`}>
-                          {feature.free}
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-sm ${feature.pro === '✅' ? 'text-green-400' : 'text-white'}`}>
-                          {feature.pro}
-                        </span>
-                      </div>
-                    </React.Fragment>
-                  ))}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
