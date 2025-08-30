@@ -317,32 +317,43 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
         const userId = (customer as Stripe.Customer).metadata.userId;
         
         if (userId) {
+          console.log(`🔄 Processing payment success for user: ${userId}`);
+          
           // Update subscription document
           await db.collection('subscriptions').doc(invoice.subscription as string).update({
             status: 'active',
             updatedAt: new Date()
           });
           
-          // Update user document
+          // Update user document with Pro tier
+          const plan = getPlanFromPriceId(subscription.items.data[0].price.id);
           await db.collection('users').doc(userId).update({
+            'subscription.plan': plan,
             'subscription.status': 'active',
+            'subscription.tier': plan,
+            'subscriptionTier': plan,
+            'subscription.currentPeriodStart': new Date(subscription.current_period_start * 1000),
+            'subscription.currentPeriodEnd': new Date(subscription.current_period_end * 1000),
             updatedAt: new Date()
           });
           
-          console.log(`✅ Payment succeeded for user ${userId}, subscription activated`);
+          console.log(`✅ Payment success processed for user ${userId} with plan ${plan}`);
           
-          // Log successful payment
+          // Log successful payment processing
           await db.collection('webhookLogs').add({
             eventType: 'invoice.payment_succeeded',
             invoiceId: invoice.id,
             subscriptionId: invoice.subscription,
             userId,
-            amount: invoice.amount_paid,
-            currency: invoice.currency,
+            plan,
             timestamp: new Date(),
             success: true
           });
+        } else {
+          console.error('❌ No userId found in customer metadata for payment success');
         }
+      } else {
+        console.error('❌ Customer was deleted for payment success');
       }
     }
   } catch (error) {

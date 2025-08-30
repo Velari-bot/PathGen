@@ -349,15 +349,25 @@ export default function DashboardPage() {
         userId: user.uid,
         linkedAt: new Date(),
         isReal: account.isReal || false,
-        // Additional Epic account fields
-        accountId: account.accountId,
-        country: account.country,
-        preferredLanguage: account.preferredLanguage,
-        email: account.email,
+        // Additional Epic account fields - only include if they have values
         lastLogin: new Date(),
         status: 'active' as const,
         verificationStatus: 'verified' as const
       };
+
+      // Only add optional fields if they have values
+      if (account.accountId) {
+        epicAccountData.accountId = account.accountId;
+      }
+      if (account.country) {
+        epicAccountData.country = account.country;
+      }
+      if (account.preferredLanguage) {
+        epicAccountData.preferredLanguage = account.preferredLanguage;
+      }
+      if (account.email) {
+        epicAccountData.email = account.email;
+      }
 
       // Only add note if it has a value
       if (account.note) {
