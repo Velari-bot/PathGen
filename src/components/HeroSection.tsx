@@ -117,16 +117,16 @@ export default function HeroSection() {
 
         {/* Main Title */}
         <h1 className="hero-title text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 leading-tight">
-          <span className="text-primary-text">Level Up Your</span>
+          <span className="text-primary-text">Generate Smarter</span>
           <br />
           <span className="text-gradient bg-gradient-to-r from-white via-gray-200 to-white bg-clip-text text-transparent">
-            Fortnite Game
+            Fortnite Strategies
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="hero-subtitle text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-secondary-text mb-8 sm:mb-10 lg:mb-12 max-w-4xl mx-auto leading-relaxed px-4">
-          Master the battle royale with AI-powered coaching, personalized strategies, and real-time performance tracking. 
+          Free to try, unlock more with Pro. AI-powered coaching, personalized strategies, and real-time performance tracking. 
           <span className="text-white font-semibold"> Dominate every match.</span>
         </p>
 
@@ -155,16 +155,16 @@ export default function HeroSection() {
         {/* Stats */}
         <div className="mt-12 sm:mt-14 lg:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4">
           <div className="text-center mobile-spacing">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">1,000+</div>
-            <div className="text-secondary-text text-sm sm:text-base">Matches Broken Down</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">+47%</div>
+            <div className="text-secondary-text text-sm sm:text-base">Average Win Rate Improvement</div>
           </div>
           <div className="text-center mobile-spacing">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">500+</div>
-            <div className="text-secondary-text text-sm sm:text-base">Replay Insights Generated</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">10,000+</div>
+            <div className="text-secondary-text text-sm sm:text-base">Players Already Improving</div>
           </div>
           <div className="text-center mobile-spacing">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">95%</div>
-            <div className="text-secondary-text text-sm sm:text-base">Accuracy in AI Match Analysis</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">$6.99</div>
+            <div className="text-secondary-text text-sm sm:text-base">Pro Plan - Cancel Anytime</div>
           </div>
         </div>
       </div>
