@@ -34,7 +34,6 @@ export async function POST(request: NextRequest) {
         // Apply tier-specific promo codes
         const couponMap = {
           'free': 'FREETIER_PROMO',
-          'paid': 'STANDARD_PROMO', 
           'pro': 'PRO_PROMO'
         };
         

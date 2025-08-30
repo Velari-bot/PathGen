@@ -217,7 +217,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-white h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
@@ -237,7 +237,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                   type="text"
                   value={data.displayName}
                   onChange={(e) => updateData('displayName', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-white focus:border-transparent"
                   placeholder="Enter your display name"
                 />
               </div>
@@ -249,7 +249,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                 <select
                   value={data.timezone}
                   onChange={(e) => updateData('timezone', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-white focus:border-transparent"
                 >
                   <option value="America/New_York">Eastern Time (ET)</option>
                   <option value="America/Chicago">Central Time (CT)</option>
@@ -269,7 +269,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                 <select
                   value={data.language}
                   onChange={(e) => updateData('language', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-white focus:border-transparent"
                 >
                   <option value="en-US">English (US)</option>
                   <option value="en-GB">English (UK)</option>
@@ -297,7 +297,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                   type="text"
                   value={data.favoriteGame}
                   onChange={(e) => updateData('favoriteGame', e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-white focus:border-transparent"
                   placeholder="What's your favorite game?"
                 />
               </div>
@@ -313,7 +313,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                       onClick={() => updateData('skillLevel', level.value)}
                       className={`p-4 rounded-lg border transition-all duration-200 text-left ${
                         data.skillLevel === level.value
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                          ? 'border-white bg-white/20 text-white'
                           : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                       }`}
                     >
@@ -335,7 +335,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                       onClick={() => updateData('playStyle', style.value)}
                       className={`p-4 rounded-lg border transition-all duration-200 text-center ${
                         data.playStyle === style.value
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                          ? 'border-white bg-white/20 text-white'
                           : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                       }`}
                     >
@@ -357,7 +357,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                       onClick={() => updateData('teamSize', size.value)}
                       className={`p-4 rounded-lg border transition-all duration-200 text-center ${
                         data.teamSize === size.value
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                          ? 'border-white bg-white/20 text-white'
                           : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                       }`}
                     >
@@ -393,7 +393,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                       }}
                       className={`p-3 rounded-lg border transition-all duration-200 text-sm ${
                         data.goals.includes(goal)
-                          ? 'border-green-500 bg-green-500/20 text-green-400'
+                          ? 'border-white bg-white/20 text-white'
                           : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                       }`}
                     >
@@ -424,7 +424,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                       }}
                       className={`p-3 rounded-lg border transition-all duration-200 text-sm ${
                         data.preferredModes.includes(mode)
-                          ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                          ? 'border-white bg-white/20 text-white'
                           : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                       }`}
                     >
@@ -434,8 +434,8 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                 </div>
               </div>
 
-              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                <h4 className="text-blue-400 font-semibold mb-2">🎯 Your Profile Summary</h4>
+              <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                <h4 className="text-white font-semibold mb-2">🎯 Your Profile Summary</h4>
                 <div className="text-sm text-gray-300 space-y-1">
                   <p><span className="text-gray-400">Name:</span> {data.displayName}</p>
                   <p><span className="text-gray-400">Game:</span> {data.favoriteGame}</p>
@@ -464,7 +464,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
             {currentStep < 3 ? (
               <button
                 onClick={handleNext}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                className="px-6 py-3 bg-white text-gray-900 hover:bg-gray-100 rounded-lg font-semibold transition-colors"
               >
                 Next →
               </button>
@@ -475,7 +475,7 @@ export default function OnboardingModal({ isOpen, onComplete, userId, userEmail,
                 className={`px-8 py-3 rounded-lg font-semibold transition-colors ${
                   isSubmitting
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-white text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 {isSubmitting ? 'Saving...' : 'Complete Setup 🚀'}

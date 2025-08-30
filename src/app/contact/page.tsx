@@ -1,39 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
 
 export default function ContactUs() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    // Simulate form submission (replace with actual API call)
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setSubmitStatus('success');
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 2000);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
 
   return (
     <div className="min-h-screen bg-gradient-dark flex flex-col">
@@ -94,102 +66,7 @@ export default function ContactUs() {
           </div>
         </div>
 
-        {/* Contact Form */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-8 mb-16">
-          <h2 className="text-3xl font-bold text-white mb-8 text-center">Send us a Message</h2>
-          
-          {submitStatus === 'success' && (
-            <div className="mb-6 p-4 bg-green-500/20 border border-green-500/30 rounded-lg">
-              <p className="text-green-400 text-center">
-                ✅ Thank you! Your message has been sent successfully. We'll get back to you soon.
-              </p>
-            </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                  placeholder="Your name"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                  placeholder="your.email@example.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="subject" className="block text-sm font-medium text-white mb-2">
-                Subject *
-              </label>
-              <select
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-              >
-                <option value="">Select a subject</option>
-                <option value="general">General Question</option>
-                <option value="technical">Technical Issue</option>
-                <option value="billing">Billing & Payment</option>
-                <option value="feature">Feature Request</option>
-                <option value="bug">Bug Report</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="message" className="block text-sm font-medium text-white mb-2">
-                Message *
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                required
-                rows={6}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent resize-none"
-                placeholder="Describe your question or issue in detail..."
-              />
-            </div>
-
-            <div className="text-center">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="px-8 py-4 bg-white text-dark-charcoal rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Sending...' : 'Send Message'}
-              </button>
-            </div>
-          </form>
-        </div>
 
         {/* Additional Support Options */}
         <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl p-8 mb-16">

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     // Epic OAuth configuration
     const clientId = process.env.EPIC_CLIENT_ID;
     const clientSecret = process.env.EPIC_CLIENT_SECRET;
-    const redirectUri = process.env.EPIC_REDIRECT_URI || 'http://localhost:3000/auth/callback'; // Use env var or fallback
+    const redirectUri = process.env.EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback'; // Use env var or fallback
 
     console.log('Epic OAuth Debug:', {
       hasClientId: !!clientId,

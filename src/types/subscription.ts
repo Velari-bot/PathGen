@@ -1,8 +1,8 @@
 import { Timestamp } from 'firebase/firestore';
 
 // Subscription Tiers
-export type SubscriptionTier = 'free' | 'standard' | 'pro';
-export type SubscriptionStatus = 'free' | 'standard' | 'pro' | 'past_due' | 'canceled' | 'unpaid';
+export type SubscriptionTier = 'free' | 'pro';
+export type SubscriptionStatus = 'free' | 'pro' | 'past_due' | 'canceled' | 'unpaid';
 
 // Plan Limits Interface
 export interface PlanLimits {
@@ -188,15 +188,6 @@ export const PLAN_LIMITS: Record<SubscriptionTier, PlanLimits> = {
     prioritySupport: false,
     advancedAnalytics: false
   },
-  standard: {
-    monthlyMessages: 100,
-    monthlyTokens: 10000,
-    monthlyDataPulls: 50,
-    replayUploads: 5,
-    tournamentStrategies: 10,
-    prioritySupport: false,
-    advancedAnalytics: true
-  },
   pro: {
     monthlyMessages: 1000,
     monthlyTokens: 100000,
@@ -210,8 +201,7 @@ export const PLAN_LIMITS: Record<SubscriptionTier, PlanLimits> = {
 
 // Stripe Price IDs - UPDATE THESE WITH YOUR ACTUAL STRIPE PRICE IDs
 export const STRIPE_PRICE_IDS: Record<SubscriptionTier, string> = {
-  free: 'price_free', // Free plan (no actual Stripe price needed)
-  standard: 'price_1RvsvqCitWuvPenEw9TefOig', // PathGen Standard
+  free: 'free', // Free plan (no actual Stripe price needed)
   pro: 'price_1RvsyxCitWuvPenEOtFzt5FC' // PathGen Pro
 };
 

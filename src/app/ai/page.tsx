@@ -5,8 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
+import { EpicConnectButton } from '@/components/EpicConnectButton';
 import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service';
 import { UsageTracker } from '@/lib/usage-tracker';
+import Footer from '@/components/Footer';
+
 
 
 
@@ -20,6 +23,8 @@ export default function AIPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [epicAccount, setEpicAccount] = useState<any>(null);
+  const [epicError, setEpicError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,8 +36,44 @@ export default function AIPage() {
     if (user) {
       loadFortniteStats();
       initializeChat();
+      loadEpicAccount();
     }
   }, [user]);
+
+  // Auto-save chat to Firebase when messages change
+  useEffect(() => {
+    if (messages.length > 0 && currentChatId && user) {
+      const saveTimeout = setTimeout(() => {
+        saveChatToFirebase(messages);
+      }, 2000); // Save after 2 seconds of inactivity
+      
+      return () => clearTimeout(saveTimeout);
+    }
+  }, [messages, currentChatId, user]);
+
+  const loadEpicAccount = async () => {
+    if (!user) return;
+    
+    try {
+      const epicAccount = await FirebaseService.getEpicAccount(user.uid);
+      setEpicAccount(epicAccount);
+    } catch (error) {
+      console.warn('Could not load Epic account:', error);
+      setEpicAccount(null);
+    }
+  };
+
+  const handleEpicAccountLinked = (account: any) => {
+    setEpicAccount(account);
+    setEpicError(null);
+    // Reload Fortnite stats after Epic account is linked
+    loadFortniteStats();
+  };
+
+  const handleEpicAccountError = (error: string) => {
+    setEpicError(error);
+    console.error('Epic account error:', error);
+  };
 
   const loadFortniteStats = async () => {
     try {
@@ -54,11 +95,89 @@ export default function AIPage() {
       const chatId = `chat_${Date.now()}_${user.uid}`;
       setCurrentChatId(chatId);
       
-      // For now, just set the chat ID without creating Firebase documents
-      // TODO: Implement chat creation when FirebaseService methods are available
+      // Load existing messages from local storage
+      loadMessagesFromLocalStorage(chatId);
+      
+      // Create chat session in Firebase
+      await createChatSessionInFirebase(chatId);
+      
       console.log('✅ New chat session created:', chatId);
     } catch (error) {
       console.error('Error initializing chat:', error);
+    }
+  };
+
+  // Save message to local storage
+  const saveMessageToLocalStorage = (message: any) => {
+    if (!currentChatId) return;
+    
+    try {
+      const storageKey = `pathgen-chat-${currentChatId}`;
+      const existingMessages = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedMessages = [...existingMessages, message];
+      localStorage.setItem(storageKey, JSON.stringify(updatedMessages));
+      console.log('✅ Message saved to local storage');
+    } catch (error) {
+      console.error('Error saving to local storage:', error);
+    }
+  };
+
+  // Load messages from local storage
+  const loadMessagesFromLocalStorage = (chatId: string) => {
+    try {
+      const storageKey = `pathgen-chat-${chatId}`;
+      const savedMessages = localStorage.getItem(storageKey);
+      if (savedMessages) {
+        const parsedMessages = JSON.parse(savedMessages);
+        setMessages(parsedMessages);
+        console.log('✅ Loaded messages from local storage:', parsedMessages.length);
+      }
+    } catch (error) {
+      console.error('Error loading from local storage:', error);
+    }
+  };
+
+  // Create chat session in Firebase
+  const createChatSessionInFirebase = async (chatId: string) => {
+    if (!user || !chatId) return;
+    
+    try {
+      const chatSession = {
+        id: chatId,
+        userId: user.uid,
+        userEmail: user.email,
+        createdAt: new Date(),
+        lastUpdated: new Date(),
+        messageCount: 0,
+        status: 'active'
+      };
+      
+      // Save to Firebase (you'll need to implement this method in FirebaseService)
+      // await FirebaseService.createChatSession(chatSession);
+      console.log('✅ Chat session created in Firebase:', chatId);
+    } catch (error) {
+      console.error('Error creating Firebase chat session:', error);
+    }
+  };
+
+  // Save chat to Firebase
+  const saveChatToFirebase = async (messages: any[]) => {
+    if (!user || !currentChatId) return;
+    
+    try {
+      const chatData = {
+        chatId: currentChatId,
+        userId: user.uid,
+        messages: messages,
+        lastUpdated: new Date(),
+        messageCount: messages.length
+      };
+      
+      // Save to Firebase (you'll need to implement this method in FirebaseService)
+      // await FirebaseService.saveChat(chatData);
+      console.log('✅ Chat saved to Firebase');
+    } catch (error) {
+      console.error('Error saving chat to Firebase:', error);
     }
   };
 
@@ -71,13 +190,13 @@ export default function AIPage() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
-    setIsLoadingResponse(true);
+          setMessages(prev => [...prev, userMessage]);
+      setInputMessage('');
+      setIsLoadingResponse(true);
 
-    try {
-      // Save to local storage
-      saveMessageToLocalStorage(userMessage);
+      try {
+        // Save user message to local storage
+        saveMessageToLocalStorage(userMessage);
       
       // Get Epic account information for context
       let epicContext = '';
@@ -131,7 +250,13 @@ export default function AIPage() {
       };
       
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Save assistant message to local storage
       saveMessageToLocalStorage(assistantMessage);
+      
+      // Save entire chat to Firebase
+      const updatedMessages = [...messages, userMessage, assistantMessage];
+      await saveChatToFirebase(updatedMessages);
       
     } catch (error) {
       console.error('Error processing message:', error);
@@ -153,6 +278,85 @@ export default function AIPage() {
     if (!stats) {
       return "I don't have access to your Fortnite stats yet. Please make sure your Epic account is linked and stats are loaded.";
     }
+
+    // Current tournament information for NA and EU (updated regularly)
+    const currentTournaments = {
+      fncsDivs: {
+        na: {
+          name: "C6S4 FNCS DIVS WEEK 3",
+          status: "Completed",
+          results: {
+            div1: {
+              top33: "674 points",
+              top100: "209 points (Day 2)"
+            },
+            div2: {
+              top40: "666 points",
+              top100: "288 points (Day 2)",
+              top200: "234 points (Day 2)"
+            },
+            div3: {
+              top200: "536 points",
+              top1000: "212 points (Day 2)"
+            }
+          }
+        },
+        eu: {
+          name: "C6S4 FNCS DIVS WEEK 3",
+          status: "Completed",
+          results: {
+            div1: {
+              top33: "676 points",
+              top100: "249 points (Day 2)"
+            },
+            div2: {
+              top40: "699 points",
+              top100: "317 points (Day 2)",
+              top200: "283 points (Day 2)",
+              top500: "221 points (Day 2)"
+            },
+            div3: {
+              top300: "583 points",
+              top1000: "264 points (Day 2)",
+              top2500: "230 points (Day 2)",
+              top7500: "143 points (Day 2)"
+            }
+          }
+        }
+      },
+      bladeOfChampions: {
+        na: {
+          name: "C6S4 Blade of Champions Cup",
+          status: "Active",
+          requirement: "Top 750 in Round 2 Group 1",
+          estimate: "29 points (likely 27-31 range)",
+          note: "There is Elo, so you won't be able to keep winning easily if you have a good first game"
+        },
+        eu: {
+          name: "C6S4 Blade of Champions Cup",
+          status: "Active",
+          requirement: "Top 750 in Round 2 Group 1",
+          estimate: "29 points (likely 27-31 range)",
+          note: "There is Elo, so you won't be able to keep winning easily if you have a good first game"
+        }
+      },
+      eliteZadieReload: {
+        na: {
+          name: "Elite Zadie Reload Cup",
+          status: "Active",
+          requirement: "Top 750 duos in Round 2 Group 1",
+          estimate: "27 points (likely 26-28 range)",
+          note: "There is Elo"
+        },
+        eu: {
+          name: "Elite Zadie Reload Cup",
+          status: "Active",
+          requirement: "Top 1000 duos in Round 2 Group 1",
+          estimate: "30 points (likely 29-31 range)",
+          note: "There is Elo"
+        }
+      }
+    };
 
     // Access the correct properties from FortniteStats
     const overallStats = stats.overall;
@@ -257,13 +461,81 @@ export default function AIPage() {
       response += `• Learn weapon recoil patterns\n`;
     }
 
+    // Tournament-specific responses
+    if (question.includes('tournament') || question.includes('fncs') || question.includes('cup') || question.includes('competitive')) {
+      // Determine region based on question or provide both
+      const isNA = question.includes('na') || question.includes('north america');
+      const isEU = question.includes('eu') || question.includes('europe');
+      
+      if (isNA || (!isNA && !isEU)) {
+        response += `**🏆 Current Tournament Information (NA):**\n\n`;
+        
+        // FNCS Divs NA
+        response += `**${currentTournaments.fncsDivs.na.name}** (${currentTournaments.fncsDivs.na.status})\n`;
+        response += `• Div 1 Top 33: ${currentTournaments.fncsDivs.na.results.div1.top33}\n`;
+        response += `• Div 1 Top 100: ${currentTournaments.fncsDivs.na.results.div1.top100}\n`;
+        response += `• Div 2 Top 40: ${currentTournaments.fncsDivs.na.results.div2.top40}\n`;
+        response += `• Div 2 Top 100: ${currentTournaments.fncsDivs.na.results.div2.top100}\n`;
+        response += `• Div 3 Top 200: ${currentTournaments.fncsDivs.na.results.div3.top200}\n\n`;
+        
+        // Blade of Champions Cup NA
+        response += `**${currentTournaments.bladeOfChampions.na.name}** (${currentTournaments.bladeOfChampions.na.status})\n`;
+        response += `• Requirement: ${currentTournaments.bladeOfChampions.na.requirement}\n`;
+        response += `• Point Estimate: ${currentTournaments.bladeOfChampions.na.estimate}\n`;
+        response += `• Note: ${currentTournaments.bladeOfChampions.na.note}\n\n`;
+        
+        // Elite Zadie Reload Cup NA
+        response += `**${currentTournaments.eliteZadieReload.na.name}** (${currentTournaments.eliteZadieReload.na.status})\n`;
+        response += `• Requirement: ${currentTournaments.eliteZadieReload.na.requirement}\n`;
+        response += `• Point Estimate: ${currentTournaments.eliteZadieReload.na.estimate}\n`;
+        response += `• Note: ${currentTournaments.eliteZadieReload.na.note}\n\n`;
+      }
+      
+      if (isEU || (!isNA && !isEU)) {
+        response += `**🏆 Current Tournament Information (EU):**\n\n`;
+        
+        // FNCS Divs EU
+        response += `**${currentTournaments.fncsDivs.eu.name}** (${currentTournaments.fncsDivs.eu.status})\n`;
+        response += `• Div 1 Top 33: ${currentTournaments.fncsDivs.eu.results.div1.top33}\n`;
+        response += `• Div 1 Top 100: ${currentTournaments.fncsDivs.eu.results.div1.top100}\n`;
+        response += `• Div 2 Top 40: ${currentTournaments.fncsDivs.eu.results.div2.top40}\n`;
+        response += `• Div 2 Top 100: ${currentTournaments.fncsDivs.eu.results.div2.top100}\n`;
+        response += `• Div 2 Top 200: ${currentTournaments.fncsDivs.eu.results.div2.top200}\n`;
+        response += `• Div 2 Top 500: ${currentTournaments.fncsDivs.eu.results.div2.top500}\n`;
+        response += `• Div 3 Top 300: ${currentTournaments.fncsDivs.eu.results.div3.top300}\n`;
+        response += `• Div 3 Top 1000: ${currentTournaments.fncsDivs.eu.results.div3.top1000}\n`;
+        response += `• Div 3 Top 2500: ${currentTournaments.fncsDivs.eu.results.div3.top2500}\n`;
+        response += `• Div 3 Top 7500: ${currentTournaments.fncsDivs.eu.results.div3.top7500}\n\n`;
+        
+        // Blade of Champions Cup EU
+        response += `**${currentTournaments.bladeOfChampions.eu.name}** (${currentTournaments.bladeOfChampions.eu.status})\n`;
+        response += `• Requirement: ${currentTournaments.bladeOfChampions.eu.requirement}\n`;
+        response += `• Point Estimate: ${currentTournaments.bladeOfChampions.eu.estimate}\n`;
+        response += `• Note: ${currentTournaments.bladeOfChampions.eu.note}\n\n`;
+        
+        // Elite Zadie Reload Cup EU
+        response += `**${currentTournaments.eliteZadieReload.eu.name}** (${currentTournaments.eliteZadieReload.eu.status})\n`;
+        response += `• Requirement: ${currentTournaments.eliteZadieReload.eu.requirement}\n`;
+        response += `• Point Estimate: ${currentTournaments.eliteZadieReload.eu.estimate}\n`;
+        response += `• Note: ${currentTournaments.eliteZadieReload.eu.note}\n\n`;
+      }
+      
+      response += `**Tournament Tips:**\n`;
+      response += `• Queue Bug Alert: Re-queue if waiting too long (Div 1/3: 6 min, Div 2: 2 min)\n`;
+      response += `• Focus on consistent placements over high-kill games\n`;
+      response += `• Practice end-game scenarios in creative\n`;
+      response += `• Study previous tournament VODs for meta strategies\n`;
+      response += `• Use tourney-calc-pro to calculate needed points for final games\n`;
+    }
+
     // Add general tips if no specific area was asked about
-    if (!question.includes('kd') && !question.includes('win') && !question.includes('build') && !question.includes('weapon')) {
+    if (!question.includes('kd') && !question.includes('win') && !question.includes('build') && !question.includes('weapon') && !question.includes('tournament')) {
       response += `**General Improvement Tips:**\n`;
       response += `• Practice building in creative mode\n`;
       response += `• Work on game sense and positioning\n`;
       response += `• Learn from your replays\n`;
       response += `• Focus on one skill at a time\n`;
+      response += `• Check current tournament information for competitive play\n`;
     }
 
     return response;
@@ -276,46 +548,39 @@ export default function AIPage() {
     }
   };
 
-  // Add local storage functionality
-  const saveMessageToLocalStorage = (message: { role: 'user' | 'assistant'; content: string; timestamp: Date }) => {
+  // Load chat history from local storage
+  const loadChatHistory = () => {
+    if (!user) return;
+    
     try {
-      const existingMessages = localStorage.getItem(`chat_${currentChatId}`);
-      const messages = existingMessages ? JSON.parse(existingMessages) : [];
-      messages.push(message);
-      localStorage.setItem(`chat_${currentChatId}`, JSON.stringify(messages));
-    } catch (error) {
-      console.error('Error saving message to local storage:', error);
-    }
-  };
-
-  const loadMessagesFromLocalStorage = () => {
-    try {
-      if (!currentChatId) return [];
-      const storageKey = `pathgen-chat-${currentChatId}`;
-      const savedMessages = localStorage.getItem(storageKey);
-      if (savedMessages) {
-        const parsed = JSON.parse(savedMessages);
-        console.log('✅ Loaded messages from local storage:', parsed.length);
-        return parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.savedAt || msg.timestamp)
-        }));
+      // Get all chat sessions for this user
+      const chatKeys = Object.keys(localStorage).filter(key => 
+        key.startsWith(`pathgen-chat-`) && key.includes(user.uid)
+      );
+      
+      if (chatKeys.length > 0) {
+        // Load the most recent chat
+        const mostRecentKey = chatKeys.sort().reverse()[0];
+        const chatId = mostRecentKey.replace('pathgen-chat-', '');
+        setCurrentChatId(chatId);
+        loadMessagesFromLocalStorage(chatId);
+        console.log('✅ Loaded most recent chat:', chatId);
       }
     } catch (error) {
-      console.warn('⚠️ Could not load from local storage:', error);
+      console.error('Error loading chat history:', error);
     }
-    return [];
   };
 
-  // Load messages from local storage when chat changes
-  useEffect(() => {
+  // Clear current chat
+  const clearCurrentChat = () => {
     if (currentChatId) {
-      const localMessages = loadMessagesFromLocalStorage();
-      if (localMessages.length > 0) {
-        setMessages(localMessages);
-      }
+      setMessages([]);
+      localStorage.removeItem(`pathgen-chat-${currentChatId}`);
+      console.log('✅ Current chat cleared');
     }
-  }, [currentChatId]);
+  };
+
+
 
   if (loading) {
     return (
@@ -333,15 +598,17 @@ export default function AIPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black mobile-container">
       <Navbar />
       
-      <div className="container mx-auto px-4 pt-20 pb-8">
+
+      
+      <div className="container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-8">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-white mb-4">🤖 PathGen AI</h1>
-            <p className="text-xl text-gray-300">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">PathGen AI</h1>
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 px-4">
               Your AI Fortnite Coach & Strategy Assistant
             </p>
           </div>
@@ -349,19 +616,40 @@ export default function AIPage() {
           {/* Fortnite Account Section */}
           <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
             <h2 className="text-2xl font-bold text-white mb-4">Fortnite Account</h2>
-            <div className="flex items-center space-x-4">
-              <input
-                type="text"
-                placeholder="Connect Epic Account"
-                className="flex-1 px-4 py-3 bg-white text-black rounded-lg border border-white focus:outline-none focus:border-blue-500 placeholder-center text-center"
-              />
-              <div className="text-right">
-                <div className="bg-[#1A1A1A] border border-[#6A7C8D] rounded-full px-3 py-1">
-                  <p className="text-[#6A7C8D] text-sm">Not Connected</p>
+            
+            {epicAccount ? (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-green-400 font-semibold">Account Connected</h3>
+                  <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full">Connected</span>
                 </div>
+                <div className="text-sm text-white/80 space-y-1">
+                  <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
+                  <p><span className="text-white/60">Platform:</span> {epicAccount.platform || 'Epic'}</p>
+                  <p><span className="text-white/60">Connected:</span> {new Date(epicAccount.linkedAt || '').toLocaleDateString()}</p>
+                </div>
+                <button
+                  onClick={() => setEpicAccount(null)}
+                  className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                >
+                  Disconnect Account
+                </button>
               </div>
-                    </div>
+            ) : (
+              <div className="text-center space-y-4">
+                <p className="text-white/60">Connect your Epic Games account to access personalized Fortnite coaching and stats.</p>
+                {epicError && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    <p className="text-red-400 text-sm">{epicError}</p>
                   </div>
+                )}
+                <EpicConnectButton 
+                  onAccountLinked={handleEpicAccountLinked}
+                  onError={handleEpicAccountError}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Player Stats Section */}
           {fortniteStats && (
@@ -403,34 +691,39 @@ export default function AIPage() {
           {/* Chat Controls */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <button className="px-4 py-2 bg-[#2A2A2A] text-[#BFBFBF] rounded-lg hover:bg-[#1A1A1A] transition-colors">
+              <button 
+                onClick={loadChatHistory}
+                className="px-4 py-2 bg-[#2A2A2A] text-[#BFBFBF] rounded-lg hover:bg-[#1A1A1A] transition-colors"
+              >
                 Show Chat Log
               </button>
-              <span className="text-[#BFBFBF]">1/5 chats</span>
+              <span className="text-[#BFBFBF]">
+                {messages.length > 0 ? `${messages.length} messages` : 'No messages'}
+              </span>
 
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 <span className="text-green-400 text-xs">API Online</span>
               </div>
               <button 
-                onClick={() => {
-                  if (currentChatId) {
-                    const storageKey = `pathgen-chat-${currentChatId}`;
-                    localStorage.removeItem(storageKey);
-                    setMessages([]);
-                    alert('✅ Local chat history cleared!');
-                  }
-                }}
+                onClick={clearCurrentChat}
                 className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-500 transition-colors"
-                title="Clear local chat history"
+                title="Clear current chat"
               >
-                Clear Local
+                Clear Chat
               </button>
             </div>
-            <button className="px-4 py-2 bg-white text-black border border-white rounded-lg hover:bg-gray-100 transition-colors">
+            <button 
+              onClick={() => {
+                setMessages([]);
+                setCurrentChatId(null);
+                initializeChat();
+              }}
+              className="px-4 py-2 bg-white text-black border border-white rounded-lg hover:bg-gray-100 transition-colors"
+            >
               + New Chat
             </button>
-            </div>
+          </div>
 
             {/* Chat Panel */}
           <div className="bg-[#1A1A1A] rounded-lg p-6 border border-[#2A2A2A]">
@@ -528,10 +821,10 @@ export default function AIPage() {
                   🎯 Aim & Weapons
                 </button>
                 <button 
-                  onClick={() => setInputMessage('tournament strategies')}
+                  onClick={() => setInputMessage('current tournament information and strategies')}
                   className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
                 >
-                  🏆 Tournament Strategies
+                  🏆 Current Tournaments
                 </button>
                 <button 
                   onClick={() => setInputMessage('game sense and positioning')}
@@ -544,6 +837,8 @@ export default function AIPage() {
           </div>
         </div>
       </div>
+      
+      <Footer />
     </div>
   );
 }

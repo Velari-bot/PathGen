@@ -33,6 +33,15 @@
     transition: all 0.3s ease;
     transform: scale(1);
   }
+
+  @media (max-width: 768px) {
+    .btn-primary {
+      padding: 10px 20px;
+      font-size: 14px;
+      width: 100%;
+      text-align: center;
+    }
+  }
   
   .btn-primary:hover {
     transform: scale(1.05);
@@ -47,6 +56,15 @@
     border-radius: 12px;
     border: 2px solid #FFFFFF;
     transition: all 0.3s ease;
+  }
+
+  @media (max-width: 768px) {
+    .btn-secondary {
+      padding: 10px 20px;
+      font-size: 14px;
+      width: 100%;
+      text-align: center;
+    }
   }
 
   .btn-secondary:hover {
@@ -77,6 +95,14 @@
     align-items: center;
     justify-content: center;
     scroll-snap-align: start;
+    padding: 0 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .section {
+      min-height: auto;
+      padding: 4rem 1rem;
+    }
   }
   
   .gradient-bg {
@@ -96,6 +122,14 @@
     border: 1px solid rgba(58, 58, 62, 0.2);
   }
 
+  @media (max-width: 768px) {
+    .card {
+      padding: 16px;
+      border-radius: 12px;
+      margin: 0 8px;
+    }
+  }
+
   .card:hover {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     border-color: rgba(255, 255, 255, 0.5);
@@ -109,6 +143,15 @@
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     padding: 24px;
     transition: all 0.3s ease;
+  }
+
+  @media (max-width: 768px) {
+    .glass-card {
+      padding: 16px;
+      border-radius: 12px;
+      margin: 0 8px;
+      backdrop-filter: blur(8px);
+    }
   }
 
   .glass-card:hover {
@@ -279,4 +322,66 @@
   
   .prose li {
     margin: 0.25em 0;
+  }
+
+  /* Mobile Optimization Utilities */
+  .mobile-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0 1rem;
+    overflow-x: hidden;
+  }
+
+  .mobile-text {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  .mobile-spacing {
+    margin: 1rem 0;
+  }
+
+  .mobile-stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .touch-friendly {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  @media (max-width: 640px) {
+    .mobile-hidden {
+      display: none !important;
+    }
+    
+    .mobile-full {
+      width: 100% !important;
+    }
+    
+    .mobile-center {
+      text-align: center !important;
+    }
+    
+    .mobile-p-4 {
+      padding: 1rem !important;
+    }
+    
+    .mobile-text-sm {
+      font-size: 0.875rem !important;
+    }
+    
+    .mobile-text-lg {
+      font-size: 1.125rem !important;
+    }
+    
+    .mobile-mb-4 {
+      margin-bottom: 1rem !important;
+    }
+    
+    .mobile-mt-4 {
+      margin-top: 1rem !important;
+    }
   }

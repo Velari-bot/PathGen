@@ -188,7 +188,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const hasFeatureAccess = useCallback((feature: string, requiredTier: SubscriptionTier): boolean => {
     if (!subscription) return false;
     
-    const tierOrder = { free: 0, standard: 1, pro: 2 };
+    const tierOrder = { free: 0, pro: 1 };
     const userTier = subscription.tier || 'free';
     
     return tierOrder[userTier] >= tierOrder[requiredTier];

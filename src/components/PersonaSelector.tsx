@@ -92,45 +92,45 @@ export default function PersonaSelector() {
         <div className="absolute top-1/3 right-1/3 w-20 h-20 bg-white/3 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mobile-container">
         {/* Logo Section at Top */}
-        <div className="flex justify-center mb-16 animate-fade-in">
-          <div className="flex items-center space-x-3">
+        <div className="flex justify-center mb-8 sm:mb-12 lg:mb-16 animate-fade-in">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* White curved corner cube with logo */}
-            <div className="relative w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-              <div className="relative w-12 h-12">
+            <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative w-8 h-8 sm:w-12 sm:h-12">
                 <Image
                   src="/Black PathGen logo.png"
                   alt="PathGen AI Logo"
                   fill
-                  sizes="48px"
+                  sizes="(max-width: 640px) 32px, 48px"
                   className="object-contain"
                 />
               </div>
             </div>
-            <span className="text-3xl font-bold text-primary-text">PathGen AI</span>
+            <span className="text-2xl sm:text-3xl font-bold text-primary-text">PathGen AI</span>
           </div>
         </div>
 
         {/* Enhanced Header with more spacing */}
-        <div className="animate-fade-in mb-20">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-8 leading-tight">
+        <div className="animate-fade-in mb-12 sm:mb-16 lg:mb-20">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 lg:mb-8 leading-tight">
             <span className="text-primary-text">Choose Your</span>
             <br />
             <span className="text-gradient">Playstyle</span>
           </h2>
           
-          <p className="text-xl md:text-2xl text-secondary-text mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-secondary-text mb-8 sm:mb-10 lg:mb-12 max-w-3xl mx-auto leading-relaxed px-4">
             Select your Fortnite persona and get personalized coaching tailored to your goals and skill level.
           </p>
         </div>
 
         {/* Enhanced Persona Cards with more spacing */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto mb-12 sm:mb-16 lg:mb-20">
           {personas.map((persona, index) => (
             <div
               key={persona.id}
-              className={`glass-card cursor-pointer transition-all duration-500 hover:scale-105 ${
+              className={`glass-card cursor-pointer transition-all duration-500 hover:scale-105 touch-friendly ${
                 selectedPersona === persona.id 
                   ? 'ring-2 ring-white ring-opacity-50 scale-105 shadow-2xl' 
                   : 'hover:ring-2 hover:ring-white/30 hover:shadow-xl'
@@ -139,41 +139,41 @@ export default function PersonaSelector() {
               onClick={() => setSelectedPersona(persona.id)}
             >
               {/* Enhanced Icon */}
-              <div className="text-6xl mb-6 animate-bounce" style={{ animationDelay: `${index * 0.1}s` }}>
+              <div className="text-4xl sm:text-5xl lg:text-6xl mb-4 sm:mb-6 animate-bounce" style={{ animationDelay: `${index * 0.1}s` }}>
                 {persona.icon}
               </div>
               
               {/* Title */}
-              <h3 className="text-2xl font-bold text-primary-text mb-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-primary-text mb-2 sm:mb-3">
                 {persona.title}
               </h3>
               
               {/* Description */}
-              <p className="text-secondary-text mb-4 leading-relaxed">
+              <p className="text-secondary-text mb-3 sm:mb-4 leading-relaxed text-sm sm:text-base">
                 {persona.description}
               </p>
 
               {/* Difficulty & Time */}
-              <div className="flex justify-between items-center mb-4 text-sm">
-                <span className="bg-white/10 px-3 py-1 rounded-full text-white">
+              <div className="flex flex-col sm:flex-row justify-between items-center mb-3 sm:mb-4 text-sm gap-2 sm:gap-0">
+                <span className="bg-white/10 px-3 py-1 rounded-full text-white text-xs sm:text-sm">
                   {persona.difficulty}
                 </span>
-                <span className="text-secondary-text">
+                <span className="text-secondary-text text-xs sm:text-sm">
                   {persona.timeCommitment}
                 </span>
               </div>
 
               {/* Best For */}
-              <p className="text-secondary-text text-sm mb-6 italic">
+              <p className="text-secondary-text text-xs sm:text-sm mb-4 sm:mb-6 italic text-center sm:text-left">
                 Best for: {persona.bestFor}
               </p>
               
               {/* Features */}
-              <ul className="space-y-3 mb-6 text-left">
+              <ul className="space-y-2 sm:space-y-3 mb-4 sm:mb-6 text-left">
                 {persona.features.map((feature, featureIndex) => (
-                  <li key={featureIndex} className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-white rounded-full flex-shrink-0 animate-pulse" style={{ animationDelay: `${featureIndex * 0.1}s` }}></div>
-                    <span className="text-secondary-text text-sm">{feature}</span>
+                  <li key={featureIndex} className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-white rounded-full flex-shrink-0 animate-pulse mt-1" style={{ animationDelay: `${featureIndex * 0.1}s` }}></div>
+                    <span className="text-secondary-text text-xs sm:text-sm leading-relaxed">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -189,24 +189,24 @@ export default function PersonaSelector() {
         </div>
 
         {/* Enhanced CTA Section with more spacing */}
-        <div className="animate-fade-in-up mb-20" style={{ animationDelay: '0.8s' }}>
-          <div className="bg-white/5 rounded-2xl p-8 border border-white/10">
-            <h3 className="text-2xl font-bold text-white mb-4">
+        <div className="animate-fade-in-up mb-12 sm:mb-16 lg:mb-20" style={{ animationDelay: '0.8s' }}>
+          <div className="bg-white/5 rounded-xl sm:rounded-2xl p-6 sm:p-8 border border-white/10 mx-4">
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
               Ready to Start Your Journey?
             </h3>
-            <p className="text-secondary-text mb-6">
+            <p className="text-secondary-text mb-4 sm:mb-6 text-sm sm:text-base">
               Join thousands of players who have already improved their Fortnite skills with PathGen AI.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="btn-primary text-lg px-8 py-4 group">
+            <div className="flex flex-col gap-3 sm:gap-4 justify-center items-center max-w-md mx-auto">
+              <button className="btn-primary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full touch-friendly">
                 <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
                   Start Coaching with {personas.find(p => p.id === selectedPersona)?.title}
                 </span>
               </button>
               
               <button 
-                className="btn-secondary text-lg px-8 py-4"
+                className="btn-secondary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 w-full touch-friendly"
                 onClick={() => setShowFeatures(!showFeatures)}
               >
                 {showFeatures ? 'Hide' : 'Show'} All Features
@@ -217,16 +217,16 @@ export default function PersonaSelector() {
 
         {/* Additional Features Grid with more spacing */}
         {showFeatures && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto animate-fade-in-up mb-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto animate-fade-in-up mb-12 sm:mb-16 lg:mb-20">
             {additionalFeatures.map((feature, index) => (
               <div 
                 key={index}
-                className="glass-card text-center p-6 hover:scale-105 transition-transform duration-300"
+                className="glass-card text-center p-4 sm:p-6 hover:scale-105 transition-transform duration-300"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h4 className="text-lg font-semibold text-white mb-2">{feature.title}</h4>
-                <p className="text-secondary-text text-sm">{feature.description}</p>
+                <div className="text-3xl sm:text-4xl mb-3 sm:mb-4">{feature.icon}</div>
+                <h4 className="text-base sm:text-lg font-semibold text-white mb-2">{feature.title}</h4>
+                <p className="text-secondary-text text-xs sm:text-sm">{feature.description}</p>
               </div>
             ))}
           </div>

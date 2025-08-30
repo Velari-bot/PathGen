@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         title: 'Chapter 6 Season 4: Last Resort',
         body: 'Dive into the mysterious depths of Chapter 6 Season 4: Last Resort. Explore underwater locations, discover new weapons, and battle it out in the most intense season yet!',
         image: '/api/placeholder?width=400&height=200&bgColor=4A90E2&text=Chapter+6+Season+4',
-        date: '2024-01-15',
+        date: '2025-09-10',
         type: 'br',
         url: '#'
       },
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         title: 'Save the World: New Hero Classes',
         body: 'Introducing new hero classes in Save the World! Master the art of combat with these powerful new characters and abilities.',
         image: '/api/placeholder?width=400&height=200&bgColor=9B59B6&text=Save+The+World',
-        date: '2024-01-14',
+        date: '2025-09-10',
         type: 'stw',
         url: '#'
       },
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         title: 'Creative 2.0: Advanced Building Tools',
         body: 'Unleash your creativity with the new advanced building tools in Creative 2.0. Create amazing experiences like never before!',
         image: '/api/placeholder?width=400&height=200&bgColor=3498DB&text=Creative+2.0',
-        date: '2024-01-13',
+        date: '2025-09-10',
         type: 'creative',
         url: '#'
       }

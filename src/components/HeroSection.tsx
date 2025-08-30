@@ -4,8 +4,26 @@ import React from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HeroSection() {
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleTryForFree = () => {
+    if (user) {
+      router.push('/dashboard');
+    } else {
+      router.push('/login');
+    }
+  };
+
+  const handleWatchDemo = () => {
+    // TODO: Add demo video functionality when available
+    alert('Demo video coming soon! Stay tuned for updates.');
+  };
+
   useGSAP(() => {
     // Hero entrance animation
     const tl = gsap.timeline({ delay: 0.5 });
@@ -76,29 +94,29 @@ export default function HeroSection() {
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary-bg/50 via-transparent to-white/5"></div>
 
-      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
+      <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto mobile-container">
         {/* Logo Section at Top */}
-        <div className="flex justify-center mb-16 hero-logo">
-          <div className="flex items-center space-x-3">
+        <div className="flex justify-center mb-8 sm:mb-12 lg:mb-16 hero-logo">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* White curved corner cube with logo */}
-            <div className="relative w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-              <div className="relative w-16 h-16">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative w-12 h-12 sm:w-16 sm:h-16">
                 <Image
                   src="/Black PathGen logo.png"
                   alt="PathGen AI Logo"
                   fill
-                  sizes="64px"
+                  sizes="(max-width: 640px) 48px, 64px"
                   priority
                   className="object-contain"
                 />
               </div>
             </div>
-            <span className="text-4xl font-bold text-primary-text">PathGen AI</span>
+            <span className="text-2xl sm:text-3xl lg:text-4xl font-bold text-primary-text">PathGen AI</span>
           </div>
         </div>
 
         {/* Main Title */}
-        <h1 className="hero-title text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight">
+        <h1 className="hero-title text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 leading-tight">
           <span className="text-primary-text">Level Up Your</span>
           <br />
           <span className="text-gradient bg-gradient-to-r from-white via-gray-200 to-white bg-clip-text text-transparent">
@@ -107,21 +125,27 @@ export default function HeroSection() {
         </h1>
 
         {/* Subtitle */}
-        <p className="hero-subtitle text-xl md:text-2xl lg:text-3xl text-secondary-text mb-12 max-w-4xl mx-auto leading-relaxed">
+        <p className="hero-subtitle text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-secondary-text mb-8 sm:mb-10 lg:mb-12 max-w-4xl mx-auto leading-relaxed px-4">
           Master the battle royale with AI-powered coaching, personalized strategies, and real-time performance tracking. 
           <span className="text-white font-semibold"> Dominate every match.</span>
         </p>
 
         {/* CTA Buttons */}
-        <div className="hero-buttons flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button className="btn-primary text-lg px-8 py-4 group">
+        <div className="hero-buttons flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center max-w-md sm:max-w-none mx-auto">
+          <button 
+            onClick={handleTryForFree}
+            className="btn-primary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly"
+          >
             <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
               Try for Free Now
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-white to-gray-200 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </button>
           
-          <button className="btn-secondary text-lg px-8 py-4 group">
+          <button 
+            onClick={handleWatchDemo}
+            className="btn-secondary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly"
+          >
             <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
               Watch Demo
             </span>
@@ -129,18 +153,18 @@ export default function HeroSection() {
         </div>
 
         {/* Stats */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">1,000+</div>
-            <div className="text-secondary-text">Matches Broken Down</div>
+        <div className="mt-12 sm:mt-14 lg:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4">
+          <div className="text-center mobile-spacing">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">1,000+</div>
+            <div className="text-secondary-text text-sm sm:text-base">Matches Broken Down</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">500+</div>
-            <div className="text-secondary-text">Replay Insights Generated</div>
+          <div className="text-center mobile-spacing">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">500+</div>
+            <div className="text-secondary-text text-sm sm:text-base">Replay Insights Generated</div>
           </div>
-          <div className="text-center">
-            <div className="text-3xl md:text-4xl font-bold text-white mb-2">95%</div>
-            <div className="text-secondary-text">Accuracy in AI Match Analysis</div>
+          <div className="text-center mobile-spacing">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">95%</div>
+            <div className="text-secondary-text text-sm sm:text-base">Accuracy in AI Match Analysis</div>
           </div>
         </div>
       </div>

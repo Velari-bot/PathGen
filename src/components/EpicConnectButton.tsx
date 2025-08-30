@@ -13,17 +13,27 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
   const { user } = useAuth();
 
   const handleEpicConnect = async () => {
+    console.log('EpicConnectButton clicked!');
+    
     if (!user) {
+      console.log('No user found, showing error');
       onError('Please sign in to your account first');
       return;
     }
 
+    console.log('User found:', user.uid);
     setIsLoading(true);
 
     try {
       // Epic Games OAuth flow
       const epicClientId = process.env.NEXT_PUBLIC_EPIC_CLIENT_ID;
-      const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'http://localhost:3000/auth/callback';
+      const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback';
+      
+      console.log('Epic OAuth config:', {
+        hasClientId: !!epicClientId,
+        clientId: epicClientId ? `${epicClientId.substring(0, 8)}...` : 'missing',
+        redirectUri
+      });
       
       if (!epicClientId) {
         throw new Error('Epic OAuth not configured. Please set NEXT_PUBLIC_EPIC_CLIENT_ID in your environment variables.');
@@ -40,6 +50,7 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
 
       // Redirect to Epic OAuth
       const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
+      console.log('Redirecting to Epic OAuth:', epicOAuthUrl);
       window.location.href = epicOAuthUrl;
 
     } catch (error) {
@@ -51,9 +62,13 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
 
   return (
     <button
-      onClick={handleEpicConnect}
+      onClick={(e) => {
+        console.log('Button clicked!', e);
+        handleEpicConnect();
+      }}
       disabled={isLoading || !user}
-      className="w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+      className="w-full px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+      style={{ cursor: (isLoading || !user) ? 'not-allowed' : 'pointer' }}
     >
       {isLoading ? (
         <>
@@ -62,9 +77,13 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
         </>
       ) : (
         <>
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
+          <div className="w-5 h-5 bg-white rounded-lg flex items-center justify-center">
+            <img 
+              src="/Black PathGen logo.png" 
+              alt="PathGen Logo" 
+              className="w-4 h-4"
+            />
+          </div>
           Connect Epic Account
         </>
       )}

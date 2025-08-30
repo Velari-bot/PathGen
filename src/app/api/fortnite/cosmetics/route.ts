@@ -88,8 +88,8 @@ export async function GET(request: NextRequest) {
           featured: '/api/placeholder?width=300&height=300&bgColor=4A90E2&text=Galaxy+Featured',
           smallIcon: '/api/placeholder?width=50&height=50&bgColor=4A90E2&text=G'
         },
-        releaseDate: '2024-01-15',
-        lastUpdate: '2024-01-15',
+        releaseDate: '2025-09-10',
+        lastUpdate: '2025-09-10',
         obtained: false,
         season: 'Chapter 6 Season 4',
         battlePass: false
@@ -104,8 +104,8 @@ export async function GET(request: NextRequest) {
           icon: '/api/placeholder?width=150&height=150&bgColor=9B59B6&text=Dragon',
           smallIcon: '/api/placeholder?width=50&height=50&bgColor=9B59B6&text=D'
         },
-        releaseDate: '2024-01-14',
-        lastUpdate: '2024-01-14',
+        releaseDate: '2025-09-10',
+        lastUpdate: '2025-09-10',
         obtained: true,
         season: 'Chapter 6 Season 4',
         battlePass: true

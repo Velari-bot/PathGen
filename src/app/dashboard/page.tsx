@@ -7,8 +7,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import { FirebaseService, EpicAccount, FortniteStats } from '@/lib/firebase-service';
-import { UsageTracker } from '@/lib/usage-tracker';
+
 import OnboardingModal from '@/components/OnboardingModal';
+
+import { FullCreditDisplay } from '@/components/CreditDisplay';
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
@@ -20,8 +22,6 @@ export default function DashboardPage() {
   const [replayUploads, setReplayUploads] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [usageData, setUsageData] = useState<any>(null);
-  const [usageLoading, setUsageLoading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,7 +34,6 @@ export default function DashboardPage() {
       checkSubscription();
       loadEpicAccount();
       loadUserProfile();
-      loadUsageData();
     }
   }, [user]);
 
@@ -74,9 +73,11 @@ export default function DashboardPage() {
       console.log('⚠️ API call failed, using local data:', error);
     }
     
-    // Fallback to local Firebase data
+    // Fallback to local Firebase data - ensure new accounts are 'free'
     try {
       const userDoc = await FirebaseService.getUserProfile(user.uid);
+      // For new accounts or accounts without explicit subscription data, default to 'free'
+      // Check both subscription.tier and subscriptionTier fields for compatibility
       const tier = userDoc?.subscription?.tier || 'free';
       console.log('✅ Got subscription tier from local Firebase:', tier);
       return tier;
@@ -86,37 +87,7 @@ export default function DashboardPage() {
     }
   };
 
-  const loadUsageData = async () => {
-    if (!user) return;
-    
-    setUsageLoading(true);
-    try {
-      // Get the correct subscription tier
-      const subscriptionTier = await getSubscriptionTier();
-      
-      // Map subscription tier to UsageTracker format
-      const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
-      console.log('✅ Mapped tier for UsageTracker:', mappedTier);
-      
-      // Get usage summary from UsageTracker
-      const usageSummary = await UsageTracker.getUsageSummary(user.uid, mappedTier as 'free' | 'paid' | 'pro');
-      setUsageData(usageSummary);
-      console.log('✅ Usage data loaded with tier:', subscriptionTier, usageSummary);
-    } catch (error) {
-      console.error('Error loading usage data:', error);
-      // Set default usage data based on production subscription
-      const defaultTier = 'paid'; // Assume standard tier for better UX
-      setUsageData({
-        usage: {
-          osirion: { matchesUsed: 0, replayUploadsUsed: 0, computeRequestsUsed: 0, eventTypesUsed: 0 },
-          ai: { messagesUsed: 0, conversationsCreated: 0 }
-        },
-        limits: UsageTracker.getLimitsForTier(defaultTier)
-      });
-    } finally {
-      setUsageLoading(false);
-    }
-  };
+
 
   const loadUserProfile = async () => {
     try {
@@ -168,8 +139,8 @@ export default function DashboardPage() {
       try {
         const parsed = JSON.parse(epicAccountData);
         setEpicAccount(parsed);
-        // Load stats if account is connected
-        if (parsed.id) {
+        // Load stats if account is connected (check for either id or epicId)
+        if (parsed.id || parsed.epicId) {
             // Use the new function to pull stats immediately
             pullStatsFromOsirion(parsed);
         }
@@ -246,8 +217,7 @@ export default function DashboardPage() {
           canAccess 
         });
         
-        // Always reload usage data to ensure we have the latest subscription info
-        await loadUsageData();
+
       } else {
         console.error('Subscription check failed:', response.status);
         // Default to allowing access for free users
@@ -311,10 +281,20 @@ export default function DashboardPage() {
     try {
       console.log('🔄 Immediately pulling stats from Osirion API after OAuth success...');
       
+      // Use epicId if available, otherwise fall back to id
+      const epicId = account.epicId || account.id;
+      console.log('🔍 Account object for stats pull:', account);
+      console.log('🔍 Using Epic ID:', epicId);
+      
+      if (!epicId) {
+        console.error('❌ No Epic ID found in account object for stats pull');
+        return;
+      }
+      
       // First, save the Epic account to Firebase with expanded fields
       const epicAccountData: EpicAccount = {
         id: FirebaseService.generateId(),
-        epicId: account.id,
+        epicId: epicId,
         displayName: account.displayName,
         platform: account.platform || 'Epic',
         userId: user.uid,
@@ -334,14 +314,7 @@ export default function DashboardPage() {
       await FirebaseService.saveEpicAccount(epicAccountData);
       console.log('✅ Epic account saved to Firebase');
       
-      // Track Epic account usage in Firebase
-      try {
-        const { UsageTracker } = await import('@/lib/usage-tracker');
-        await UsageTracker.incrementUsage(user.uid, 'epicSync');
-        console.log('✅ Epic account sync usage tracked in Firebase');
-      } catch (error) {
-        console.warn('⚠️ Could not track Epic account usage:', error);
-      }
+
       
       // Now pull stats from Osirion API
       const response = await fetch('/api/osirion/stats', {
@@ -350,7 +323,7 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          epicId: account.id,
+          epicId: epicId,
           userId: user.uid,
           platform: 'pc'
         }),
@@ -476,14 +449,7 @@ export default function DashboardPage() {
                      await FirebaseService.saveFortniteStats(fortniteStatsData);
            console.log('✅ Comprehensive Fortnite stats saved to Firebase');
            
-           // Track stats pulled usage in Firebase
-           try {
-             const { UsageTracker } = await import('@/lib/usage-tracker');
-             await UsageTracker.incrementUsage(user.uid, 'epicStats');
-             console.log('✅ Epic stats pulled usage tracked in Firebase');
-           } catch (error) {
-             console.warn('⚠️ Could not track Epic stats usage:', error);
-           }
+
            
            // Update local state with the full data structure
            setFortniteStats(fortniteStatsData);
@@ -503,7 +469,15 @@ export default function DashboardPage() {
     if (!epicAccount || !user) return;
     
     try {
-      console.log('🔄 Refreshing stats for Epic account:', epicAccount.id);
+      // Use epicId if available, otherwise fall back to id
+      const epicId = epicAccount.epicId || epicAccount.id;
+      console.log('🔄 Refreshing stats for Epic account:', epicId);
+      console.log('🔍 Epic account object:', epicAccount);
+      
+      if (!epicId) {
+        console.error('❌ No Epic ID found in account object');
+        return;
+      }
       
       const response = await fetch('/api/osirion/stats', {
         method: 'POST',
@@ -511,7 +485,7 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          epicId: epicAccount.id,
+          epicId: epicId,
           userId: user.uid,
           platform: 'pc'
         }),
@@ -526,7 +500,7 @@ export default function DashboardPage() {
           const fortniteStatsData: FortniteStats = {
             id: FirebaseService.generateId(),
             userId: user.uid,
-            epicId: epicAccount.id,
+            epicId: epicId,
             epicName: epicAccount.displayName,
             platform: 'pc',
             lastUpdated: new Date(),
@@ -707,25 +681,30 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-dark">
+    <div className="min-h-screen bg-gradient-dark mobile-container">
       <Navbar />
       
+
+      
       {/* Main Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-8 sm:pb-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
             <span className="text-primary-text">Welcome to</span>
             <br />
             <span className="text-gradient">PathGen AI</span>
           </h1>
-          <p className="text-xl text-secondary-text">
+          <p className="text-base sm:text-lg md:text-xl text-secondary-text px-4">
             Your personal Fortnite improvement dashboard
           </p>
         </div>
 
         {/* Dashboard Content */}
         <div className="max-w-6xl mx-auto space-y-8">
+          {/* Credit Display Section */}
+          <FullCreditDisplay />
+          
           {/* Combined Epic Account, AI Coaching, and Fortnite Stats Section */}
           <div className="glass-card p-6">
             <h3 className="text-xl font-semibold text-white mb-6">🎮 Epic Games Account & AI Coaching</h3>
@@ -733,10 +712,10 @@ export default function DashboardPage() {
             {/* Epic Account Status */}
             <div className="mb-6">
               {epicAccount ? (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                <div className="bg-white/10 border border-white/20 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-green-400 font-semibold">Account Connected</h4>
-                    <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full">Connected</span>
+                    <h4 className="text-white font-semibold">Account Connected</h4>
+                    <span className="px-3 py-1 bg-white text-gray-900 text-xs rounded-full">Connected</span>
                   </div>
                   <div className="text-sm text-white/80 space-y-1">
                     <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
@@ -745,7 +724,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     onClick={disconnectEpicAccount}
-                    className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
+                    className="mt-3 px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg text-sm transition-colors"
                   >
                     Disconnect Account
                   </button>
@@ -755,7 +734,7 @@ export default function DashboardPage() {
                   <p className="text-white/60">Connect your Epic Games account to access personalized Fortnite coaching and stats.</p>
                   <button
                     onClick={handleEpicSignIn}
-                    className="px-6 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                    className="px-6 py-3 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
                   >
                     🎮 Sign In with Epic Games
                   </button>
@@ -767,10 +746,10 @@ export default function DashboardPage() {
             <div className="mb-6">
               <h4 className="text-lg font-semibold text-white mb-3">🤖 AI Coaching Connection</h4>
               {epicAccount ? (
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <div className="bg-white/10 border border-white/20 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h5 className="text-blue-400 font-semibold">AI Coaching Active</h5>
-                    <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full">Connected</span>
+                    <h5 className="text-white font-semibold">AI Coaching Active</h5>
+                    <span className="px-3 py-1 bg-white text-gray-900 text-xs rounded-full">Connected</span>
                   </div>
                   <div className="text-sm text-white/80 space-y-1">
                     <p><span className="text-white/60">Status:</span> AI coaching is now connected to your Epic account</p>
@@ -780,11 +759,11 @@ export default function DashboardPage() {
                   <div className="mt-3 space-y-2">
                     <Link
                       href="/ai"
-                      className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                      className="inline-block px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg text-sm transition-colors"
                     >
                       🚀 Start AI Coaching Session
                     </Link>
-                    <p className="text-xs text-blue-300">Your AI coach now has access to your Epic account data for personalized advice</p>
+                    <p className="text-xs text-white">Your AI coach now has access to your Epic account data for personalized advice</p>
                   </div>
                 </div>
               ) : (
@@ -809,29 +788,29 @@ export default function DashboardPage() {
                     <div>
                       <h5 className="text-md font-semibold text-white mb-3">Overall Performance</h5>
                       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-blue-400">{fortniteStats.overall?.kd?.toFixed(2) || 'N/A'}</div>
-                          <div className="text-xs text-blue-300">K/D Ratio</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{fortniteStats.overall?.kd?.toFixed(2) || 'N/A'}</div>
+                          <div className="text-xs text-white">K/D Ratio</div>
                         </div>
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-green-400">{fortniteStats.overall?.winRate?.toFixed(1) || 'N/A'}%</div>
-                          <div className="text-xs text-green-300">Win Rate</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{fortniteStats.overall?.winRate?.toFixed(1) || 'N/A'}%</div>
+                          <div className="text-xs text-white">Win Rate</div>
                         </div>
-                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-purple-400">{fortniteStats.overall?.matches || 'N/A'}</div>
-                          <div className="text-xs text-purple-300">Matches</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{fortniteStats.overall?.matches || 'N/A'}</div>
+                          <div className="text-xs text-white">Matches</div>
                         </div>
-                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-orange-400">{fortniteStats.overall?.avgPlace?.toFixed(1) || 'N/A'}</div>
-                          <div className="text-xs text-orange-300">Avg Placement</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{fortniteStats.overall?.avgPlace?.toFixed(1) || 'N/A'}</div>
+                          <div className="text-xs text-white">Avg Placement</div>
                         </div>
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-red-400">{fortniteStats.overall?.kills || 'N/A'}</div>
-                          <div className="text-xs text-red-300">Total Kills</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{fortniteStats.overall?.kills || 'N/A'}</div>
+                          <div className="text-xs text-white">Total Kills</div>
                         </div>
-                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-center">
-                          <div className="text-xl font-bold text-yellow-400">{fortniteStats.overall?.top1 || 'N/A'}</div>
-                          <div className="text-xs text-yellow-300">Victories</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-xl font-bold text-white">{fortniteStats.overall?.top1 || 'N/A'}</div>
+                          <div className="text-xs text-white">Victories</div>
                         </div>
                       </div>
                     </div>
@@ -842,8 +821,8 @@ export default function DashboardPage() {
                         <h5 className="text-md font-semibold text-white mb-3">Mode Breakdown</h5>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {fortniteStats.solo && (
-                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                              <h6 className="text-sm font-semibold text-blue-300 mb-2">Solo</h6>
+                            <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                              <h6 className="text-sm font-semibold text-white mb-2">Solo</h6>
                               <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-white/60">K/D:</span>
@@ -862,8 +841,8 @@ export default function DashboardPage() {
                           )}
                           
                           {fortniteStats.duo && (
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                              <h6 className="text-sm font-semibold text-green-300 mb-2">Duo</h6>
+                            <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                              <h6 className="text-sm font-semibold text-white mb-2">Duo</h6>
                               <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-white/60">K/D:</span>
@@ -882,8 +861,8 @@ export default function DashboardPage() {
                           )}
                           
                           {fortniteStats.squad && (
-                            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
-                              <h6 className="text-sm font-semibold text-purple-300 mb-2">Squad</h6>
+                            <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                              <h6 className="text-sm font-semibold text-white mb-2">Squad</h6>
                               <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                   <span className="text-white/60">K/D:</span>
@@ -908,21 +887,21 @@ export default function DashboardPage() {
                     <div>
                       <h5 className="text-md font-semibold text-white mb-3">Additional Metrics</h5>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-indigo-400">{fortniteStats.overall?.damageDealt?.toLocaleString() || 'N/A'}</div>
-                          <div className="text-xs text-indigo-300">Damage Dealt</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-white">{fortniteStats.overall?.damageDealt?.toLocaleString() || 'N/A'}</div>
+                          <div className="text-xs text-white">Damage Dealt</div>
                         </div>
-                        <div className="bg-pink-500/10 border border-pink-500/20 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-pink-400">{fortniteStats.overall?.structuresBuilt?.toLocaleString() || 'N/A'}</div>
-                          <div className="text-xs text-pink-300">Structures Built</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-white">{fortniteStats.overall?.structuresBuilt?.toLocaleString() || 'N/A'}</div>
+                          <div className="text-xs text-white">Structures Built</div>
                         </div>
-                        <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-teal-400">{fortniteStats.overall?.materialsGathered?.toLocaleString() || 'N/A'}</div>
-                          <div className="text-xs text-teal-300">Materials</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-white">{fortniteStats.overall?.materialsGathered?.toLocaleString() || 'N/A'}</div>
+                          <div className="text-xs text-white">Materials</div>
                         </div>
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-center">
-                          <div className="text-lg font-bold text-amber-400">{fortniteStats.overall?.distanceTraveled?.toFixed(0) || 'N/A'}</div>
-                          <div className="text-xs text-amber-300">Distance (m)</div>
+                        <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-white">{fortniteStats.overall?.distanceTraveled?.toFixed(0) || 'N/A'}</div>
+                          <div className="text-xs text-white">Distance (m)</div>
                         </div>
                       </div>
                     </div>
@@ -932,7 +911,7 @@ export default function DashboardPage() {
                     <p className="text-white/60 mb-4">Loading your comprehensive Fortnite stats...</p>
                     <button
                       onClick={refreshStats}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                      className="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       Refresh Stats
                     </button>
@@ -1000,7 +979,7 @@ export default function DashboardPage() {
                    <h4 className="text-lg font-semibold text-white mb-3">Gaming Goals</h4>
                    <div className="flex flex-wrap gap-2">
                      {userProfile.gaming.goals.map((goal: string, index: number) => (
-                       <span key={index} className="px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm border border-blue-600/30">
+                       <span key={index} className="px-3 py-1 bg-white/20 text-white rounded-full text-sm border border-white/30">
                          {goal}
                        </span>
                      ))}
@@ -1013,22 +992,22 @@ export default function DashboardPage() {
                  <div className="mt-4">
                    <h4 className="text-lg font-semibold text-white mb-3">AI Coaching Usage</h4>
                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                     <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 text-center">
-                       <div className="text-xl font-bold text-blue-400">{userProfile.ai.conversationsCreated || 0}</div>
-                       <div className="text-xs text-blue-300">Conversations</div>
+                     <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                       <div className="text-xl font-bold text-white">{userProfile.ai.conversationsCreated || 0}</div>
+                       <div className="text-xs text-white">Conversations</div>
                      </div>
-                     <div className="bg-green-600/10 border border-green-600/20 rounded-lg p-3 text-center">
-                       <div className="text-xl font-bold text-green-400">{userProfile.ai.messagesUsed || 0}</div>
-                       <div className="text-xs text-green-300">Messages Used</div>
+                     <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                       <div className="text-xl font-bold text-white">{userProfile.ai.messagesUsed || 0}</div>
+                       <div className="text-xs text-white">Messages Used</div>
                      </div>
-                     <div className="bg-purple-600/10 border border-purple-600/20 rounded-lg p-3 text-center">
-                       <div className="text-xl font-bold text-purple-400">{userProfile.statistics?.totalSessions || 0}</div>
-                       <div className="text-xs text-purple-300">Total Sessions</div>
+                     <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                       <div className="text-xl font-bold text-white">{userProfile.statistics?.totalSessions || 0}</div>
+                       <div className="text-xs text-white">Total Sessions</div>
                      </div>
-                     <div className="bg-orange-600/10 border border-orange-600/20 rounded-lg p-3 text-center">
-                       <div className="text-xl font-bold text-orange-400">{userProfile.statistics?.totalTime || 0}</div>
-                       <div className="text-xs text-orange-300">Total Time (min)</div>
-                     </div>
+                                            <div className="bg-white/10 border border-white/20 rounded-lg p-3 text-center">
+                         <div className="text-xl font-bold text-white">{userProfile.statistics?.totalTime || 0}</div>
+                         <div className="text-xs text-white">Total Time (min)</div>
+                       </div>
                    </div>
                  </div>
                )}
@@ -1064,9 +1043,9 @@ export default function DashboardPage() {
                       <div key={index} className="flex items-center justify-between bg-white/5 p-3 rounded-lg">
                         <span className="text-white/80">{upload.filename}</span>
                         <span className={`px-2 py-1 rounded text-xs ${
-                          upload.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          upload.status === 'processing' ? 'bg-yellow-500/20 text-yellow-400' :
-                          'bg-red-500/20 text-red-400'
+                          upload.status === 'completed' ? 'bg-white/20 text-white' :
+                          upload.status === 'processing' ? 'bg-white/20 text-white' :
+                          'bg-gray-500/20 text-gray-400'
                         }`}>
                           {upload.status}
                         </span>
@@ -1078,114 +1057,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-                     {/* Usage Tracking Section */}
-                     {usageLoading ? (
-                       <div className="glass-card p-6">
-                         <h3 className="text-xl font-semibold text-white mb-4">📊 Usage & Limits</h3>
-                         <div className="flex items-center justify-center py-8">
-                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                           <span className="ml-3 text-white/60">Loading usage data...</span>
-                         </div>
-                       </div>
-                     ) : usageData && (
-                       <div className="glass-card p-6">
-                         <h3 className="text-xl font-semibold text-white mb-4">📊 Usage & Limits</h3>
-                         
-                         {/* Osirion API Usage */}
-                         <div className="mb-6">
-                           <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                             <span className="text-pink-400">🎯</span>
-                             Osirion API Usage
-                           </h4>
-                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Matches Used</p>
-                               <p className="text-white font-semibold">
-                                 {usageData.usage.osirion.matchesUsed} / {usageData.limits.osirion.matchesPerMonth === -1 ? '∞' : usageData.limits.osirion.matchesPerMonth}
-                               </p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Replay Uploads</p>
-                               <p className="text-white font-semibold">
-                                 {usageData.usage.osirion.replayUploadsUsed} / {usageData.limits.osirion.replayUploadsPerMonth === -1 ? '∞' : usageData.limits.osirion.replayUploadsPerMonth}
-                               </p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Compute Requests</p>
-                               <p className="text-white font-semibold">
-                                 {usageData.usage.osirion.computeRequestsUsed} / {usageData.limits.osirion.computeRequestsPerMonth === -1 ? '∞' : usageData.limits.osirion.computeRequestsPerMonth}
-                               </p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Event Types</p>
-                               <p className="text-white font-semibold">
-                                 {usageData.usage.osirion.eventTypesUsed} / {usageData.limits.osirion.eventTypesPerMatch === -1 ? '∞' : usageData.limits.osirion.eventTypesPerMatch}
-                               </p>
-                             </div>
-                           </div>
-                         </div>
 
-                         {/* AI Coaching Usage */}
-                         <div className="mb-6">
-                           <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                             <span className="text-blue-400">🤖</span>
-                             AI Coaching Usage
-                           </h4>
-                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">AI Messages</p>
-                               <p className="text-white font-semibold">
-                                 {usageData.usage.ai.messagesUsed} / {usageData.limits.ai.messagesPerMonth === -1 ? '∞' : usageData.limits.ai.messagesPerMonth}
-                               </p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Conversations</p>
-                               <p className="text-white font-semibold">
-                                 {usageData.usage.ai.conversationsCreated} / {usageData.limits.ai.conversationsPerMonth === -1 ? '∞' : usageData.limits.ai.conversationsPerMonth}
-                               </p>
-                             </div>
-                           </div>
-                         </div>
-
-                         {/* Epic Account Sync */}
-                         <div>
-                           <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-                             <span className="text-purple-400">🎮</span>
-                             Epic Account Sync
-                           </h4>
-                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Last Sync</p>
-                               <p className="text-white font-semibold">
-                                 {epicAccount?.linkedAt ? new Date(epicAccount.linkedAt).toLocaleDateString() : 'Never'}
-                               </p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Sync Count</p>
-                               <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Stats Pulled</p>
-                               <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
-                             </div>
-                             <div className="bg-white/5 rounded-lg p-3">
-                               <p className="text-white/60 text-sm">Total Sessions</p>
-                               <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
-                             </div>
-                           </div>
-                         </div>
-
-                         <button
-                           onClick={loadUsageData}
-                           className="w-full mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
-                         >
-                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                           </svg>
-                           Refresh Usage Data
-                         </button>
-                       </div>
-                     )}
 
                      {/* Quick Actions */}
            <div className="glass-card p-6">
@@ -1213,6 +1085,8 @@ export default function DashboardPage() {
            </div>
         </div>
 
+
+        
         {/* Payment Gate Overlay */}
         {(!hasActiveSubscription && !isLoading) && (
           <div className="absolute inset-0 bg-dark-charcoal/90 backdrop-blur-md flex items-center justify-center z-30">
@@ -1228,7 +1102,7 @@ export default function DashboardPage() {
               </p>
               <div className="space-y-3">
                 <Link href="/pricing" className="w-full btn-primary py-3 block">
-                  Subscribe Now - $3.99/month
+                  Subscribe Now - $6.99/month
                 </Link>
                 <button
                   onClick={checkSubscription}

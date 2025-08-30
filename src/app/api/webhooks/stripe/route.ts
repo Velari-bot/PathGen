@@ -180,6 +180,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       'subscription.tier': plan,
       'subscription.stripeCustomerId': subscription.customer,
       'subscription.stripeSubscriptionId': subscription.id,
+      'subscriptionTier': plan, // Add this for credit system compatibility
       updatedAt: new Date()
     });
 
@@ -248,6 +249,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       'subscription.plan': plan,
       'subscription.status': subscription.status,
       'subscription.tier': plan,
+      'subscriptionTier': plan, // Add this for credit system compatibility
       'subscription.currentPeriodStart': new Date(subscription.current_period_start * 1000),
       'subscription.currentPeriodEnd': new Date(subscription.current_period_end * 1000),
       'subscription.cancelAtPeriodEnd': subscription.cancel_at_period_end,
@@ -405,9 +407,7 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
 // Helper function to get plan from Stripe price ID
 function getPlanFromPriceId(priceId: string): string {
   const planMap: { [key: string]: string } = {
-    'price_free': 'free',
-    'price_standard': 'standard',
-    'price_pro': 'pro'
+    'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro' // PathGen Pro
   };
   return planMap[priceId] || 'free';
 }
@@ -423,15 +423,6 @@ function getPlanLimits(plan: string) {
       tournamentStrategies: 0,
       prioritySupport: false,
       advancedAnalytics: false
-    },
-    standard: {
-      monthlyMessages: 100,
-      monthlyTokens: 10000,
-      monthlyDataPulls: 50,
-      replayUploads: 5,
-      tournamentStrategies: 10,
-      prioritySupport: false,
-      advancedAnalytics: true
     },
     pro: {
       monthlyMessages: 1000,

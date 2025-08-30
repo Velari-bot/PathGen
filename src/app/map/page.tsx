@@ -713,7 +713,7 @@ export default function MapPage() {
               onClick={() => setViewMode('map')}
               className={`px-6 py-2 rounded-md transition-all duration-300 ${
                 viewMode === 'map'
-                  ? 'bg-blue-600 text-white shadow-lg'
+                  ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -723,7 +723,7 @@ export default function MapPage() {
               onClick={() => setViewMode('poi-analysis')}
               className={`px-6 py-2 rounded-md transition-all duration-300 ${
                 viewMode === 'poi-analysis'
-                  ? 'bg-blue-600 text-white shadow-lg'
+                  ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -733,7 +733,7 @@ export default function MapPage() {
               onClick={() => setViewMode('competitive')}
               className={`px-6 py-2 rounded-md transition-all duration-300 ${
                 viewMode === 'competitive'
-                  ? 'bg-blue-600 text-white shadow-lg'
+                  ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
@@ -784,7 +784,7 @@ export default function MapPage() {
                     onClick={() => setIsDragEnabled(!isDragEnabled)}
                     className={`px-4 py-2 rounded-lg transition-colors border ${
                       isDragEnabled 
-                        ? 'bg-blue-600 text-white border-blue-500' 
+                        ? 'bg-gray-700 text-white border-gray-600' 
                         : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'
                     }`}
                     title={isDragEnabled ? 'Disable Dragging' : 'Enable Dragging'}
@@ -872,8 +872,8 @@ export default function MapPage() {
                 {mapData?.pois.map((poi) => (
             <div 
               key={poi.id} 
-                    className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-700 hover:border-blue-500/50 ${
-                      selectedPOI?.id === poi.id ? 'ring-2 ring-blue-500 shadow-blue-500/25' : ''
+                    className={`bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer border border-gray-700 hover:border-gray-500/50 ${
+                      selectedPOI?.id === poi.id ? 'ring-2 ring-gray-500 shadow-gray-500/25' : ''
               }`}
               onClick={() => setSelectedPOI(poi)}
             >
@@ -943,8 +943,8 @@ export default function MapPage() {
                   onClick={() => setSelectedPlayStyle('balanced')}
                   className={`p-6 rounded-xl transition-all duration-300 ${
                     selectedPlayStyle === 'balanced'
-                      ? 'bg-blue-600 text-white shadow-lg ring-2 ring-blue-400'
-                      : 'bg-gray-800 text-blue-400 hover:bg-gray-700 border border-gray-700'
+                      ? 'bg-gray-700 text-white shadow-lg ring-2 ring-gray-400'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700'
                   }`}
                 >
                   <h4 className="text-xl font-bold mb-2">⚖️ Balanced</h4>
@@ -968,28 +968,28 @@ export default function MapPage() {
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Shiny Shafts</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 109</div>
-                            <div><span className="text-orange-400">Metal:</span> 9,300</div>
-                            <div><span className="text-blue-400">Zone:</span> 128</div>
-                            <div><span className="text-green-400">75%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 109</div>
+                            <div><span className="text-gray-300">Metal:</span> 9,300</div>
+                            <div><span className="text-gray-300">Zone:</span> 128</div>
+                            <div><span className="text-gray-300">75%</span></div>
                           </div>
                         </div>
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Kappa Kappa Factory</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 57</div>
-                            <div><span className="text-orange-400">Metal:</span> 2,200</div>
-                            <div><span className="text-blue-400">Zone:</span> 55</div>
-                            <div><span className="text-orange-400">67%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 57</div>
+                            <div><span className="text-gray-300">Metal:</span> 2,200</div>
+                            <div><span className="text-gray-300">Zone:</span> 55</div>
+                            <div><span className="text-gray-300">67%</span></div>
                           </div>
                         </div>
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Rocky Rus</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 81</div>
-                            <div><span className="text-orange-400">Metal:</span> 9,300</div>
-                            <div><span className="text-blue-400">Zone:</span> 29</div>
-                            <div><span className="text-red-400">42%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 81</div>
+                            <div><span className="text-gray-300">Metal:</span> 9,300</div>
+                            <div><span className="text-gray-300">Zone:</span> 29</div>
+                            <div><span className="text-gray-300">42%</span></div>
                           </div>
                         </div>
                       </>
@@ -999,28 +999,28 @@ export default function MapPage() {
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">First Order Base</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 53</div>
-                            <div><span className="text-orange-400">Metal:</span> 10,000</div>
-                            <div><span className="text-blue-400">Zone:</span> 45</div>
-                            <div><span className="text-green-400">56%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 53</div>
+                            <div><span className="text-gray-300">Metal:</span> 10,000</div>
+                            <div><span className="text-gray-300">Zone:</span> 45</div>
+                            <div><span className="text-gray-300">56%</span></div>
                           </div>
                         </div>
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Utopia City</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 53</div>
-                            <div><span className="text-orange-400">Metal:</span> 5,300</div>
-                            <div><span className="text-blue-400">Zone:</span> 78</div>
-                            <div><span className="text-green-400">54%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 53</div>
+                            <div><span className="text-gray-300">Metal:</span> 5,300</div>
+                            <div><span className="text-gray-300">Zone:</span> 78</div>
+                            <div><span className="text-gray-300">54%</span></div>
                           </div>
                         </div>
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Kappa Kappa Factory</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 57</div>
-                            <div><span className="text-orange-400">Metal:</span> 3,500</div>
-                            <div><span className="text-blue-400">Zone:</span> 55</div>
-                            <div><span className="text-green-400">63%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 57</div>
+                            <div><span className="text-gray-300">Metal:</span> 3,500</div>
+                            <div><span className="text-gray-300">Zone:</span> 55</div>
+                            <div><span className="text-gray-300">63%</span></div>
                           </div>
                         </div>
                       </>
@@ -1030,28 +1030,28 @@ export default function MapPage() {
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Way Station</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 40</div>
-                            <div><span className="text-orange-400">Metal:</span> 1,600</div>
-                            <div><span className="text-blue-400">Zone:</span> 32</div>
-                            <div><span className="text-green-400">43%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 40</div>
+                            <div><span className="text-gray-300">Metal:</span> 1,600</div>
+                            <div><span className="text-gray-300">Zone:</span> 32</div>
+                            <div><span className="text-gray-300">43%</span></div>
                           </div>
                         </div>
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Outpost Enclave</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 38</div>
-                            <div><span className="text-orange-400">Metal:</span> 2,600</div>
-                            <div><span className="text-blue-400">Zone:</span> 28</div>
-                            <div><span className="text-green-400">62%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 38</div>
+                            <div><span className="text-gray-300">Metal:</span> 2,600</div>
+                            <div><span className="text-gray-300">Zone:</span> 28</div>
+                            <div><span className="text-gray-300">62%</span></div>
                           </div>
                         </div>
                         <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                           <h5 className="text-lg font-semibold text-white mb-2">Fighting Frogs</h5>
                           <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-purple-400">Loot:</span> 49</div>
-                            <div><span className="text-orange-400">Metal:</span> 8,300</div>
-                            <div><span className="text-blue-400">Zone:</span> 41</div>
-                            <div><span className="text-green-400">70%</span></div>
+                            <div><span className="text-gray-300">Loot:</span> 49</div>
+                            <div><span className="text-gray-300">Metal:</span> 8,300</div>
+                            <div><span className="text-gray-300">Zone:</span> 41</div>
+                            <div><span className="text-gray-300">70%</span></div>
                           </div>
                         </div>
                       </>
@@ -1110,7 +1110,7 @@ export default function MapPage() {
                     onClick={() => setSelectedRegion('EU')}
                     className={`px-6 py-3 rounded-md transition-all duration-300 font-semibold ${
                       selectedRegion === 'EU'
-                        ? 'bg-blue-600 text-white shadow-lg'
+                        ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -1120,7 +1120,7 @@ export default function MapPage() {
                     onClick={() => setSelectedRegion('NAC')}
                     className={`px-6 py-3 rounded-md transition-all duration-300 font-semibold ${
                       selectedRegion === 'NAC'
-                        ? 'bg-blue-600 text-white shadow-lg'
+                        ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                         : 'text-gray-400 hover:text-white'
                     }`}
                   >
@@ -1136,7 +1136,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('FNCS Div 1 EU Week 1 Day 1')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'FNCS Div 1 EU Week 1 Day 1'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1146,7 +1146,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('FNCS Div 2 EU Week 1 Day 1')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'FNCS Div 2 EU Week 1 Day 1'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1156,7 +1156,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('FNCS Div 3 EU Week 1 Day 1')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'FNCS Div 3 EU Week 1 Day 1'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1166,7 +1166,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('EU Eval')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'EU Eval'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1179,7 +1179,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('FNCS Div 1 NAC Week 1 Day 1')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'FNCS Div 1 NAC Week 1 Day 1'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1189,7 +1189,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('FNCS Div 2 NAC Week 1 Day 1')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'FNCS Div 2 NAC Week 1 Day 1'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1199,7 +1199,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('FNCS Div 3 NAC Week 1 Day 1')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'FNCS Div 3 NAC Week 1 Day 1'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1209,7 +1209,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('Trio Loot + Metal Evaluation')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === 'Trio Loot + Metal Evaluation'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1219,7 +1219,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('🏅 NAC #2 Top 1000 Evaluation')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === '🏅 NAC #2 Top 1000 Evaluation'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >
@@ -1229,7 +1229,7 @@ export default function MapPage() {
                         onClick={() => setSelectedDivision('🌟 NAC #1 Evaluation')}
                         className={`px-4 py-3 rounded-md transition-all duration-300 text-sm ${
                           selectedDivision === '🌟 NAC #1 Evaluation'
-                            ? 'bg-green-600 text-white shadow-lg'
+                            ? 'bg-gray-700 text-white shadow-lg border border-gray-600'
                             : 'text-gray-400 hover:text-white'
                         }`}
                       >

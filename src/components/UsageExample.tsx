@@ -63,9 +63,9 @@ export function UsageExample() {
           {/* Standard Feature */}
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-2">Standard Feature</h3>
-            <FeatureGate requiredTier="standard">
+            <FeatureGate requiredTier="pro">
               <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                <p className="text-blue-800">🚀 Standard tier feature unlocked!</p>
+                <p className="text-blue-800">🚀 Pro tier feature unlocked!</p>
               </div>
             </FeatureGate>
           </div>
@@ -84,10 +84,10 @@ export function UsageExample() {
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-2">Feature with Fallback</h3>
             <FeatureGate 
-              requiredTier="standard" 
+              requiredTier="pro" 
               fallback={
                 <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
-                  <p className="text-yellow-800">⚠️ Upgrade to Standard to access this feature</p>
+                  <p className="text-yellow-800">⚠️ Upgrade to Pro to access this feature</p>
                 </div>
               }
             >
@@ -177,7 +177,7 @@ export function UsageExample() {
           <div className="border border-gray-200 rounded-lg p-4">
             <h3 className="font-medium text-gray-900 mb-2">Tournament Strategy (Auto-tracking)</h3>
             <FeatureGateWithUsage 
-              requiredTier="standard" 
+              requiredTier="pro" 
               feature="tournament_strategy"
               onFeatureUse={() => {
                 console.log('Tournament strategy generated!');

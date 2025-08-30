@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import SmoothScroll from '@/components/SmoothScroll';
-import { UsageTracker } from '@/lib/usage-tracker';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { creditTracker } from '@/lib/credit-tracker';
+import { CreditSystem } from '@/lib/credit-system';
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -17,9 +18,10 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [epicAccount, setEpicAccount] = useState<any>(null);
-  const [usageData, setUsageData] = useState<any>(null);
-  const [isLoadingUsage, setIsLoadingUsage] = useState(false);
+  const [userCredits, setUserCredits] = useState<any>(null);
+  const [isLoadingCredits, setIsLoadingCredits] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showCreditCosts, setShowCreditCosts] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,7 +33,7 @@ export default function SettingsPage() {
     if (user) {
       setDisplayName(user.displayName || '');
       loadEpicAccount();
-      loadUsageData();
+      loadUserCredits();
       loadUserProfile();
     }
   }, [user]);
@@ -64,9 +66,17 @@ export default function SettingsPage() {
           setDisplayName(profileData.displayName);
         }
         
-        // Refresh usage data after profile is loaded to get correct limits
+        // Convert standard users to pro users
+        if (profileData.subscriptionTier === 'standard' && db) {
+          await updateDoc(userDocRef, {
+            subscriptionTier: 'pro'
+          });
+          profileData.subscriptionTier = 'pro';
+        }
+        
+        // Refresh credits after profile is loaded
         if (profileData.subscriptionTier !== userProfile?.subscriptionTier) {
-          loadUsageData();
+          loadUserCredits();
         }
       }
     } catch (error) {
@@ -74,45 +84,71 @@ export default function SettingsPage() {
     }
   };
 
-  const loadUsageData = async () => {
+  const loadUserCredits = async () => {
     if (!user) return;
     
-    setIsLoadingUsage(true);
+    setIsLoadingCredits(true);
     try {
       // Get the current subscription tier from userProfile or default to free
       const currentTier = userProfile?.subscriptionTier || 'free';
       
-      // Map subscription tier names to match UsageTracker expectations
-      const mappedTier = currentTier === 'standard' ? 'paid' : currentTier;
-      
-      const usageSummary = await UsageTracker.getUsageSummary(user.uid, mappedTier as 'free' | 'paid' | 'pro');
-      
-      // Set the usage data directly
-      if (usageSummary) {
-        setUsageData(usageSummary);
-      }
-    } catch (error) {
-      console.error('Failed to load usage data:', error);
-      // Set default usage data if there's a permission error
-      if (error instanceof Error && error.message?.includes('permissions')) {
-        const currentTier = userProfile?.subscriptionTier || 'free';
-        
-        // Map subscription tier names to match UsageTracker expectations
-        const mappedTier = currentTier === 'standard' ? 'paid' : currentTier;
-        
-        setUsageData({
-          usage: {
-            subscriptionTier: currentTier,
-            osirion: { matchesUsed: 0, eventTypesUsed: 0, replayUploadsUsed: 0, computeRequestsUsed: 0 },
-            ai: { messagesUsed: 0, conversationsCreated: 0 },
-            epic: { lastSync: null, syncCount: 0, statsPulled: 0 },
-            totalSessions: 0
-          },
-          limits: UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro')
+      // Convert standard to pro if needed
+      if (currentTier === 'standard' && db) {
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
+          subscriptionTier: 'pro'
         });
+        // Update local state
+        setUserProfile((prev: any) => prev ? { ...prev, subscriptionTier: 'pro' } : null);
       }
+      
+      // Get user credits from credit tracker
+      let credits = creditTracker.getUserCredits(user.uid);
+      
+      // If no credits found, initialize them
+      if (!credits) {
+        credits = await creditTracker.initializeUserCredits(user.uid, currentTier === 'standard' ? 'pro' : currentTier);
+      }
+      
+      // Ensure the plan matches the userProfile subscription tier and set correct credits
+      if (credits && userProfile?.subscriptionTier) {
+        credits.plan = userProfile.subscriptionTier;
+        
+        // Ensure Pro users have 4000 credits
+        if (userProfile.subscriptionTier === 'pro' || userProfile.subscriptionTier === 'standard') {
+          credits.totalCredits = 4000;
+          credits.availableCredits = 4000;
+          credits.plan = 'pro';
+        }
+      }
+      
+      setUserCredits(credits);
+    } catch (error) {
+      console.error('Failed to load user credits:', error);
+      // Set default credits if there's an error
+      const currentTier = userProfile?.subscriptionTier || 'free';
+      const defaultCredits = currentTier === 'free' ? 250 : 4000;
+      
+      const mockCredits = {
+        userId: user.uid,
+        totalCredits: defaultCredits,
+        usedCredits: 0,
+        availableCredits: defaultCredits,
+        lastReset: new Date(),
+        plan: currentTier === 'standard' ? 'pro' : currentTier,
+        expiresAt: currentTier === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      };
+      
+      // Ensure Pro users get 4000 credits
+      if (currentTier === 'pro' || currentTier === 'standard') {
+        mockCredits.totalCredits = 4000;
+        mockCredits.availableCredits = 4000;
+        mockCredits.plan = 'pro';
+      }
+      
+      setUserCredits(mockCredits);
     } finally {
-      setIsLoadingUsage(false);
+      setIsLoadingCredits(false);
     }
   };
 
@@ -219,7 +255,7 @@ export default function SettingsPage() {
                 {!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Edit Profile
                   </button>
@@ -228,7 +264,7 @@ export default function SettingsPage() {
                     <button
                       onClick={handleSave}
                       disabled={isSaving}
-                      className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white rounded-lg transition-colors"
+                      className="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 disabled:bg-gray-400 disabled:text-gray-500 rounded-lg transition-colors"
                     >
                       {isSaving ? 'Saving...' : 'Save'}
                     </button>
@@ -245,7 +281,7 @@ export default function SettingsPage() {
               {message && (
                 <div className={`mb-4 p-3 rounded-lg ${
                   message.includes('successfully') 
-                    ? 'bg-green-500/20 border border-green-500/30 text-green-400' 
+                    ? 'bg-white/20 border border-white/30 text-white' 
                     : 'bg-red-500/20 border border-red-500/30 text-red-400'
                 }`}>
                   {message}
@@ -279,7 +315,7 @@ export default function SettingsPage() {
                     disabled={!isEditing}
                     className={`w-full px-4 py-3 border rounded-xl transition-colors ${
                       isEditing 
-                        ? 'border-blue-500/50 bg-white/10 text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20' 
+                        ? 'border-white/50 bg-white/10 text-white focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20' 
                         : 'border-white/20 bg-white/5 text-white cursor-not-allowed opacity-70'
                     }`}
                     placeholder="Enter your display name"
@@ -296,10 +332,10 @@ export default function SettingsPage() {
               <h2 className="text-xl font-semibold text-white mb-4">🎮 Epic Games Account</h2>
               {epicAccount ? (
                 <div className="space-y-4">
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="bg-white/10 border border-white/20 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-green-400 font-semibold">Account Connected</h3>
-                      <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full">Connected</span>
+                      <h3 className="text-white font-semibold">Account Connected</h3>
+                      <span className="px-3 py-1 bg-white text-gray-900 text-xs rounded-full">Connected</span>
                     </div>
                     <div className="text-sm text-white/80 space-y-1">
                       <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
@@ -320,7 +356,7 @@ export default function SettingsPage() {
                   <p className="text-white/40 text-sm">Connect your Epic account in the dashboard to access personalized Fortnite coaching.</p>
                   <button
                     onClick={() => router.push('/dashboard')}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                    className="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Go to Dashboard
                   </button>
@@ -328,177 +364,127 @@ export default function SettingsPage() {
               )}
             </div>
 
-            {/* Usage Tracking */}
+            {/* Credit System */}
             <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">📊 Usage & Credits</h2>
-              {isLoadingUsage ? (
+              <h2 className="text-xl font-semibold text-white mb-4">💎 Credit System</h2>
+              {isLoadingCredits ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                  <p className="text-white/60 mt-2">Loading usage data...</p>
+                  <p className="text-white/60 mt-2">Loading credit data...</p>
                 </div>
-              ) : usageData ? (
+              ) : userCredits ? (
                 <div className="space-y-6">
-                  {/* Subscription Info */}
-                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                    <h3 className="text-blue-400 font-semibold mb-2">Current Plan: {(userProfile?.subscriptionTier || 'free').toUpperCase()}</h3>
-                    <p className="text-white/80 text-sm">Track your monthly usage and remaining credits</p>
+                  {/* Credit Overview */}
+                  <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                    <h3 className="text-white font-semibold mb-2">Current Plan: {(userProfile?.subscriptionTier || userCredits?.plan || 'free').toUpperCase()}</h3>
+                    <p className="text-white/80 text-sm">Track your credit balance and usage</p>
                   </div>
 
-                  {/* User Subscription Details */}
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  {/* Credit Balance */}
+                  <div className="bg-white/10 border border-white/20 rounded-lg p-4">
+                    <div className="mb-3">
+                      <h3 className="text-white font-semibold">💎 Credit Balance</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">
+                          {CreditSystem.formatCredits(userCredits.availableCredits)}
+                        </div>
+                        <div className="text-gray-300 text-sm">Available</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">
+                          {CreditSystem.formatCredits(userCredits.usedCredits)}
+                        </div>
+                        <div className="text-gray-300 text-sm">Used</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-white">
+                          {CreditSystem.formatCredits(userCredits.totalCredits)}
+                        </div>
+                        <div className="text-gray-300 text-sm">Total</div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm text-gray-300 mb-2">
+                        <span>Credit Usage</span>
+                        <span>{((userCredits.usedCredits / userCredits.totalCredits) * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="h-2 rounded-full transition-all duration-300 bg-white"
+                          style={{ width: `${Math.min((userCredits.usedCredits / userCredits.totalCredits) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Plan Info */}
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium">Current Plan: {(userProfile?.subscriptionTier || userCredits.plan).toUpperCase()}</div>
+                          <div className="text-gray-300 text-sm">
+                            {(userProfile?.subscriptionTier || userCredits.plan) === 'free' ? 'One-time allocation' : 'Monthly allocation'}
+                          </div>
+                        </div>
+                        {userCredits.expiresAt && (
+                          <div className="text-right">
+                            <div className="text-gray-300 text-sm">Resets</div>
+                            <div className="text-white font-medium">
+                              {userCredits.expiresAt.toLocaleDateString()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Credit Costs */}
+                  <div>
                     <div className="flex justify-between items-center mb-3">
-                      <h3 className="text-green-400 font-semibold">📋 Subscription Details</h3>
+                      <h3 className="text-lg font-semibold text-white">Quick Actions (Credit Costs)</h3>
                       <button
-                        onClick={loadUserProfile}
-                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors"
+                        onClick={() => setShowCreditCosts(!showCreditCosts)}
+                        className="px-3 py-1 bg-white/10 border border-white/20 text-white text-xs rounded-lg transition-colors hover:bg-white/20"
                       >
-                        🔄 Refresh
+                        {showCreditCosts ? 'Hide Costs' : 'Show Costs'}
                       </button>
                     </div>
-                    {userProfile ? (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-white/60 text-sm">Current Tier</p>
-                            <p className="text-white font-semibold capitalize">
-                              {userProfile.subscriptionTier || 'Free'}
-                            </p>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-white/60 text-sm">Status</p>
-                            <p className="text-white font-semibold capitalize">
-                              {userProfile.subscriptionStatus || 'Active'}
-                            </p>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-white/60 text-sm">Member Since</p>
-                            <p className="text-white font-semibold">
-                              {userProfile.createdAt ? new Date(userProfile.createdAt.toDate()).toLocaleDateString() : 'N/A'}
-                            </p>
-                          </div>
-                          <div className="bg-white/5 rounded-lg p-3">
-                            <p className="text-white/60 text-sm">Last Login</p>
-                            <p className="text-white font-semibold">
-                              {userProfile.lastLogin ? new Date(userProfile.lastLogin.toDate()).toLocaleDateString() : 'N/A'}
-                            </p>
-                          </div>
+                    {showCreditCosts && (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-300">AI Chat</span>
+                          <span className="text-white">1 credit</span>
                         </div>
-                        <div className="mt-3 p-3 bg-white/5 rounded-lg">
-                          <p className="text-white/60 text-sm">Plan Duration</p>
-                          <p className="text-white font-semibold">
-                            {userProfile.subscriptionTier === 'free' ? 'Lifetime Access' : 
-                             userProfile.subscriptionTier === 'pro' ? 'Pro Subscription' : 'Monthly Subscription'}
-                          </p>
-                          {userProfile.subscriptionTier === 'pro' && (
-                            <p className="text-white/60 text-xs mt-1">
-                              Pro tier with 30,000 credits/month - Unlimited for most users
-                            </p>
-                          )}
-                          {userProfile.subscriptionTier !== 'free' && userProfile.subscriptionTier !== 'pro' && (
-                            <p className="text-white/60 text-xs mt-1">
-                              Next billing cycle: {userProfile.lastLogin ? new Date(new Date(userProfile.lastLogin.toDate()).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() : 'N/A'}
-                            </p>
-                          )}
+                        <div className="flex justify-between">
+                          <span className="text-gray-300">Stats Lookup</span>
+                          <span className="text-white">2 credits</span>
                         </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                        <p className="text-white/60 text-sm">Loading subscription details...</p>
+                        <div className="flex justify-between">
+                          <span className="text-gray-300">Replay Upload</span>
+                          <span className="text-white">20 credits</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-300">Osirion Pull (Premium)</span>
+                          <span className="text-white">50 credits</span>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Osirion Usage */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">🎯 Osirion API Usage</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Matches Used</p>
-                        <p className="text-white font-semibold">
-                          {usageData.usage.osirion.matchesUsed} / {usageData.limits.osirion.matchesPerMonth === -1 ? '∞' : usageData.limits.osirion.matchesPerMonth}
-                        </p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Replay Uploads</p>
-                        <p className="text-white font-semibold">
-                          {usageData.usage.osirion.replayUploadsUsed} / {usageData.limits.osirion.replayUploadsPerMonth === -1 ? '∞' : usageData.limits.osirion.replayUploadsPerMonth}
-                        </p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Compute Requests</p>
-                        <p className="text-white font-semibold">
-                          {usageData.usage.osirion.computeRequestsUsed} / {usageData.limits.osirion.computeRequestsPerMonth === -1 ? '∞' : usageData.limits.osirion.computeRequestsPerMonth}
-                        </p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Event Types</p>
-                        <p className="text-white font-semibold">
-                          {usageData.usage.osirion.eventTypesUsed} / {usageData.limits.osirion.eventTypesPerMatch === -1 ? '∞' : usageData.limits.osirion.eventTypesPerMatch}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* AI Usage */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">🤖 AI Coaching Usage</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">AI Messages</p>
-                        <p className="text-white font-semibold">
-                          {usageData.usage.ai.messagesUsed} / {usageData.limits.ai.messagesPerMonth === -1 ? '∞' : usageData.limits.ai.messagesPerMonth}
-                        </p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Conversations</p>
-                        <p className="text-white font-semibold">
-                          {usageData.usage.ai.conversationsCreated} / {usageData.limits.ai.conversationsPerMonth === -1 ? '∞' : usageData.limits.ai.conversationsPerMonth}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Epic Account Usage */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-3">🎮 Epic Account Sync</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Last Sync</p>
-                        <p className="text-white font-semibold">
-                          {epicAccount?.linkedAt ? new Date(epicAccount.linkedAt).toLocaleDateString() : 'Never'}
-                        </p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Sync Count</p>
-                        <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Stats Pulled</p>
-                        <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-3">
-                        <p className="text-white/60 text-sm">Total Sessions</p>
-                        <p className="text-white font-semibold">{epicAccount ? '1' : '0'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={loadUsageData}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    🔄 Refresh Usage Data
-                  </button>
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-white/60">No usage data available</p>
+                  <p className="text-white/60">No credit data available</p>
                   <button
-                    onClick={loadUsageData}
-                    className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    onClick={loadUserCredits}
+                    className="mt-2 px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    Load Usage Data
+                    Load Credit Data
                   </button>
                 </div>
               )}
@@ -508,14 +494,14 @@ export default function SettingsPage() {
             <div className="glass-card p-6">
               <h2 className="text-xl font-semibold text-white mb-4">Account Status</h2>
               <p className="text-secondary-text mb-4">
-                Your account is currently active. For additional features and support,
-                please visit the pricing page to upgrade your subscription.
+                Your account is currently active with the {(userProfile?.subscriptionTier || userCredits?.plan || 'free')} plan. 
+                {(userProfile?.subscriptionTier || userCredits?.plan) === 'free' ? ' Upgrade to Pro for unlimited credits and premium features.' : ' You have access to all premium features.'}
               </p>
               <button
                 onClick={() => router.push('/pricing')}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105"
+                className="px-6 py-3 bg-white text-gray-900 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-gray-100"
               >
-                View Pricing Plans
+                {(userProfile?.subscriptionTier || userCredits?.plan) === 'free' ? 'Upgrade to Pro' : 'View Pricing Plans'}
               </button>
             </div>
 

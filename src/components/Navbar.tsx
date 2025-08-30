@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 
+
 export default function Navbar() {
   const { user, logout, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -46,22 +47,22 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 nav-glass">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mobile-container">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            <div className="relative w-8 h-8 bg-white rounded-lg flex items-center justify-center group-hover:shadow-lg group-hover:shadow-white/50 transition-all duration-300">
-              <div className="relative w-6 h-6">
+          <Link href="/" className="flex items-center space-x-2 group touch-friendly">
+            <div className="relative w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-lg flex items-center justify-center group-hover:shadow-lg group-hover:shadow-white/50 transition-all duration-300">
+              <div className="relative w-5 h-5 sm:w-6 sm:h-6">
                 <Image
                   src="/Black PathGen logo.png"
                   alt="PathGen AI Logo"
                   fill
-                  sizes="24px"
+                  sizes="(max-width: 640px) 20px, 24px"
                   className="object-contain"
                 />
               </div>
             </div>
-            <span className="text-xl font-bold text-primary-text group-hover:text-gradient transition-all duration-300">PathGen AI</span>
+            <span className="text-lg sm:text-xl font-bold text-primary-text group-hover:text-gradient transition-all duration-300">PathGen AI</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -83,6 +84,7 @@ export default function Navbar() {
                 <Link href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Settings
                 </Link>
+                
                 <button
                   onClick={handleLogout}
                   className="btn-secondary"
@@ -109,9 +111,10 @@ export default function Navbar() {
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-secondary-text hover:text-white focus:outline-none focus:text-white transition-colors duration-300"
+              className="text-secondary-text hover:text-white focus:outline-none focus:text-white transition-colors duration-300 touch-friendly p-2"
+              aria-label="Toggle menu"
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isMenuOpen ? (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 ) : (
@@ -128,37 +131,37 @@ export default function Navbar() {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-dark-gray/90 backdrop-blur-md border-t border-white/10">
               {user ? (
                 <>
-                  <Link href="/dashboard" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                  <Link href="/dashboard" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Dashboard
                   </Link>
-                                     <Link href="/ai" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
-                     AI Coach
-                   </Link>
-                                       <Link href="/poi-analysis" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
-                      POI Analysis
-                    </Link>
-                    <Link href="/tournament-strategy" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
-                      Tournament
-                    </Link>
-                  <Link href="/settings" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                  <Link href="/ai" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    AI Coach
+                  </Link>
+                  <Link href="/poi-analysis" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    POI Analysis
+                  </Link>
+                  <Link href="/tournament-strategy" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    Tournament
+                  </Link>
+                  <Link href="/settings" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Settings
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300"
+                    className="block w-full text-left px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base"
                   >
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/#features" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                  <Link href="/#features" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Features
                   </Link>
-                  <Link href="/pricing" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                  <Link href="/pricing" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Pricing
                   </Link>
-                  <Link href="/login" className="block px-3 py-2 text-secondary-text hover:text-white transition-colors duration-300">
+                  <Link href="/login" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Sign In
                   </Link>
                 </>

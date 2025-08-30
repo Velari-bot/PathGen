@@ -44,15 +44,6 @@ const SUBSCRIPTION_PLANS = {
     prioritySupport: false,
     advancedAnalytics: false
   },
-  standard: {
-    monthlyMessages: 100,
-    monthlyTokens: 10000,
-    monthlyDataPulls: 50,
-    replayUploads: 5,
-    tournamentStrategies: 10,
-    prioritySupport: false,
-    advancedAnalytics: true
-  },
   pro: {
     monthlyMessages: 1000,
     monthlyTokens: 100000,
@@ -203,10 +194,8 @@ export async function POST(request: NextRequest) {
                       subscriptionStatus === 'active';
       
       // Map tier to the format expected by subscription plans
-      let planForLimits: 'free' | 'standard' | 'pro' = 'free';
-      if (subscriptionTier === 'basic' || subscriptionTier === 'standard') {
-        planForLimits = 'standard';
-      } else if (subscriptionTier === 'pro' || subscriptionTier === 'premium') {
+      let planForLimits: 'free' | 'pro' = 'free';
+      if (subscriptionTier === 'pro' || subscriptionTier === 'premium') {
         planForLimits = 'pro';
       }
       

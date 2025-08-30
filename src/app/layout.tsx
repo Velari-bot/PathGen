@@ -6,7 +6,14 @@ import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+}
+
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: 'PathGen - AI-Powered Fortnite Improvement',
   description: 'Get personalized Fortnite coaching with AI analysis of your gameplay stats. Improve your building, strategy, and overall performance.',
   icons: {
@@ -40,6 +47,27 @@ export const metadata: Metadata = {
   },
 }
 
+// Google AdSense script component
+function AdSenseScript() {
+  return (
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2357025365884471"
+      crossOrigin="anonymous"
+    />
+  );
+}
+
+function RootLayoutContent({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      <SubscriptionProvider>
+        {children}
+      </SubscriptionProvider>
+    </AuthProvider>
+  );
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -47,12 +75,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.className}>
+      <head>
+        <AdSenseScript />
+      </head>
       <body className="font-sans antialiased">
-        <AuthProvider>
-          <SubscriptionProvider>
-            {children}
-          </SubscriptionProvider>
-        </AuthProvider>
+        <RootLayoutContent>
+          {children}
+        </RootLayoutContent>
       </body>
     </html>
   )

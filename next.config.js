@@ -10,8 +10,15 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.discordapp.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'fortnite-api.com',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
     ],
-    domains: ['localhost', 'fortnite-api.com'],
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },

@@ -34,11 +34,13 @@ export default function HomePage() {
 
   return (
     <SmoothScroll>
-      <main className="scroll-snap-y bg-primary-bg text-primary-text overflow-hidden">
+      <main className="scroll-snap-y bg-primary-bg text-primary-text overflow-hidden mobile-container">
         <Navbar />
-        <HeroSection />
-        <AIShowcaseSection />
-        <PersonaSelector />
+        <div className="pt-14 sm:pt-16"> {/* Account for fixed navbar height */}
+          <HeroSection />
+          <AIShowcaseSection />
+          <PersonaSelector />
+        </div>
         <Footer />
       </main>
     </SmoothScroll>

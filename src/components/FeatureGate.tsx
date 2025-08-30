@@ -25,7 +25,6 @@ function UpgradePrompt({ requiredTier, currentTier, onUpgrade, className = '' }:
   const getTierDisplayName = (tier: SubscriptionTier) => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'standard': return 'Standard';
       case 'pro': return 'Pro';
       default: return tier;
     }
@@ -34,7 +33,6 @@ function UpgradePrompt({ requiredTier, currentTier, onUpgrade, className = '' }:
   const getTierColor = (tier: SubscriptionTier) => {
     switch (tier) {
       case 'free': return 'text-gray-600';
-      case 'standard': return 'text-blue-600';
       case 'pro': return 'text-purple-600';
       default: return 'text-gray-600';
     }

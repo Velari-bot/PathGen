@@ -27,7 +27,6 @@ export function SubscriptionManager({ className = '' }: SubscriptionManagerProps
   const getTierDisplayName = (tier: SubscriptionTier) => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'standard': return 'Standard';
       case 'pro': return 'Pro';
       default: return tier;
     }
@@ -36,7 +35,6 @@ export function SubscriptionManager({ className = '' }: SubscriptionManagerProps
   const getTierColor = (tier: SubscriptionTier) => {
     switch (tier) {
       case 'free': return 'text-gray-600 bg-gray-100';
-      case 'standard': return 'text-blue-600 bg-blue-100';
       case 'pro': return 'text-purple-600 bg-purple-100';
       default: return 'text-gray-600 bg-gray-100';
     }
@@ -45,8 +43,7 @@ export function SubscriptionManager({ className = '' }: SubscriptionManagerProps
   const getTierPrice = (tier: SubscriptionTier) => {
     switch (tier) {
       case 'free': return 'Free';
-      case 'standard': return '$9.99/month';
-      case 'pro': return '$19.99/month';
+      case 'pro': return '$6.99/month';
       default: return 'Free';
     }
   };
@@ -127,7 +124,6 @@ export function SubscriptionManager({ className = '' }: SubscriptionManagerProps
           <div className="text-center">
             <div className="text-2xl font-bold text-gray-900">
               {currentStatus === 'free' ? 'Free' :
-               currentStatus === 'standard' ? 'Standard' :
                currentStatus === 'pro' ? 'Pro' :
                currentStatus === 'past_due' ? 'Past Due' :
                currentStatus === 'canceled' ? 'Canceled' :
@@ -184,7 +180,7 @@ export function SubscriptionManager({ className = '' }: SubscriptionManagerProps
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Available Plans</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(['free', 'standard', 'pro'] as SubscriptionTier[]).map((tier) => (
+          {(['free', 'pro'] as SubscriptionTier[]).map((tier) => (
             <div
               key={tier}
               className={`relative p-6 rounded-lg border-2 transition-all duration-200 ${
