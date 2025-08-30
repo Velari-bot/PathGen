@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { CreditSystem, CREDIT_COSTS, UserCredits } from '@/lib/credit-system';
 import { creditTracker } from '@/lib/credit-tracker';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface CreditDisplayProps {
   className?: string;
@@ -26,8 +28,82 @@ export const CreditDisplay: React.FC<CreditDisplayProps> = ({
   useEffect(() => {
     if (user) {
       loadUserCredits();
+      // Set up real-time listener for usage updates
+      if (!db) {
+        console.error('Firebase db not initialized');
+        return;
+      }
+      
+      const unsubscribeUsage = onSnapshot(
+        doc(db, 'usage', user.uid),
+        (doc) => {
+          if (doc.exists()) {
+            const usageData = doc.data();
+            console.log('✅ Real-time usage update received:', usageData);
+            
+            // Update local credit state with new usage data
+            if (userCredits) {
+              const updatedCredits = {
+                ...userCredits,
+                usedCredits: calculateTotalUsedCredits(usageData),
+                availableCredits: userCredits.totalCredits - calculateTotalUsedCredits(usageData)
+              };
+              setUserCredits(updatedCredits);
+            }
+          }
+        },
+        (error) => {
+          console.error('Error listening to usage updates:', error);
+        }
+      );
+
+      // Set up real-time listener for subscription changes
+      const unsubscribeSubscription = onSnapshot(
+        doc(db!, 'users', user.uid),
+        (doc) => {
+          if (doc.exists()) {
+            const userData = doc.data();
+            const newTier = userData.subscriptionTier || userData.subscription?.tier || 'free';
+            
+            if (newTier !== subscriptionTier) {
+              console.log('✅ Subscription tier changed from', subscriptionTier, 'to', newTier);
+              // Reload credits with new tier
+              loadUserCredits();
+            }
+          }
+        },
+        (error) => {
+          console.error('Error listening to subscription changes:', error);
+        }
+      );
+
+      return () => {
+        unsubscribeUsage();
+        unsubscribeSubscription();
+      };
     }
-  }, [user]);
+  }, [user, subscriptionTier]);
+
+  const calculateTotalUsedCredits = (usageData: any) => {
+    if (!usageData) return 0;
+    
+    // Calculate total used credits based on feature usage
+    const aiMessages = usageData.aiMessages || 0;
+    const osirionPulls = usageData.osirionPulls || 0;
+    const replayUploads = usageData.replayUploads || 0;
+    const tournamentStrategies = usageData.tournamentStrategies || 0;
+    
+    // Credit costs per feature
+    const aiMessageCost = 1;
+    const osirionPullCost = 50;
+    const replayUploadCost = 20;
+    const tournamentStrategyCost = 25;
+    
+    return (aiMessages * aiMessageCost) + 
+           (osirionPulls * osirionPullCost) + 
+           (replayUploads * replayUploadCost) + 
+           (tournamentStrategies * tournamentStrategyCost);
+  };
 
   const loadUserCredits = async () => {
     if (!user) return;
@@ -55,23 +131,55 @@ export const CreditDisplay: React.FC<CreditDisplayProps> = ({
         actualTier = subscriptionTier || 'free';
       }
       
-      // Get user credits from credit tracker with the correct tier
-      let userCredits = creditTracker.getUserCredits(user.uid);
+      // Get current usage from Firebase
+      const usageResponse = await fetch('/api/usage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+        }),
+      });
       
-      // If no credits found or tier changed, initialize them with the correct tier
-      if (!userCredits || userCredits.plan !== actualTier) {
-        userCredits = await creditTracker.initializeUserCredits(user.uid, actualTier);
+      let usageData = {};
+      if (usageResponse.ok) {
+        const data = await usageResponse.json();
+        usageData = data.usage || {};
+        console.log('✅ Got current usage from API:', usageData);
       }
       
+      // Calculate total credits based on tier
+      const totalCredits = actualTier === 'pro' ? 4000 : 250;
+      const usedCredits = calculateTotalUsedCredits(usageData);
+      const availableCredits = Math.max(0, totalCredits - usedCredits);
+      
+      const userCredits: UserCredits = {
+        userId: user.uid,
+        totalCredits,
+        usedCredits,
+        availableCredits,
+        lastReset: new Date(),
+        plan: actualTier,
+        expiresAt: actualTier === 'pro' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined
+      };
+      
       setUserCredits(userCredits);
+      console.log('✅ User credits loaded:', userCredits);
     } catch (error) {
       console.error('Failed to load user credits:', error);
       // Fallback to local tier
       try {
-        let userCredits = creditTracker.getUserCredits(user.uid);
-        if (!userCredits) {
-          userCredits = await creditTracker.initializeUserCredits(user.uid, subscriptionTier || 'free');
-        }
+        const totalCredits = subscriptionTier === 'pro' ? 4000 : 250;
+        const userCredits: UserCredits = {
+          userId: user.uid,
+          totalCredits,
+          usedCredits: 0,
+          availableCredits: totalCredits,
+          lastReset: new Date(),
+          plan: subscriptionTier || 'free',
+          expiresAt: subscriptionTier === 'pro' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined
+        };
         setUserCredits(userCredits);
       } catch (fallbackError) {
         console.error('Fallback credit loading failed:', fallbackError);
@@ -99,10 +207,10 @@ export const CreditDisplay: React.FC<CreditDisplayProps> = ({
   const getStatusColor = () => {
     const status = getCreditStatus();
     switch (status) {
-      case 'critical': return 'text-white';
-      case 'warning': return 'text-gray-300';
-      case 'info': return 'text-white';
-      case 'good': return 'text-gray-300';
+      case 'critical': return 'text-red-400';
+      case 'warning': return 'text-yellow-400';
+      case 'info': return 'text-blue-400';
+      case 'good': return 'text-green-400';
       default: return 'text-gray-400';
     }
   };
@@ -137,12 +245,12 @@ export const CreditDisplay: React.FC<CreditDisplayProps> = ({
     return (
       <div className={`bg-gray-800 border border-gray-600 rounded-lg p-3 ${className}`}>
         <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-          <span className="text-white text-lg">💎</span>
-          <span className="text-white font-medium">
-            {CreditSystem.formatCredits(userCredits.availableCredits)} Credits
-          </span>
-        </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-white text-lg">💎</span>
+            <span className="text-white font-medium">
+              {CreditSystem.formatCredits(userCredits.availableCredits)} Credits
+            </span>
+          </div>
           <div className={`text-sm ${getStatusColor()}`}>
             {getStatusMessage()}
           </div>
@@ -239,7 +347,10 @@ export const CreditDisplay: React.FC<CreditDisplayProps> = ({
         </div>
       </div>
 
-
+      {/* Real-time Status */}
+      <div className="text-center text-xs text-gray-400">
+        🔄 Real-time updates enabled
+      </div>
     </div>
   );
 };

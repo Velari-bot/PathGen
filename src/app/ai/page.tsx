@@ -203,7 +203,7 @@ export default function AIPage() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user || !currentChatId) return;
 
-    // Track credit usage for AI chat (temporarily disabled for debugging)
+    // Track credit usage for AI chat
     const trackingData: UsageTrackingRequest = {
       feature: 'message',
       tokensUsed: 1,
@@ -211,8 +211,11 @@ export default function AIPage() {
     };
     console.log('🔍 Sending tracking data:', JSON.stringify(trackingData));
     try {
-      await trackUsage(trackingData);
-      console.log('✅ Credit tracking successful');
+      const result = await trackUsage(trackingData);
+      console.log('✅ Credit tracking successful:', result);
+      
+      // Force refresh of credit display by triggering a re-render
+      // The real-time listeners in CreditDisplay will pick up the change
     } catch (error) {
       console.error('Failed to track credit usage:', error);
       console.log('⚠️ Continuing without credit tracking for now');
