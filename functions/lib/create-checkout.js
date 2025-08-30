@@ -246,8 +246,7 @@ exports.getSubscriptionInfo = functions.https.onCall(async (request, context) =>
 function getPlanFromPriceId(priceId) {
     const priceMap = {
         'price_free': 'free',
-        'price_1RvsvqCitWuvPenEw9TefOig': 'standard', // PathGen Standard
-        'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro' // PathGen Pro
+        'price_1RvsvqCitWuvPenEw9TefOig': 'pro' // PathGen Pro
     };
     return priceMap[priceId] || 'free';
 }

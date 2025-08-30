@@ -14,15 +14,6 @@ exports.PLAN_LIMITS = {
         prioritySupport: false,
         advancedAnalytics: false
     },
-    standard: {
-        monthlyMessages: 100,
-        monthlyTokens: 10000,
-        monthlyDataPulls: 50,
-        replayUploads: 5,
-        tournamentStrategies: 10,
-        prioritySupport: false,
-        advancedAnalytics: true
-    },
     pro: {
         monthlyMessages: 1000,
         monthlyTokens: 100000,
@@ -35,16 +26,14 @@ exports.PLAN_LIMITS = {
 };
 // Stripe Price IDs - UPDATE THESE WITH YOUR ACTUAL STRIPE PRICE IDs
 exports.STRIPE_PRICE_IDS = {
-    free: 'price_free', // Free plan (no actual Stripe price needed)
-    standard: 'price_1RvsvqCitWuvPenEw9TefOig', // PathGen Standard
-    pro: 'price_1RvsyxCitWuvPenEOtFzt5FC' // PathGen Pro
+    free: 'free', // Free plan (no actual Stripe price needed)
+    pro: 'price_1RvsvqCitWuvPenEw9TefOig' // PathGen Pro
 };
 // Helper function to get plan from Stripe price ID
 function getPlanFromPriceId(priceId) {
     const planMap = {
-        'price_free': 'free',
-        'price_standard': 'standard',
-        'price_pro': 'pro'
+        'free': 'free',
+        'price_1RvsvqCitWuvPenEw9TefOig': 'pro'
     };
     return planMap[priceId] || 'free';
 }

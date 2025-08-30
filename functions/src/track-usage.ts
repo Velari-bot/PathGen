@@ -31,20 +31,34 @@ export const trackUsage = functions.https.onCall(async (request, context) => {
       throw new functions.https.HttpsError('not-found', 'User data not found');
     }
 
-    const subscription = userData.subscription;
-    if (!subscription) {
-      throw new functions.https.HttpsError('failed-precondition', 'No subscription found');
+    // Get subscription tier from user data
+    const subscriptionTier = userData.subscriptionTier || userData.subscription?.tier || 'free';
+
+    // Get usage data from the usage collection
+    const usageRef = db.collection('usage').doc(userId);
+    const usageDoc = await usageRef.get();
+    
+    let usageData: any = {};
+    if (usageDoc.exists) {
+      usageData = usageDoc.data() || {};
     }
 
-    const plan = subscription.plan || 'free';
-    const limits = subscription.limits || getDefaultLimits(plan);
-    const usage = subscription.usage || getDefaultUsage();
+    // Map feature to usage field
+    const featureMap = {
+      'message': 'aiMessages',
+      'data_pull': 'osirionPulls',
+      'replay_upload': 'replayUploads',
+      'tournament_strategy': 'tournamentStrategies'
+    };
+
+    const usageField = featureMap[feature] || 'aiMessages';
+    const currentUsage = usageData[usageField] || 0;
+
+    // Get limits based on subscription tier
+    const limits = getLimitsForTier(subscriptionTier);
+    const limit = limits[usageField] || 1000; // Default limit
 
     // Check if user has exceeded limits
-    const featureKey = getFeatureKey(feature);
-    const currentUsage = usage[featureKey] || 0;
-    const limit = limits[featureKey];
-
     if (limit !== -1 && currentUsage >= limit) {
       return {
         success: false,
@@ -54,15 +68,16 @@ export const trackUsage = functions.https.onCall(async (request, context) => {
       };
     }
 
-    // Update usage
+    // Update usage in the usage collection
     const newUsage = currentUsage + 1;
-    const newTokensUsed = (usage.tokensUsed || 0) + tokensUsed;
+    const updateData = {
+      [usageField]: newUsage,
+      lastUpdated: admin.firestore.Timestamp.now(),
+      userId: userId,
+      subscriptionTier: subscriptionTier
+    };
 
-    await db.collection('users').doc(userId).update({
-      [`subscription.usage.${featureKey}`]: newUsage,
-      'subscription.usage.tokensUsed': newTokensUsed,
-      'subscription.usage.updatedAt': admin.firestore.Timestamp.now()
-    });
+    await usageRef.set(updateData, { merge: true });
 
     // Log usage event
     await db.collection('usageEvents').add({
@@ -71,7 +86,7 @@ export const trackUsage = functions.https.onCall(async (request, context) => {
       tokensUsed,
       metadata,
       timestamp: admin.firestore.Timestamp.now(),
-      plan
+      plan: subscriptionTier
     });
 
     console.log(`Usage tracked for user ${userId}: ${feature} (${newUsage}/${limit})`);
@@ -113,21 +128,27 @@ export const getCurrentUsage = functions.https.onCall(async (request, context) =
       throw new functions.https.HttpsError('not-found', 'User data not found');
     }
 
-    const subscription = userData.subscription;
-    if (!subscription) {
-      return { hasSubscription: false };
+    // Get subscription tier from user data
+    const subscriptionTier = userData.subscriptionTier || userData.subscription?.tier || 'free';
+    
+    // Get usage data from the usage collection
+    const usageRef = db.collection('usage').doc(userId);
+    const usageDoc = await usageRef.get();
+    
+    let usageData: any = {};
+    if (usageDoc.exists) {
+      usageData = usageDoc.data() || {};
     }
 
-    const plan = subscription.plan || 'free';
-    const limits = subscription.limits || getDefaultLimits(plan);
-    const usage = subscription.usage || getDefaultUsage();
+    // Get limits based on subscription tier
+    const limits = getLimitsForTier(subscriptionTier);
 
     return {
       hasSubscription: true,
-      plan,
+      plan: subscriptionTier,
       limits,
-      usage,
-      resetDate: usage.resetDate
+      usage: usageData,
+      resetDate: usageData.lastUpdated
     };
 
   } catch (error) {
@@ -165,12 +186,17 @@ export const resetUserUsage = functions.https.onCall(async (request, context) =>
       }
     }
 
-    // Reset usage for target user
-    const defaultUsage = getDefaultUsage();
+    // Reset usage for target user in the usage collection
+    const defaultUsage = {
+      aiMessages: 0,
+      osirionPulls: 0,
+      replayUploads: 0,
+      tournamentStrategies: 0,
+      lastUpdated: admin.firestore.Timestamp.now(),
+      userId: targetUserId
+    };
     
-    await db.collection('users').doc(targetUserId).update({
-      'subscription.usage': defaultUsage
-    });
+    await db.collection('usage').doc(targetUserId).set(defaultUsage);
 
     console.log(`Usage reset for user ${targetUserId} by admin ${adminUserId}`);
 
@@ -202,11 +228,16 @@ export const monthlyUsageReset = functions.pubsub.schedule('0 0 1 * *').onRun(as
 
     usersSnapshot.forEach((doc) => {
       const userData = doc.data();
-      if (userData.subscription) {
-        const defaultUsage = getDefaultUsage();
-        batch.update(doc.ref, {
-          'subscription.usage': defaultUsage
-        });
+      if (userData.subscription || userData.subscriptionTier) {
+        const defaultUsage = {
+          aiMessages: 0,
+          osirionPulls: 0,
+          replayUploads: 0,
+          tournamentStrategies: 0,
+          lastUpdated: admin.firestore.Timestamp.now(),
+          userId: doc.id
+        };
+        batch.set(db.collection('usage').doc(doc.id), defaultUsage);
         resetCount++;
       }
     });
@@ -225,33 +256,20 @@ export const monthlyUsageReset = functions.pubsub.schedule('0 0 1 * *').onRun(as
 });
 
 // Helper functions
-function getFeatureKey(feature: string): string {
-  const featureMap: { [key: string]: string } = {
-    'message': 'messagesUsed',
-    'data_pull': 'dataPullsUsed',
-    'replay_upload': 'replayUploadsUsed',
-    'tournament_strategy': 'tournamentStrategiesUsed'
-  };
-  return featureMap[feature] || 'messagesUsed';
-}
-
-function getDefaultLimits(plan: string): any {
+function getLimitsForTier(tier: string): any {
   const limits = {
-    free: { messagesUsed: 10, tokensUsed: 1000, dataPullsUsed: 5, replayUploadsUsed: 2, tournamentStrategiesUsed: 3 },
-    standard: { messagesUsed: 100, tokensUsed: 10000, dataPullsUsed: 50, replayUploadsUsed: 20, tournamentStrategiesUsed: 30 },
-    pro: { messagesUsed: -1, tokensUsed: -1, dataPullsUsed: -1, replayUploadsUsed: -1, tournamentStrategiesUsed: -1 }
+    free: { 
+      aiMessages: 250, 
+      osirionPulls: 5, 
+      replayUploads: 12, 
+      tournamentStrategies: 25 
+    },
+    pro: { 
+      aiMessages: 4000, 
+      osirionPulls: 80, 
+      replayUploads: 200, 
+      tournamentStrategies: 400 
+    }
   };
-  return limits[plan as keyof typeof limits] || limits.free;
-}
-
-function getDefaultUsage(): any {
-  return {
-    messagesUsed: 0,
-    tokensUsed: 0,
-    dataPullsUsed: 0,
-    replayUploadsUsed: 0,
-    tournamentStrategiesUsed: 0,
-    resetDate: admin.firestore.Timestamp.fromDate(new Date()),
-    updatedAt: admin.firestore.Timestamp.now()
-  };
+  return limits[tier as keyof typeof limits] || limits.free;
 }

@@ -1,8 +1,8 @@
 import { Timestamp } from 'firebase-admin/firestore';
 
 // Subscription Tiers
-export type SubscriptionTier = 'free' | 'standard' | 'pro';
-export type SubscriptionStatus = 'free' | 'standard' | 'pro' | 'past_due' | 'canceled' | 'unpaid';
+export type SubscriptionTier = 'free' | 'pro';
+export type SubscriptionStatus = 'free' | 'pro' | 'past_due' | 'canceled' | 'unpaid';
 
 // Plan Limits Interface
 export interface PlanLimits {
@@ -188,15 +188,6 @@ export const PLAN_LIMITS: Record<SubscriptionTier, PlanLimits> = {
     prioritySupport: false,
     advancedAnalytics: false
   },
-  standard: {
-    monthlyMessages: 100,
-    monthlyTokens: 10000,
-    monthlyDataPulls: 50,
-    replayUploads: 5,
-    tournamentStrategies: 10,
-    prioritySupport: false,
-    advancedAnalytics: true
-  },
   pro: {
     monthlyMessages: 1000,
     monthlyTokens: 100000,
@@ -210,16 +201,15 @@ export const PLAN_LIMITS: Record<SubscriptionTier, PlanLimits> = {
 
 // Stripe Price IDs - UPDATE THESE WITH YOUR ACTUAL STRIPE PRICE IDs
 export const STRIPE_PRICE_IDS: Record<SubscriptionTier, string> = {
-  free: 'price_free', // Free plan (no actual Stripe price needed)
+  free: 'free', // Free plan (no actual Stripe price needed)
   pro: 'price_1RvsvqCitWuvPenEw9TefOig' // PathGen Pro
 };
 
 // Helper function to get plan from Stripe price ID
 export function getPlanFromPriceId(priceId: string): SubscriptionTier {
   const planMap: Record<string, SubscriptionTier> = {
-    'price_free': 'free',
-    'price_standard': 'standard',
-    'price_pro': 'pro'
+    'free': 'free',
+    'price_1RvsvqCitWuvPenEw9TefOig': 'pro'
   };
   return planMap[priceId] || 'free';
 }
