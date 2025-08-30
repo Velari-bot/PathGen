@@ -229,7 +229,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
     // Update subscription data
     const updatedSubscriptionData = {
-      ...subscriptionData,
+      userId,
+      stripeCustomerId: subscription.customer,
+      stripeSubscriptionId: subscription.id,
       plan,
       status: subscription.status,
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
