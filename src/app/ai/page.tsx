@@ -26,6 +26,17 @@ export default function AIPage() {
   const [epicAccount, setEpicAccount] = useState<any>(null);
   const [epicError, setEpicError] = useState<string | null>(null);
 
+  // Function to parse markdown-style bold text
+  const parseBoldText = (text: string) => {
+    return text.split('**').map((part, index) => {
+      if (index % 2 === 1) {
+        // Odd indices are the text between ** markers (should be bold)
+        return <strong key={index} className="font-bold">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
@@ -752,7 +763,7 @@ export default function AIPage() {
                         : 'bg-[#2A2A2A] text-white'
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap">{parseBoldText(message.content)}</p>
                     <p className="text-xs text-[#BFBFBF] mt-1">
                           {message.timestamp.toLocaleTimeString()}
                         </p>
