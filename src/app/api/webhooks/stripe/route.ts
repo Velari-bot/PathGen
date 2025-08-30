@@ -176,20 +176,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       updatedAt: new Date()
     };
 
-    // Create subscription document
-    await db.collection('subscriptions').doc(subscription.id).set(subscriptionData);
-
-    // Update user document with full subscription data
-    await db.collection('users').doc(userId).update({
-      subscription: subscriptionData,
-      'subscription.plan': plan,
-      'subscription.status': subscription.status,
-      'subscription.tier': plan,
-      'subscription.stripeCustomerId': subscription.customer,
-      'subscription.stripeSubscriptionId': subscription.id,
-      'subscriptionTier': plan, // Add this for credit system compatibility
-      updatedAt: new Date()
-    });
+    // Update ALL collections for the user
+    await updateAllCollectionsForUser(userId, plan, subscriptionData);
 
     console.log(`✅ Subscription created for user ${userId} with plan ${plan}`);
     
@@ -239,8 +227,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const plan = getPlanFromPriceId(subscription.items.data[0].price.id);
     const limits = getPlanLimits(plan);
 
-    // Update subscription document
-    await db.collection('subscriptions').doc(subscription.id).update({
+    // Update subscription data
+    const updatedSubscriptionData = {
+      ...subscriptionData,
       plan,
       status: subscription.status,
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
@@ -249,19 +238,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       limits,
       updatedAt: new Date()
-    });
+    };
 
-    // Update user document
-    await db.collection('users').doc(userId).update({
-      'subscription.plan': plan,
-      'subscription.status': subscription.status,
-      'subscription.tier': plan,
-      'subscriptionTier': plan, // Add this for credit system compatibility
-      'subscription.currentPeriodStart': new Date(subscription.current_period_start * 1000),
-      'subscription.currentPeriodEnd': new Date(subscription.current_period_end * 1000),
-      'subscription.cancelAtPeriodEnd': subscription.cancel_at_period_end,
-      updatedAt: new Date()
-    });
+    // Update ALL collections for the user
+    await updateAllCollectionsForUser(userId, plan, updatedSubscriptionData);
 
     console.log(`✅ Subscription updated for user ${userId}: ${subscription.status} (${plan})`);
     
@@ -319,23 +299,33 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
         if (userId) {
           console.log(`🔄 Processing payment success for user: ${userId}`);
           
-          // Update subscription document
-          await db.collection('subscriptions').doc(invoice.subscription as string).update({
-            status: 'active',
-            updatedAt: new Date()
-          });
-          
-          // Update user document with Pro tier
+          // Get subscription data and update ALL collections
           const plan = getPlanFromPriceId(subscription.items.data[0].price.id);
-          await db.collection('users').doc(userId).update({
-            'subscription.plan': plan,
-            'subscription.status': 'active',
-            'subscription.tier': plan,
-            'subscriptionTier': plan,
-            'subscription.currentPeriodStart': new Date(subscription.current_period_start * 1000),
-            'subscription.currentPeriodEnd': new Date(subscription.current_period_end * 1000),
+          const subscriptionData = {
+            userId,
+            stripeCustomerId: subscription.customer,
+            stripeSubscriptionId: subscription.id,
+            plan,
+            status: 'active',
+            currentPeriodStart: new Date(subscription.current_period_start * 1000),
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+            limits: getPlanLimits(plan),
+            usage: {
+              messagesUsed: 0,
+              tokensUsed: 0,
+              dataPullsUsed: 0,
+              replayUploadsUsed: 0,
+              tournamentStrategiesUsed: 0,
+              resetDate: new Date()
+            },
+            createdAt: new Date(),
             updatedAt: new Date()
-          });
+          };
+
+          // Update ALL collections for the user
+          await updateAllCollectionsForUser(userId, plan, subscriptionData);
           
           console.log(`✅ Payment success processed for user ${userId} with plan ${plan}`);
           
@@ -429,6 +419,68 @@ function getPlanFromPriceId(priceId: string): string {
     'price_1RvsvqCitWuvPenEw9TefOig': 'pro'   // PathGen Pro (new)
   };
   return planMap[priceId] || 'free';
+}
+
+// Helper function to update ALL collections for a user
+async function updateAllCollectionsForUser(userId: string, plan: string, subscriptionData: any) {
+  try {
+    console.log(`🔄 Updating ALL collections for user ${userId} to ${plan} tier...`);
+
+    // 1. Update user document
+    await db.collection('users').doc(userId).update({
+      subscription: subscriptionData,
+      'subscription.plan': plan,
+      'subscription.status': subscriptionData.status,
+      'subscription.tier': plan,
+      'subscription.stripeCustomerId': subscriptionData.stripeCustomerId,
+      'subscription.stripeSubscriptionId': subscriptionData.stripeSubscriptionId,
+      'subscriptionTier': plan,
+      'subscription.startDate': new Date(),
+      'subscription.autoRenew': true,
+      updatedAt: new Date()
+    });
+
+    // 2. Update or create subscription document
+    const subscriptionsSnapshot = await db.collection('subscriptions')
+      .where('userId', '==', userId)
+      .get();
+    
+    if (!subscriptionsSnapshot.empty) {
+      // Update existing subscription
+      await subscriptionsSnapshot.docs[0].ref.update(subscriptionData);
+    } else {
+      // Create new subscription document
+      await db.collection('subscriptions').add(subscriptionData);
+    }
+
+    // 3. Update or create usage document
+    const usageSnapshot = await db.collection('usage')
+      .where('userId', '==', userId)
+      .get();
+    
+    const usageData = {
+      userId,
+      subscriptionTier: plan,
+      totalCredits: plan === 'pro' ? 4000 : 250,
+      usedCredits: 0,
+      availableCredits: plan === 'pro' ? 4000 : 250,
+      lastReset: new Date(),
+      updatedAt: new Date()
+    };
+
+    if (!usageSnapshot.empty) {
+      // Update existing usage
+      await usageSnapshot.docs[0].ref.update(usageData);
+    } else {
+      // Create new usage document
+      await db.collection('usage').add(usageData);
+    }
+
+    console.log(`✅ Successfully updated user ${userId} to ${plan} tier across all collections`);
+  } catch (error) {
+    console.error(`❌ Error updating collections for user ${userId}:`, error);
+    throw error;
+  }
 }
 
 // Helper function to get plan limits

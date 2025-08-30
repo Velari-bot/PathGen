@@ -35,27 +35,41 @@ export async function POST(request: NextRequest) {
     const db = getFirestore();
 
     if (action === 'check') {
-      // Check current subscription status
+      // Check current subscription status across all collections
       const userDoc = await db.collection('users').doc(userId).get();
       const subscriptionsSnapshot = await db.collection('subscriptions')
         .where('userId', '==', userId)
         .get();
+      const usageSnapshot = await db.collection('usage')
+        .where('userId', '==', userId)
+        .get();
+      const webhookLogsSnapshot = await db.collection('webhookLogs')
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc')
+        .limit(5)
+        .get();
 
       const userData = userDoc.exists ? userDoc.data() : null;
       const subscriptionData = !subscriptionsSnapshot.empty ? subscriptionsSnapshot.docs[0].data() : null;
+      const usageData = !usageSnapshot.empty ? usageSnapshot.docs[0].data() : null;
+      const webhookLogs = webhookLogsSnapshot.docs.map(doc => doc.data());
 
       return NextResponse.json({
         userId,
         userData,
         subscriptionData,
+        usageData,
+        webhookLogs,
         hasUserDoc: userDoc.exists,
         hasSubscriptionDoc: !subscriptionsSnapshot.empty,
+        hasUsageDoc: !usageSnapshot.empty,
         subscriptionTier: userData?.subscriptionTier || userData?.subscription?.tier || 'free',
-        subscriptionStatus: userData?.subscription?.status || 'free'
+        subscriptionStatus: userData?.subscription?.status || 'free',
+        usageTier: usageData?.subscriptionTier || 'free'
       });
 
     } else if (action === 'update') {
-      // Manually update to Pro
+      // Manually update to Pro across ALL collections
       const subscriptionData = {
         userId,
         plan: 'pro',
@@ -67,22 +81,74 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date()
       };
 
+      console.log(`🔄 Updating user ${userId} to Pro tier across ALL collections...`);
+
       // Update user document
       await db.collection('users').doc(userId).update({
         subscriptionTier: 'pro',
         'subscription.plan': 'pro',
         'subscription.status': 'active',
         'subscription.tier': 'pro',
+        'subscription.startDate': new Date(),
+        'subscription.autoRenew': true,
         updatedAt: new Date()
       });
 
-      // Create subscription document
-      await db.collection('subscriptions').add(subscriptionData);
+      // Update or create subscription document
+      const subscriptionsSnapshot = await db.collection('subscriptions')
+        .where('userId', '==', userId)
+        .get();
+      
+      if (!subscriptionsSnapshot.empty) {
+        // Update existing subscription
+        await subscriptionsSnapshot.docs[0].ref.update(subscriptionData);
+      } else {
+        // Create new subscription document
+        await db.collection('subscriptions').add(subscriptionData);
+      }
+
+      // Update or create usage document
+      const usageSnapshot = await db.collection('usage')
+        .where('userId', '==', userId)
+        .get();
+      
+      const usageData = {
+        userId,
+        subscriptionTier: 'pro',
+        totalCredits: 4000,
+        usedCredits: 0,
+        availableCredits: 4000,
+        lastReset: new Date(),
+        updatedAt: new Date()
+      };
+
+      if (!usageSnapshot.empty) {
+        // Update existing usage
+        await usageSnapshot.docs[0].ref.update(usageData);
+      } else {
+        // Create new usage document
+        await db.collection('usage').add(usageData);
+      }
+
+      // Add webhook log entry
+      await db.collection('webhookLogs').add({
+        eventType: 'manual.subscription.update',
+        userId,
+        plan: 'pro',
+        status: 'active',
+        timestamp: new Date(),
+        success: true,
+        message: 'Manually updated to Pro tier across all collections'
+      });
+
+      console.log(`✅ Successfully updated user ${userId} to Pro tier across all collections`);
 
       return NextResponse.json({
         success: true,
-        message: 'Manually updated to Pro tier',
-        subscriptionData
+        message: 'Manually updated to Pro tier across ALL collections',
+        subscriptionData,
+        usageData,
+        collectionsUpdated: ['users', 'subscriptions', 'usage', 'webhookLogs']
       });
 
     } else {
