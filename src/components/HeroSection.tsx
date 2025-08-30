@@ -19,9 +19,44 @@ export default function HeroSection() {
     }
   };
 
-  const handleWatchDemo = () => {
-    // TODO: Add demo video functionality when available
-    alert('Demo video coming soon! Stay tuned for updates.');
+  const handleGoPro = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      // Create Stripe checkout session directly
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'user-email': user.email || 'customer@example.com',
+        },
+        body: JSON.stringify({
+          priceId: 'price_1RvsvqCitWuvPenEw9TefOig', // Pro tier price ID
+          userId: user.uid,
+          tier: 'pro',
+          promoCode: null
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+      
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Error creating checkout session:', error);
+      alert(`Payment Error: ${error.message || 'Failed to create checkout session. Please try again.'}`);
+    }
   };
 
   useGSAP(() => {
@@ -142,12 +177,17 @@ export default function HeroSection() {
           </button>
           
           <button 
-            onClick={() => router.push('/pricing')}
-            className="btn-secondary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly"
+            onClick={handleGoPro}
+            className="btn-secondary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly relative overflow-hidden"
+            style={{
+              animation: 'pulse-glow 2s ease-in-out infinite',
+              boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2), 0 0 60px rgba(255, 255, 255, 0.1)'
+            }}
           >
-            <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
+            <span className="group-hover:scale-110 transition-transform duration-300 inline-block relative z-10">
               Go Pro – Only $6.99/month
             </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
         </div>
 

@@ -302,10 +302,15 @@ export default function AIShowcaseSection() {
               </span>
             </button>
             <button 
-              onClick={() => router.push('/pricing')}
-              className="btn-secondary text-lg px-8 py-4 font-semibold"
+              onClick={handleUpgrade}
+              className="btn-secondary text-lg px-8 py-4 font-semibold relative overflow-hidden"
+              style={{
+                animation: 'pulse-glow 2s ease-in-out infinite',
+                boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2), 0 0 60px rgba(255, 255, 255, 0.1)'
+              }}
             >
-              Go Pro – $6.99
+              <span className="relative z-10">Go Pro – $6.99</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
             </button>
           </div>
         </div>
