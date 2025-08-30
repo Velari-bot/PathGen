@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
@@ -16,6 +17,7 @@ import Footer from '@/components/Footer';
 
 export default function AIPage() {
   const { user, loading } = useAuth();
+  const { trackUsage } = useSubscription();
   const router = useRouter();
   const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -140,8 +142,13 @@ export default function AIPage() {
       const savedMessages = localStorage.getItem(storageKey);
       if (savedMessages) {
         const parsedMessages = JSON.parse(savedMessages);
-        setMessages(parsedMessages);
-        console.log('✅ Loaded messages from local storage:', parsedMessages.length);
+        // Convert timestamp strings back to Date objects
+        const messagesWithDates = parsedMessages.map((message: any) => ({
+          ...message,
+          timestamp: new Date(message.timestamp)
+        }));
+        setMessages(messagesWithDates);
+        console.log('✅ Loaded messages from local storage:', messagesWithDates.length);
       }
     } catch (error) {
       console.error('Error loading from local storage:', error);
@@ -195,19 +202,32 @@ export default function AIPage() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user || !currentChatId) return;
 
+    // Track credit usage for AI chat
+    try {
+      await trackUsage({
+        feature: 'message',
+        tokensUsed: 1,
+        metadata: { messageType: 'ai_chat' }
+      });
+    } catch (error) {
+      console.error('Failed to track credit usage:', error);
+      // You might want to show an error message to the user here
+      return;
+    }
+
     const userMessage = {
       role: 'user' as const,
       content: inputMessage,
       timestamp: new Date()
     };
 
-          setMessages(prev => [...prev, userMessage]);
-      setInputMessage('');
-      setIsLoadingResponse(true);
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoadingResponse(true);
 
-      try {
-        // Save user message to local storage
-        saveMessageToLocalStorage(userMessage);
+    try {
+      // Save user message to local storage
+      saveMessageToLocalStorage(userMessage);
       
       // Get Epic account information for context
       let epicContext = '';
