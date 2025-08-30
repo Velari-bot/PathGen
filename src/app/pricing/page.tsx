@@ -34,7 +34,7 @@ export default function PricingPage() {
           'user-email': user.email || 'customer@example.com',
         },
         body: JSON.stringify({
-          priceId: 'price_1RvsyxCitWuvPenEOtFzt5FC', // Pro tier price ID
+          priceId: 'price_1RvsvqCitWuvPenEw9TefOig', // Pro tier price ID
           userId: user.uid,
           tier: tier,
           promoCode: promoCodes.pro || null

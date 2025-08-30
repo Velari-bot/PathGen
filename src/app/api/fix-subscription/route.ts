@@ -76,11 +76,10 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Found subscription: ${subscription.id} with status: ${subscription.status}`);
 
     // Map price ID to plan
-    const planMap: { [key: string]: string } = {
-      'price_free': 'free',
-      'price_1RvsvqCitWuvPenEw9TefOig': 'standard', // PathGen Standard
-      'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro' // PathGen Pro
-    };
+          const planMap: { [key: string]: string } = {
+        'price_free': 'free',
+        'price_1RvsvqCitWuvPenEw9TefOig': 'pro' // PathGen Pro
+      };
 
     const priceId = subscription.items.data[0].price.id;
     const plan = planMap[priceId] || 'free';
