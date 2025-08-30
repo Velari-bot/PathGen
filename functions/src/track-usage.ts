@@ -18,8 +18,14 @@ export const trackUsage = functions.https.onCall(async (request, context) => {
   const data = request.data as UsageTrackingRequest;
   const userId = context.auth.uid;
   
+  // Debug logging
+  console.log('trackUsage called with data:', JSON.stringify(data));
+  console.log('request.data type:', typeof request.data);
+  console.log('request.data:', request.data);
+  
   // Validate that data exists and has required fields
   if (!data || !data.feature) {
+    console.log('Validation failed - data:', data);
     throw new functions.https.HttpsError('invalid-argument', 'Missing required data or feature field');
   }
   
