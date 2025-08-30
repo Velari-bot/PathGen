@@ -1129,6 +1129,12 @@ export default function DashboardPage() {
                <Link href="/ai" className="btn-secondary text-left">
                  New AI Chat
                </Link>
+               <Link href="/map" className="btn-secondary text-left">
+                 POI Analysis
+               </Link>
+               <Link href="/tournament-strategy" className="btn-secondary text-left">
+                 Tournament Strategy
+               </Link>
                <Link href="/settings" className="btn-secondary text-left">
                  Settings
                </Link>

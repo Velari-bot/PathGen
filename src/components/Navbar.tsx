@@ -72,15 +72,12 @@ export default function Navbar() {
                 <Link href="/dashboard" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Dashboard
                 </Link>
-                                 <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
-                   AI Coach
-                 </Link>
-                                                   <Link href="/map" className="text-secondary-text hover:text-white transition-colors duration-300">
-                   POI Analysis
-                  </Link>
-                  <Link href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
-                    Tournament
-                  </Link>
+                <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
+                  AI Coach
+                </Link>
+                <Link href="/pricing" className="text-secondary-text hover:text-white transition-colors duration-300">
+                  Pricing
+                </Link>
                 <Link href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Settings
                 </Link>
@@ -137,11 +134,8 @@ export default function Navbar() {
                   <Link href="/ai" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     AI Coach
                   </Link>
-                  <Link href="/poi-analysis" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
-                    POI Analysis
-                  </Link>
-                  <Link href="/tournament-strategy" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
-                    Tournament
+                  <Link href="/pricing" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    Pricing
                   </Link>
                   <Link href="/settings" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Settings

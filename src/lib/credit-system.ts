@@ -37,13 +37,13 @@ export const CREDIT_COSTS: CreditCost[] = [
   },
   {
     feature: 'ai_chat_complex',
-    cost: 3,
+    cost: 1,
     description: 'AI Chat (complex analysis)',
     category: 'ai'
   },
   {
     feature: 'ai_coaching_session',
-    cost: 5,
+    cost: 1,
     description: 'AI Coaching Session',
     category: 'ai'
   },
