@@ -337,10 +337,22 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
             userId,
             plan,
             timestamp: new Date(),
-            success: true
+            success: true,
+            message: `Updated user ${userId} to ${plan} tier across all collections`
           });
         } else {
           console.error('❌ No userId found in customer metadata for payment success');
+          
+          // Log the issue for debugging
+          await db.collection('webhookLogs').add({
+            eventType: 'invoice.payment_succeeded',
+            invoiceId: invoice.id,
+            subscriptionId: invoice.subscription,
+            error: 'No userId found in customer metadata',
+            customerId: subscription.customer,
+            timestamp: new Date(),
+            success: false
+          });
         }
       } else {
         console.error('❌ Customer was deleted for payment success');
