@@ -10,7 +10,13 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 STRIPE WEBHOOK RECEIVED');
+    console.log('📋 Headers:', JSON.stringify(Object.fromEntries(request.headers.entries()), null, 2));
+    
     const body = await request.text();
+    console.log('📄 Body length:', body.length);
+    console.log('📄 Body preview:', body.substring(0, 200) + '...');
+    
     const signature = request.headers.get('stripe-signature');
 
     if (!signature) {
@@ -27,7 +33,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    console.log(`Webhook received: ${event.type} (ID: ${event.id})`);
+    console.log(`🔍 Webhook received: ${event.type} (ID: ${event.id})`);
+    console.log('📋 Event data:', JSON.stringify(event.data, null, 2));
 
     // Handle the event
     try {
