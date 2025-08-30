@@ -125,12 +125,12 @@ export default function PricingPage() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-            <span className="text-primary-text">Choose Your</span>
+            <span className="text-primary-text">Start Free. Unlock Pro</span>
             <br />
-            <span className="text-gradient">PathGen Plan</span>
+            <span className="text-gradient">for Full Coaching.</span>
           </h1>
           <p className="text-xl md:text-2xl text-secondary-text max-w-3xl mx-auto leading-relaxed">
-            Start free, upgrade when you're ready to dominate. No hidden fees, cancel anytime.
+            Get unlimited AI coaching, deep analysis, and personalized strategies. No hidden fees, cancel anytime.
           </p>
         </div>
 
@@ -138,10 +138,10 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16 max-w-5xl mx-auto">
           {/* Free Tier */}
           <div className="glass-card p-8 text-center relative">
-            <h3 className="text-3xl font-bold text-primary-text mb-4">Free</h3>
+            <h3 className="text-3xl font-bold text-primary-text mb-4">Free Plan</h3>
             <div className="mb-8">
               <span className="text-6xl font-bold text-white">$0</span>
-              <span className="text-xl text-secondary-text">/month</span>
+              <span className="text-xl text-secondary-text">/one-time trial</span>
             </div>
             <p className="text-secondary-text mb-8">Perfect for getting started with PathGen AI</p>
             
@@ -176,12 +176,12 @@ export default function PricingPage() {
               ⭐ MOST POPULAR
             </div>
             
-            <h3 className="text-3xl font-bold text-primary-text mb-4">Pro</h3>
+            <h3 className="text-3xl font-bold text-primary-text mb-4">Pro Plan</h3>
             <div className="mb-8">
               <span className="text-6xl font-bold text-white">$6.99</span>
               <span className="text-xl text-secondary-text">/month</span>
             </div>
-            <p className="text-secondary-text mb-8">Unlock unlimited potential and dominate the competition</p>
+            <p className="text-secondary-text mb-8">Unlimited AI coaching credits, deep Osirion integration, and personalized strategies</p>
             
             <div className="space-y-4 mb-8">
               <div className="flex items-center justify-center space-x-2">
@@ -233,7 +233,7 @@ export default function PricingPage() {
         {/* Detailed Feature Comparison */}
         <div className="max-w-6xl mx-auto mb-16">
           <h2 className="text-3xl font-bold text-center text-primary-text mb-12">
-            Free vs Pro - What You Get
+            Free vs Pro - Complete Comparison
           </h2>
           
           <div className="space-y-8">
@@ -279,23 +279,26 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto mb-16">
           <div className="glass-card p-8 text-center">
             <h2 className="text-3xl font-bold text-primary-text mb-6">
-              Why Players Choose Pro
+              $6.99 vs $100+ for Coaching
             </h2>
+            <p className="text-xl text-secondary-text mb-8">
+              PathGen Pro makes Pro-level coaching affordable and accessible 24/7.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="text-center">
                 <div className="text-4xl mb-4">🚀</div>
-                <h3 className="text-xl font-semibold text-white mb-2">16x More AI Messages</h3>
-                <p className="text-secondary-text">Get unlimited coaching and never run out of credits</p>
+                <h3 className="text-xl font-semibold text-white mb-2">16x More Value</h3>
+                <p className="text-secondary-text">Get 16x more AI messages, replay uploads, and tournament strategies</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-4">🎯</div>
-                <h3 className="text-xl font-semibold text-white mb-2">Advanced Analytics</h3>
-                <p className="text-secondary-text">Deep insights that free users can't access</p>
+                <h3 className="text-xl font-semibold text-white mb-2">Personalized Drills</h3>
+                <p className="text-secondary-text">Get strategies and fixes unique to your gameplay</p>
               </div>
               <div className="text-center">
                 <div className="text-4xl mb-4">⚡</div>
-                <h3 className="text-xl font-semibold text-white mb-2">Ad-Free Experience</h3>
-                <p className="text-secondary-text">Focus on your game without distractions</p>
+                <h3 className="text-xl font-semibold text-white mb-2">Priority Responses</h3>
+                <p className="text-secondary-text">Track improvement over time with advanced analytics</p>
               </div>
             </div>
           </div>

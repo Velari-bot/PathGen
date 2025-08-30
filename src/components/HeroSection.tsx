@@ -117,17 +117,16 @@ export default function HeroSection() {
 
         {/* Main Title */}
         <h1 className="hero-title text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 leading-tight">
-          <span className="text-primary-text">Generate Smarter</span>
+          <span className="text-primary-text">🔥 The AI Coach That</span>
           <br />
           <span className="text-gradient bg-gradient-to-r from-white via-gray-200 to-white bg-clip-text text-transparent">
-            Fortnite Strategies
+            Makes You Better
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="hero-subtitle text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-secondary-text mb-8 sm:mb-10 lg:mb-12 max-w-4xl mx-auto leading-relaxed px-4">
-          Free to try, unlock more with Pro. AI-powered coaching, personalized strategies, and real-time performance tracking. 
-          <span className="text-white font-semibold"> Dominate every match.</span>
+          Stop guessing why you lose. Upload your stats, get instant coaching, and finally start improving.
         </p>
 
         {/* CTA Buttons */}
@@ -137,17 +136,17 @@ export default function HeroSection() {
             className="btn-primary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly"
           >
             <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
-              Try for Free Now
+              Start Free →
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-white to-gray-200 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </button>
           
           <button 
-            onClick={handleWatchDemo}
+            onClick={() => router.push('/pricing')}
             className="btn-secondary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly"
           >
             <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
-              Watch Demo
+              Go Pro – Only $6.99/month
             </span>
           </button>
         </div>
@@ -155,16 +154,16 @@ export default function HeroSection() {
         {/* Stats */}
         <div className="mt-12 sm:mt-14 lg:mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto px-4">
           <div className="text-center mobile-spacing">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">+47%</div>
-            <div className="text-secondary-text text-sm sm:text-base">Average Win Rate Improvement</div>
-          </div>
-          <div className="text-center mobile-spacing">
-            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">10,000+</div>
-            <div className="text-secondary-text text-sm sm:text-base">Players Already Improving</div>
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">24/7</div>
+            <div className="text-secondary-text text-sm sm:text-base">AI Coach Availability</div>
           </div>
           <div className="text-center mobile-spacing">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">$6.99</div>
-            <div className="text-secondary-text text-sm sm:text-base">Pro Plan - Cancel Anytime</div>
+            <div className="text-secondary-text text-sm sm:text-base">vs $100+ for coaching</div>
+          </div>
+          <div className="text-center mobile-spacing">
+            <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">Instant</div>
+            <div className="text-secondary-text text-sm sm:text-base">Analysis & Feedback</div>
           </div>
         </div>
       </div>

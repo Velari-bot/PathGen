@@ -105,16 +105,67 @@ export default function AIShowcaseSection() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mobile-container">
-        {/* Section Header */}
+        {/* Pain Point Section */}
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
-            <span className="text-primary-text">Free vs Pro</span>
+            <span className="text-primary-text">Why Most Fortnite</span>
             <br />
-            <span className="text-gradient">What You Get</span>
+            <span className="text-gradient">Players Stay Stuck</span>
           </h2>
-          <p className="text-xl text-secondary-text max-w-3xl mx-auto">
-            Start free and upgrade when you're ready to dominate. See the difference that makes champions.
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+            <div className="glass-card p-6 text-left">
+              <div className="text-2xl mb-3">😤</div>
+              <p className="text-white font-medium">You grind for hours but never see real improvement.</p>
+            </div>
+            <div className="glass-card p-6 text-left">
+              <div className="text-2xl mb-3">🔄</div>
+              <p className="text-white font-medium">You make the same mistakes every game without realizing it.</p>
+            </div>
+            <div className="glass-card p-6 text-left">
+              <div className="text-2xl mb-3">🤔</div>
+              <p className="text-white font-medium">You don't know why other players are ahead of you.</p>
+            </div>
+            <div className="glass-card p-6 text-left">
+              <div className="text-2xl mb-3">💰</div>
+              <p className="text-white font-medium">Real coaching is too expensive, slow, and inconsistent.</p>
+            </div>
+          </div>
+          <p className="text-xl text-white font-semibold">
+            👉 PathGen AI ends that cycle. Instantly.
           </p>
+        </div>
+
+        {/* Solution Section */}
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6">
+            <span className="text-primary-text">Your Fortnite Coach,</span>
+            <br />
+            <span className="text-gradient">Powered by AI</span>
+          </h2>
+          <p className="text-xl text-secondary-text max-w-3xl mx-auto mb-8">
+            PathGen AI combines ChatGPT's intelligence, Osirion's performance stats, and your uploaded data to create a personalized path to improvement.
+            <br /><br />
+            <span className="text-white font-semibold">No fluff. No guesswork. Just clear, actionable steps.</span>
+          </p>
+          
+          {/* How it works */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-12">
+            <div className="text-center">
+              <div className="text-4xl mb-4">📊</div>
+              <h3 className="text-xl font-bold text-white mb-2">1. Upload your stats</h3>
+              <p className="text-secondary-text">Connect your Epic account or upload replay data</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-4">🤖</div>
+              <h3 className="text-xl font-bold text-white mb-2">2. AI Analyzes everything</h3>
+              <p className="text-secondary-text">Precision analysis of your gameplay patterns</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-4">🎯</div>
+              <h3 className="text-xl font-bold text-white mb-2">3. Get Coaching</h3>
+              <p className="text-secondary-text">Drills, strategies, and fixes unique to your gameplay</p>
+            </div>
+          </div>
         </div>
 
         {/* Feature Grid */}
@@ -182,13 +233,64 @@ export default function AIShowcaseSection() {
           </div>
         </div>
 
-        {/* CTA Section */}
+        {/* Social Proof Section */}
+        <div className="glass-card p-8 text-center mb-16">
+          <h2 className="text-3xl font-bold text-primary-text mb-8">
+            What Fortnite Players Are Saying
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="text-4xl mb-4">💬</div>
+              <p className="text-white font-medium mb-2">"PathGen told me exactly why I lose mid-game. I fixed it in 2 weeks."</p>
+              <p className="text-secondary-text text-sm">- Competitive Player</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-4">⏰</div>
+              <p className="text-white font-medium mb-2">"It's like having a Fortnite coach 24/7, but way cheaper."</p>
+              <p className="text-secondary-text text-sm">- Pro Player</p>
+            </div>
+            <div className="text-center">
+              <div className="text-4xl mb-4">🏆</div>
+              <p className="text-white font-medium mb-2">"I stopped wasting hours grinding and finally started winning."</p>
+              <p className="text-secondary-text text-sm">- Tournament Winner</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Urgency Section */}
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-bold text-primary-text mb-6">
+            Every Game Without PathGen Is a Game You Don't Improve
+          </h2>
+          <div className="glass-card p-8 text-center">
+            <p className="text-xl text-white mb-4">
+              You're repeating the same mistakes right now.
+            </p>
+            <p className="text-xl text-white mb-4">
+              Your opponents are getting smarter, faster, and more consistent.
+            </p>
+            <p className="text-xl text-white mb-6">
+              Without AI coaching, you'll keep falling behind.
+            </p>
+            <p className="text-2xl text-white font-bold mb-8">
+              👉 Don't just play Fortnite. Get better at it.
+            </p>
+            <button 
+              onClick={handleUpgrade}
+              className="btn-primary text-lg px-8 py-4 font-semibold"
+            >
+              Start Free →
+            </button>
+          </div>
+        </div>
+
+        {/* Final CTA Section */}
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-white mb-4">
-            Ready to Dominate?
+          <h3 className="text-4xl font-bold text-white mb-4">
+            🔥 PathGen AI = Fortnite Improvement.
           </h3>
-          <p className="text-secondary-text mb-8 max-w-2xl mx-auto">
-            Join thousands of players who've already improved their win rate by 47% with PathGen Pro.
+          <p className="text-xl text-secondary-text mb-8">
+            It's not optional anymore. It's the fastest way to get better.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button 
@@ -196,19 +298,16 @@ export default function AIShowcaseSection() {
               className="btn-primary text-lg px-8 py-4 font-semibold group"
             >
               <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
-                Upgrade to Pro - $6.99/month
+                Start Free
               </span>
             </button>
             <button 
               onClick={() => router.push('/pricing')}
               className="btn-secondary text-lg px-8 py-4 font-semibold"
             >
-              View Full Comparison
+              Go Pro – $6.99
             </button>
           </div>
-          <p className="text-xs text-secondary-text mt-4">
-            Cancel anytime • 5-day money-back guarantee
-          </p>
         </div>
       </div>
     </section>
