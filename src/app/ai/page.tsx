@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { UsageTrackingRequest } from '@/types/subscription';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
@@ -203,12 +204,14 @@ export default function AIPage() {
     if (!inputMessage.trim() || !user || !currentChatId) return;
 
     // Track credit usage for AI chat (temporarily disabled for debugging)
+    const trackingData: UsageTrackingRequest = {
+      feature: 'message',
+      tokensUsed: 1,
+      metadata: { messageType: 'ai_chat' }
+    };
+    console.log('🔍 Sending tracking data:', JSON.stringify(trackingData));
     try {
-      await trackUsage({
-        feature: 'message',
-        tokensUsed: 1,
-        metadata: { messageType: 'ai_chat' }
-      });
+      await trackUsage(trackingData);
       console.log('✅ Credit tracking successful');
     } catch (error) {
       console.error('Failed to track credit usage:', error);
