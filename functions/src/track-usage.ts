@@ -9,7 +9,7 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
-// Track usage for a specific feature
+// Track usage for a specific feature - VERSION 2.0
 export const trackUsage = functions.https.onCall(async (request, context) => {
   if (!context?.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');

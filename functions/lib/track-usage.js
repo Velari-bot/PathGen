@@ -41,7 +41,7 @@ if (!admin.apps.length) {
     admin.initializeApp();
 }
 const db = admin.firestore();
-// Track usage for a specific feature
+// Track usage for a specific feature - VERSION 2.0
 exports.trackUsage = functions.https.onCall(async (request, context) => {
     var _a;
     if (!(context === null || context === void 0 ? void 0 : context.auth)) {
