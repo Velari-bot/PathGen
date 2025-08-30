@@ -97,8 +97,12 @@ export default function Navbar() {
                 <Link href="/pricing" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Pricing
                 </Link>
-                <Link href="/login" className="btn-secondary">
-                  Sign In
+                <Link href="/login" className="btn-secondary relative overflow-hidden" style={{
+                  animation: 'pulse-glow 2s ease-in-out infinite',
+                  boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2), 0 0 60px rgba(255, 255, 255, 0.1)'
+                }}>
+                  <span className="relative z-10">Sign In</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                 </Link>
               </>
             )}
@@ -155,8 +159,12 @@ export default function Navbar() {
                   <Link href="/pricing" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Pricing
                   </Link>
-                  <Link href="/login" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
-                    Sign In
+                  <Link href="/login" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base relative overflow-hidden" style={{
+                    animation: 'pulse-glow 2s ease-in-out infinite',
+                    boxShadow: '0 0 20px rgba(255, 255, 255, 0.3), 0 0 40px rgba(255, 255, 255, 0.2), 0 0 60px rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <span className="relative z-10">Sign In</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                   </Link>
                 </>
               )}
