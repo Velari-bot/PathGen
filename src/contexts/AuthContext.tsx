@@ -32,7 +32,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
   logout: () => Promise<void>;
-  sendEmailVerification: () => Promise<void>;
+  resendEmailVerification: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   updateUserProfile: (profile: { displayName: string; epicId: string; discordId: string; persona: string }) => Promise<void>;
 }
@@ -263,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Send email verification
       try {
-        await sendEmailVerification(auth.currentUser!);
+        await sendEmailVerification(user);
         console.log('✅ Email verification sent to new user');
       } catch (error) {
         console.warn('⚠️ Could not send email verification:', error);
@@ -464,7 +464,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const sendEmailVerification = async (): Promise<void> => {
+  const resendEmailVerification = async (): Promise<void> => {
     if (!auth || !auth.currentUser) {
       throw new Error('No user logged in');
     }
@@ -518,7 +518,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signInWithGoogle,
     logout,
-    sendEmailVerification,
+    resendEmailVerification,
     sendPasswordReset,
     updateUserProfile,
   };

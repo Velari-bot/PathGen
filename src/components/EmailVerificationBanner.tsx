@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function EmailVerificationBanner() {
-  const { user, sendEmailVerification } = useAuth();
+  const { user, resendEmailVerification } = useAuth();
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
@@ -20,7 +20,7 @@ export default function EmailVerificationBanner() {
     setResendSuccess(false);
     
     try {
-      await sendEmailVerification();
+      await resendEmailVerification();
       setResendSuccess(true);
       setTimeout(() => setResendSuccess(false), 5000); // Hide success message after 5 seconds
     } catch (error: any) {
