@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import { FirebaseService, EpicAccount, FortniteStats } from '@/lib/firebase-service';
 
 import OnboardingModal from '@/components/OnboardingModal';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 
 import { FullCreditDisplay } from '@/components/CreditDisplay';
 
@@ -746,6 +747,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-dark mobile-container">
       <Navbar />
+      <EmailVerificationBanner />
       
 
       

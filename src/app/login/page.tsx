@@ -7,6 +7,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import EmailVerificationBanner from '@/components/EmailVerificationBanner';
+import PasswordResetModal from '@/components/PasswordResetModal';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,6 +16,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
 
@@ -53,6 +56,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-dark flex flex-col">
       <Navbar />
+      
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
       
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
@@ -123,6 +129,15 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                 />
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordReset(true)}
+                    className="text-sm text-secondary-text hover:text-white transition-colors mt-1"
+                  >
+                    Forgot your password?
+                  </button>
+                )}
               </div>
 
               <button
@@ -178,6 +193,12 @@ export default function LoginPage() {
       </div>
 
       <Footer />
+      
+      {/* Password Reset Modal */}
+      <PasswordResetModal 
+        isOpen={showPasswordReset} 
+        onClose={() => setShowPasswordReset(false)} 
+      />
     </div>
   );
 }

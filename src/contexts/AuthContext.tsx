@@ -8,7 +8,9 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
-  User as FirebaseUser
+  User as FirebaseUser,
+  sendEmailVerification,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
@@ -30,6 +32,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<FirebaseUser>;
   signInWithGoogle: () => Promise<FirebaseUser>;
   logout: () => Promise<void>;
+  sendEmailVerification: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
   updateUserProfile: (profile: { displayName: string; epicId: string; discordId: string; persona: string }) => Promise<void>;
 }
 
@@ -257,6 +261,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await setDoc(doc(db, 'users', user.uid), newUser);
       console.log('✅ New comprehensive user document created in Firestore during signup');
       
+      // Send email verification
+      try {
+        await sendEmailVerification(user);
+        console.log('✅ Email verification sent to new user');
+      } catch (error) {
+        console.warn('⚠️ Could not send email verification:', error);
+      }
+      
       // Also create initial usage document
       try {
         const { UsageTracker } = await import('@/lib/usage-tracker');
@@ -452,6 +464,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendEmailVerification = async (): Promise<void> => {
+    if (!auth || !auth.currentUser) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      await sendEmailVerification(auth.currentUser);
+      console.log('✅ Email verification sent successfully');
+    } catch (error: any) {
+      console.error('Error sending email verification:', error);
+      throw error;
+    }
+  };
+
+  const sendPasswordReset = async (email: string): Promise<void> => {
+    if (!auth) {
+      throw new Error('Firebase not initialized');
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      console.log('✅ Password reset email sent successfully');
+    } catch (error: any) {
+      console.error('Error sending password reset email:', error);
+      throw error;
+    }
+  };
+
   const updateUserProfile = async (profile: { displayName: string; epicId: string; discordId: string; persona: string }): Promise<void> => {
     if (!auth || !db) {
       throw new Error('Firebase not initialized');
@@ -478,6 +518,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signInWithGoogle,
     logout,
+    sendEmailVerification,
+    sendPasswordReset,
     updateUserProfile,
   };
 
