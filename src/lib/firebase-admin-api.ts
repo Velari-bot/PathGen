@@ -1,6 +1,6 @@
 import { getApps, initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+import { getAuth as getFirebaseAuth } from 'firebase-admin/auth';
 
 let firebaseAdminInitialized = false;
 let firestoreInstance: any = null;
@@ -48,7 +48,7 @@ export function getFirebaseAdmin() {
     },
     getAuth: () => {
       if (!authInstance) {
-        authInstance = getAuth();
+        authInstance = getFirebaseAuth();
       }
       return authInstance;
     }
