@@ -440,17 +440,21 @@ async function updateAllCollectionsForUser(userId: string, plan: string, subscri
   try {
     console.log(`🔄 Updating ALL collections for user ${userId} to ${plan} tier...`);
 
-    // 1. Update user document
+    // 1. Update user document with the structure the frontend expects
     await db.collection('users').doc(userId).update({
-      subscription: subscriptionData,
-      'subscription.plan': plan,
-      'subscription.status': subscriptionData.status,
-      'subscription.tier': plan,
-      'subscription.stripeCustomerId': subscriptionData.stripeCustomerId,
-      'subscription.stripeSubscriptionId': subscriptionData.stripeSubscriptionId,
-      'subscriptionTier': plan,
-      'subscription.startDate': new Date(),
-      'subscription.autoRenew': true,
+      subscription: {
+        status: subscriptionData.status,
+        tier: plan,
+        plan: plan,
+        startDate: new Date(),
+        endDate: null,
+        autoRenew: true,
+        paymentMethod: null,
+        stripeCustomerId: subscriptionData.stripeCustomerId,
+        stripeSubscriptionId: subscriptionData.stripeSubscriptionId
+      },
+      subscriptionStatus: 'active',
+      subscriptionTier: plan,
       updatedAt: new Date()
     });
 
