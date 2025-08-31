@@ -32,7 +32,7 @@ export default function EmailVerificationBanner() {
   };
 
   return (
-    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6">
+    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-6 mt-16 sm:mt-20">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center mb-2">

@@ -34,7 +34,7 @@ export default function VerifyEmailPage() {
     <div className="min-h-screen bg-gradient-dark flex flex-col">
       <Navbar />
       <EmailVerificationBanner />
-      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-20 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-8 text-center">
         <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
           Verify Your Email
         </h1>
