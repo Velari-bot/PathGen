@@ -1,37 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-
-// Initialize Firebase Admin if not already initialized
-function initializeFirebaseAdmin() {
-  // Check if Firebase Admin is already initialized
-  if (getApps().length > 0) {
-    console.log('✅ Firebase Admin already initialized');
-    return;
-  }
-
-  // Only initialize if we have the required environment variables
-  if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_PROJECT_ID) {
-    try {
-      initializeApp({
-        credential: cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-      });
-      console.log('✅ Firebase Admin initialized successfully in check-subscription');
-    } catch (error: any) {
-      if (error.code !== 'app/duplicate-app') {
-        console.error('Failed to initialize Firebase Admin:', error);
-      } else {
-        console.log('✅ Firebase Admin already initialized (duplicate app)');
-      }
-    }
-  } else {
-    console.error('❌ Missing Firebase Admin environment variables');
-  }
-}
+import { getDb } from '@/lib/firebase-admin-api';
 
 // Subscription plan limits
 const SUBSCRIPTION_PLANS = {
@@ -66,11 +34,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Firebase Admin
-    initializeFirebaseAdmin();
-
     try {
-      const db = getFirestore();
+      const db = getDb();
 
       if (!db) {
         return NextResponse.json(
