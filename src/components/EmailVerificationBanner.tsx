@@ -9,7 +9,6 @@ export default function EmailVerificationBanner() {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [lastResendTime, setLastResendTime] = useState<number>(0);
   const [cooldownRemaining, setCooldownRemaining] = useState<number>(0);
-  const [showTroubleshooting, setShowTroubleshooting] = useState(false);
 
   // Don't show banner if user is not logged in or email is already verified
   if (!user || user.emailVerified) {
@@ -82,35 +81,13 @@ export default function EmailVerificationBanner() {
           </div>
           <p className="text-yellow-300/80 text-sm mb-3">
             Please check your email ({user.email}) and click the verification link to complete your account setup.
+            <br />
+            <span className="text-yellow-400 font-medium">💡 Don't forget to check your spam/junk folder!</span>
           </p>
           {resendSuccess && (
             <p className="text-green-400 text-sm mb-2">
-              ✅ Verification email sent! Check your inbox.
+              ✅ Verification email sent! Check your inbox and spam folder.
             </p>
-          )}
-          
-          {/* Development Helper */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-3">
-              <button
-                onClick={() => setShowTroubleshooting(!showTroubleshooting)}
-                className="text-blue-400 text-xs hover:text-blue-300 underline"
-              >
-                {showTroubleshooting ? 'Hide' : 'Show'} Troubleshooting Tips
-              </button>
-              {showTroubleshooting && (
-                <div className="mt-2 p-3 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-300">
-                  <p className="font-semibold mb-2">Development Troubleshooting:</p>
-                  <ul className="space-y-1">
-                    <li>• Check your spam/junk folder</li>
-                    <li>• Verify Firebase Auth is enabled in your project</li>
-                    <li>• Check Firebase Console → Authentication → Templates</li>
-                    <li>• Ensure your email domain is not blocked</li>
-                    <li>• Try using a different email address</li>
-                  </ul>
-                </div>
-              )}
-            </div>
           )}
         </div>
         <button

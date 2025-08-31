@@ -42,7 +42,9 @@ export default function VerifyEmailPage() {
           Please check your inbox for a verification email. Click the link in the email to activate your account.
         </p>
         <p className="text-md text-secondary-text max-w-2xl">
-          If you don't see it, please check your spam folder or use the resend option above.
+          <span className="text-yellow-400 font-medium">💡 Don't forget to check your spam/junk folder!</span>
+          <br />
+          If you don't see it, please use the resend option above.
         </p>
       </div>
       <Footer />
