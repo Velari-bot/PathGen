@@ -6,6 +6,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { UsageTrackingRequest } from '@/types/subscription';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
+import EmailVerificationGuard from '@/components/EmailVerificationGuard';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
 import { EpicConnectButton } from '@/components/EpicConnectButton';
 import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service';
@@ -636,8 +637,9 @@ export default function AIPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black mobile-container">
-      <Navbar />
+    <EmailVerificationGuard>
+      <div className="min-h-screen bg-black mobile-container">
+        <Navbar />
       
 
       
@@ -878,5 +880,6 @@ export default function AIPage() {
       
       <Footer />
     </div>
+  </EmailVerificationGuard>
   );
 }

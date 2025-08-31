@@ -278,6 +278,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('⚠️ Could not create usage document during signup:', error);
       }
 
+      // Redirect to verification page for new users
+      if (!user.emailVerified) {
+        window.location.href = '/verify-email';
+      }
+      
       return user;
     } catch (error: any) {
       console.error('Error signing up:', error);

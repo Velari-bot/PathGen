@@ -7,7 +7,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import EmailVerificationBanner from '@/components/EmailVerificationBanner';
 import PasswordResetModal from '@/components/PasswordResetModal';
 
 export default function LoginPage() {
@@ -56,9 +55,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-dark flex flex-col">
       <Navbar />
-      
-      {/* Email Verification Banner */}
-      <EmailVerificationBanner />
       
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20">
