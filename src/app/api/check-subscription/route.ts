@@ -58,6 +58,26 @@ export async function POST(request: NextRequest) {
         console.log('Found subscription in subscriptions collection:', subscriptionData);
       }
 
+      // Check webhook logs for the most recent successful pro subscription
+      const webhookLogs = await db.collection('webhookLogs')
+        .where('userId', '==', userId)
+        .where('success', '==', true)
+        .orderBy('timestamp', 'desc')
+        .limit(5)
+        .get();
+      
+      let webhookProSubscription = false;
+      if (!webhookLogs.empty) {
+        for (const doc of webhookLogs.docs) {
+          const log = doc.data();
+          if (log.plan === 'pro') {
+            webhookProSubscription = true;
+            console.log('Found pro subscription in webhook log:', log.eventType, log.timestamp);
+            break;
+          }
+        }
+      }
+
       if (!userDoc.exists) {
         // Return free tier for new users
         return NextResponse.json({
@@ -138,17 +158,25 @@ export async function POST(request: NextRequest) {
       
       // If we didn't find "pro" in the recursive search, use the direct field values
       if (!foundProSubscription) {
-        subscriptionTier = subscriptionData?.plan || 
-                          userData?.subscriptionTier || 
-                          userData?.subscription?.tier || 
-                          userData?.tier ||
-                          'free';
-                          
-        subscriptionStatus = subscriptionData?.status || 
-                            userData?.subscriptionStatus || 
-                            userData?.subscription?.status || 
-                            userData?.status ||
+        // Prioritize webhook logs over other sources
+        if (webhookProSubscription) {
+          subscriptionTier = 'pro';
+          subscriptionStatus = 'active';
+          foundProSubscription = true;
+          console.log('Using pro subscription from webhook logs');
+        } else {
+          subscriptionTier = subscriptionData?.plan || 
+                            userData?.subscriptionTier || 
+                            userData?.subscription?.tier || 
+                            userData?.tier ||
                             'free';
+                            
+          subscriptionStatus = subscriptionData?.status || 
+                              userData?.subscriptionStatus || 
+                              userData?.subscription?.status || 
+                              userData?.status ||
+                              'free';
+        }
       }
       
       // Map subscription status to active/inactive
@@ -190,11 +218,13 @@ export async function POST(request: NextRequest) {
           remaining: limits.monthlyMessages - usage.messagesUsed
         },
         limits: limits,
+        timestamp: new Date().toISOString(), // Add timestamp to prevent caching
         debug: {
           foundTier: subscriptionTier,
           foundStatus: subscriptionStatus,
           planForLimits,
           foundProSubscription,
+          webhookProSubscription,
           userDataFields: userData ? Object.keys(userData) : [],
           subscriptionFields: userData?.subscription ? Object.keys(userData.subscription) : [],
           separateSubscriptionData: subscriptionData,
