@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 export default function TestSubscriptionFixPage() {
   const { user } = useAuth();
   const [isFixing, setIsFixing] = useState(false);
+  const [isForceFixing, setIsForceFixing] = useState(false);
   const [result, setResult] = useState<string>('');
 
   const handleFixSubscription = async () => {
@@ -47,6 +48,44 @@ export default function TestSubscriptionFixPage() {
     }
   };
 
+  const handleForceFixSubscription = async () => {
+    if (!user) {
+      setResult('No user logged in');
+      return;
+    }
+
+    setIsForceFixing(true);
+    setResult('');
+
+    try {
+      const response = await fetch('/api/force-fix-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.uid,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setResult(`✅ Force Fix Success: ${data.message} (Found Pro: ${data.foundProSubscription})`);
+        // Refresh the page after a short delay to show updated subscription
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setResult(`❌ Force Fix Error: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      setResult(`❌ Force Fix Network Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsForceFixing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-dark">
       <Navbar />
@@ -61,10 +100,18 @@ export default function TestSubscriptionFixPage() {
             
             <button
               onClick={handleFixSubscription}
-              disabled={isFixing || !user}
-              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isFixing || isForceFixing || !user}
+              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed mb-3"
             >
               {isFixing ? 'Fixing...' : 'Fix My Subscription'}
+            </button>
+            
+            <button
+              onClick={handleForceFixSubscription}
+              disabled={isFixing || isForceFixing || !user}
+              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isForceFixing ? 'Force Fixing...' : 'Force Fix (Check Webhook Logs)'}
             </button>
             
             {result && (

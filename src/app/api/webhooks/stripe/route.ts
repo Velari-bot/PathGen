@@ -458,6 +458,11 @@ async function updateAllCollectionsForUser(userId: string, plan: string, subscri
       updatedAt: new Date()
     });
 
+    // Also update the top-level subscriptionTier field to ensure it's always set
+    await db.collection('users').doc(userId).update({
+      subscriptionTier: plan
+    });
+
     // 2. Update or create subscription document
     const subscriptionsSnapshot = await db.collection('subscriptions')
       .where('userId', '==', userId)
@@ -489,9 +494,11 @@ async function updateAllCollectionsForUser(userId: string, plan: string, subscri
     if (!usageSnapshot.empty) {
       // Update existing usage
       await usageSnapshot.docs[0].ref.update(usageData);
+      console.log(`✅ Updated usage document for ${userId} to ${plan} tier`);
     } else {
       // Create new usage document
       await db.collection('usage').add(usageData);
+      console.log(`✅ Created usage document for ${userId} with ${plan} tier`);
     }
 
     console.log(`✅ Successfully updated user ${userId} to ${plan} tier across all collections`);

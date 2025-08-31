@@ -46,6 +46,12 @@ export async function POST(request: NextRequest) {
     };
 
     await db.collection('users').doc(userId).update(subscriptionData);
+    
+    // Also ensure the top-level subscriptionTier field is set
+    await db.collection('users').doc(userId).update({
+      subscriptionTier: plan
+    });
+    
     console.log(`✅ Updated user document for ${userId} to ${plan} tier`);
 
     // Update usage document
