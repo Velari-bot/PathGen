@@ -1,0 +1,45 @@
+# Manual deployment workflow
+# This workflow can be triggered manually from GitHub Actions
+
+name: Manual Deploy to Firebase
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build project
+        run: npm run build
+      
+      - name: Deploy to Firebase Hosting
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only hosting --project pathgen-a771b
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+      
+      - name: Deployment Status
+        run: |
+          echo "✅ Deployment to ${{ github.event.inputs.environment }} completed!"
+          echo "🌐 Site URL: https://pathgen-a771b.web.app"
