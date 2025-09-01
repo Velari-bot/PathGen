@@ -2,23 +2,20 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import Navbar from '@/components/Navbar';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
-export default function TestSubscriptionFixPage() {
+export default function TestSubscriptionFix() {
   const { user } = useAuth();
+  const { subscription, loading } = useSubscription();
   const [isFixing, setIsFixing] = useState(false);
-  const [isForceFixing, setIsForceFixing] = useState(false);
-  const [result, setResult] = useState<string>('');
+  const [result, setResult] = useState<any>(null);
 
-  const handleFixSubscription = async () => {
-    if (!user) {
-      setResult('No user logged in');
-      return;
-    }
-
+  const fixSubscription = async () => {
+    if (!user) return;
+    
     setIsFixing(true);
-    setResult('');
-
+    setResult(null);
+    
     try {
       const response = await fetch('/api/fix-user-subscription', {
         method: 'POST',
@@ -29,36 +26,26 @@ export default function TestSubscriptionFixPage() {
           userId: user.uid,
         }),
       });
-
+      
       const data = await response.json();
-
-      if (response.ok) {
-        setResult(`✅ Success: ${data.message}`);
-        // Refresh the page after a short delay to show updated subscription
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        setResult(`❌ Error: ${data.error || 'Unknown error'}`);
+      setResult(data);
+      
+      if (data.success) {
+        // Reload the page to refresh subscription context
+        window.location.reload();
       }
     } catch (error) {
-      setResult(`❌ Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setResult({ error: 'Failed to fix subscription', details: error });
     } finally {
       setIsFixing(false);
     }
   };
 
-  const handleForceFixSubscription = async () => {
-    if (!user) {
-      setResult('No user logged in');
-      return;
-    }
-
-    setIsForceFixing(true);
-    setResult('');
-
+  const checkSubscription = async () => {
+    if (!user) return;
+    
     try {
-      const response = await fetch('/api/force-fix-subscription', {
+      const response = await fetch('/api/check-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,67 +54,63 @@ export default function TestSubscriptionFixPage() {
           userId: user.uid,
         }),
       });
-
+      
       const data = await response.json();
-
-      if (response.ok) {
-        setResult(`✅ Force Fix Success: ${data.message} (Found Pro: ${data.foundProSubscription})`);
-        // Refresh the page after a short delay to show updated subscription
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
-      } else {
-        setResult(`❌ Force Fix Error: ${data.error || 'Unknown error'}`);
-      }
+      setResult(data);
     } catch (error) {
-      setResult(`❌ Force Fix Network Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsForceFixing(false);
+      setResult({ error: 'Failed to check subscription', details: error });
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark">
-      <Navbar />
-      <div className="container mx-auto px-4 py-20">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold text-white mb-6">Fix Subscription</h1>
-          
-          <div className="bg-dark-gray border border-white/10 rounded-lg p-6">
-            <p className="text-white mb-4">
-              User ID: <span className="text-blue-400">{user?.uid || 'Not logged in'}</span>
-            </p>
-            
-            <button
-              onClick={handleFixSubscription}
-              disabled={isFixing || isForceFixing || !user}
-              className="w-full btn-primary py-3 disabled:opacity-50 disabled:cursor-not-allowed mb-3"
-            >
-              {isFixing ? 'Fixing...' : 'Fix My Subscription'}
-            </button>
-            
-            <button
-              onClick={handleForceFixSubscription}
-              disabled={isFixing || isForceFixing || !user}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isForceFixing ? 'Force Fixing...' : 'Force Fix (Check Webhook Logs)'}
-            </button>
-            
-            {result && (
-              <div className="mt-4 p-3 rounded-lg text-sm">
-                {result.startsWith('✅') ? (
-                  <div className="bg-green-500/10 border border-green-500/20 text-green-400">
-                    {result}
-                  </div>
-                ) : (
-                  <div className="bg-red-500/10 border border-red-500/20 text-red-400">
-                    {result}
-                  </div>
-                )}
-              </div>
-            )}
+    <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">🔧 Subscription Fix Tool</h1>
+        
+        <div className="bg-gray-800 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4">Current Status</h2>
+          <div className="space-y-2">
+            <p><strong>User ID:</strong> {user?.uid || 'Not logged in'}</p>
+            <p><strong>Subscription Tier:</strong> {subscription?.tier || 'free'}</p>
+            <p><strong>Subscription Status:</strong> {subscription?.status || 'free'}</p>
+            <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <button
+            onClick={checkSubscription}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+          >
+            🔍 Check Subscription Status
+          </button>
+          
+          <button
+            onClick={fixSubscription}
+            disabled={isFixing}
+            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
+          >
+            {isFixing ? '🔧 Fixing...' : '🔧 Fix Subscription Status'}
+          </button>
+        </div>
+
+        {result && (
+          <div className="bg-gray-800 rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">Result</h3>
+            <pre className="bg-gray-900 p-4 rounded text-sm overflow-auto">
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          </div>
+        )}
+
+        <div className="bg-yellow-900 border border-yellow-600 rounded-lg p-6 mt-6">
+          <h3 className="text-lg font-semibold text-yellow-200 mb-2">Instructions</h3>
+          <ol className="list-decimal list-inside space-y-2 text-yellow-100">
+            <li>Click "Check Subscription Status" to see your current subscription data</li>
+            <li>If you're on Pro but it shows "free", click "Fix Subscription Status"</li>
+            <li>The page will reload automatically after fixing</li>
+            <li>Check if the subscription status is now correct</li>
+          </ol>
         </div>
       </div>
     </div>

@@ -2,26 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 export default function GamifiedProgressTracker() {
   const { user } = useAuth();
+  const { subscription } = useSubscription();
   const [skillScore, setSkillScore] = useState(68);
   const [targetScore, setTargetScore] = useState(82);
   const [progress, setProgress] = useState(0);
   const [level, setLevel] = useState('Intermediate');
   const [nextMilestone, setNextMilestone] = useState('Advanced');
 
+  // Only show progress animation if user is NOT pro
+  const isPro = subscription?.tier === 'pro';
+  
   useEffect(() => {
-    // Simulate progress updates
+    // Only simulate progress updates for non-pro users to encourage upgrade
+    if (isPro) {
+      setProgress(100); // Pro users have max progress
+      return;
+    }
+
+    // Simulate progress updates only for free users
     const interval = setInterval(() => {
       setProgress(prev => {
         const newProgress = prev + Math.random() * 2;
-        return Math.min(newProgress, 100);
+        return Math.min(newProgress, 85); // Cap at 85% for free users
       });
     }, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isPro]);
 
   const getProgressColor = () => {
     if (progress < 30) return 'text-red-400';
@@ -88,12 +99,20 @@ export default function GamifiedProgressTracker() {
       </div>
 
       <div className="text-center">
-        <div className="text-lg font-semibold text-white mb-2">
-          +{targetScore - skillScore} Skill Points Available
-        </div>
-        <div className="text-secondary-text text-sm">
-          Upgrade to Pro to unlock your full potential
-        </div>
+        {isPro ? (
+          <div className="text-lg font-semibold text-green-400 mb-2">
+            ✅ Pro Member - Full Access Unlocked
+          </div>
+        ) : (
+          <>
+            <div className="text-lg font-semibold text-white mb-2">
+              +{targetScore - skillScore} Skill Points Available
+            </div>
+            <div className="text-secondary-text text-sm">
+              Upgrade to Pro to unlock your full potential
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
