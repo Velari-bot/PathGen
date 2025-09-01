@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { CreditSystem, CREDIT_COSTS, UserCredits } from '@/lib/credit-system';
-import { creditTracker } from '@/lib/credit-tracker';
+import { CreditSystem, CREDIT_COSTS, UserCredits } from '@/lib/credit-system-client';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 

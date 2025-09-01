@@ -10,6 +10,7 @@ import { FirebaseService, EpicAccount, FortniteStats } from '@/lib/firebase-serv
 
 import OnboardingModal from '@/components/OnboardingModal';
 import EmailVerificationGuard from '@/components/EmailVerificationGuard';
+import GamifiedProgressTracker from '@/components/GamifiedProgressTracker';
 
 import { FullCreditDisplay } from '@/components/CreditDisplay';
 
@@ -769,6 +770,9 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Credit Display Section */}
           <FullCreditDisplay />
+          
+          {/* Progress Tracker Section */}
+          <GamifiedProgressTracker />
           
           {/* Combined Epic Account, AI Coaching, and Fortnite Stats Section */}
           <div className="glass-card p-6">

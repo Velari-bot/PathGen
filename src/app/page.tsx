@@ -7,6 +7,8 @@ import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import AIShowcaseSection from '@/components/AIShowcaseSection';
 import PersonaSelector from '@/components/PersonaSelector';
+import InteractiveDemo from '@/components/InteractiveDemo';
+import CommunitySection from '@/components/CommunitySection';
 import Footer from '@/components/Footer';
 import SmoothScroll from '@/components/SmoothScroll';
 
@@ -39,6 +41,8 @@ export default function HomePage() {
         <div className="pt-14 sm:pt-16"> {/* Account for fixed navbar height */}
           <HeroSection />
           <AIShowcaseSection />
+          <InteractiveDemo />
+          <CommunitySection />
           <PersonaSelector />
         </div>
         <Footer />

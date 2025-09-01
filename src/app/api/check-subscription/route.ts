@@ -61,16 +61,13 @@ export async function POST(request: NextRequest) {
       // Check webhook logs for the most recent successful pro subscription
       const webhookLogs = await db.collection('webhookLogs')
         .where('userId', '==', userId)
-        .where('success', '==', true)
-        .orderBy('timestamp', 'desc')
-        .limit(5)
         .get();
       
       let webhookProSubscription = false;
       if (!webhookLogs.empty) {
         for (const doc of webhookLogs.docs) {
           const log = doc.data();
-          if (log.plan === 'pro') {
+          if (log.plan === 'pro' && log.success === true) {
             webhookProSubscription = true;
             console.log('Found pro subscription in webhook log:', log.eventType, log.timestamp);
             break;
@@ -257,14 +254,25 @@ export async function POST(request: NextRequest) {
       
       throw firestoreError;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking subscription:', error);
+    console.error('Error details:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code
+    });
     
     // Return a more user-friendly error message
     return NextResponse.json(
       { 
         error: 'Unable to verify subscription status',
-        message: 'Please try again later or contact support if the issue persists'
+        message: 'Please try again later or contact support if the issue persists',
+        debug: {
+          errorName: error?.name,
+          errorMessage: error?.message,
+          errorCode: error?.code
+        }
       },
       { status: 500 }
     );

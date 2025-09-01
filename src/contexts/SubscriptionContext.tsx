@@ -32,6 +32,16 @@ interface SubscriptionContextType {
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
+// Helper function to determine if consistency check is needed
+function shouldCheckConsistency(subscription: any): boolean {
+  // Check for common inconsistency indicators
+  const hasMissingFields = !subscription.tier || !subscription.status || !subscription.plan;
+  const hasInvalidStatus = subscription.status === 'undefined' || subscription.status === 'null';
+  const hasInvalidTier = subscription.tier === 'undefined' || subscription.tier === 'null';
+  
+  return hasMissingFields || hasInvalidStatus || hasInvalidTier;
+}
+
 export function SubscriptionProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -56,7 +66,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     // Listen to user document for subscription changes
     const unsubscribeUser = onSnapshot(
       doc(db, 'users', user.uid),
-      (doc) => {
+      async (doc) => {
         if (doc.exists()) {
           const data = doc.data();
           const userSubscription = data.subscription;
@@ -70,6 +80,27 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
             setLimits(PLAN_LIMITS[userSubscription.tier as SubscriptionTier]);
           } else {
             setLimits(PLAN_LIMITS.free);
+          }
+
+          // Check for subscription consistency issues
+          if (userSubscription && shouldCheckConsistency(userSubscription)) {
+            console.log('🔍 Checking subscription consistency...');
+            try {
+              const response = await fetch('/api/check-subscription-consistency', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.uid })
+              });
+              
+              if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.consistencyCheck.updatedFields.length > 0) {
+                  console.log('✅ Subscription consistency restored:', result.consistencyCheck.updatedFields);
+                }
+              }
+            } catch (error) {
+              console.warn('⚠️ Failed to check subscription consistency:', error);
+            }
           }
         }
         setLoading(false);

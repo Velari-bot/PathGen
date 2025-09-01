@@ -1,3 +1,5 @@
+import { getDb } from '@/lib/firebase-admin-api';
+
 export interface CreditCost {
   feature: string;
   cost: number;
@@ -24,6 +26,16 @@ export interface UserCredits {
   lastReset: Date;
   plan: string;
   expiresAt?: Date;
+}
+
+export interface CreditUsageLog {
+  userId: string;
+  feature: string;
+  cost: number;
+  timestamp: Date;
+  success: boolean;
+  metadata?: any;
+  sessionId?: string;
 }
 
 // Credit costs for different features
@@ -200,6 +212,302 @@ export const CREDIT_PACKS: CreditPlan[] = [
     ]
   }
 ];
+
+// Credit tracking system
+export class CreditTracker {
+  private static readonly MAX_RETRIES = 3;
+  private static readonly RETRY_DELAY = 1000;
+
+  /**
+   * Track credit usage immediately when action is triggered
+   * This happens BEFORE the action is executed, regardless of success/failure
+   */
+  static async trackCreditUsage(
+    userId: string, 
+    feature: string, 
+    metadata?: any,
+    sessionId?: string
+  ): Promise<{ success: boolean; availableCredits: number; error?: string }> {
+    try {
+      const db = getDb();
+      const cost = this.getCreditCost(feature);
+      
+      if (cost === 0) {
+        return { success: true, availableCredits: 0 };
+      }
+
+      // Get current user credits
+      const userCreditsRef = db.collection('usage').where('userId', '==', userId);
+      const userCreditsSnapshot = await userCreditsRef.get();
+
+      let userCredits: any;
+      let userCreditsDocRef: any;
+
+      if (userCreditsSnapshot.empty) {
+        // Create new credits document for user
+        userCredits = {
+          userId,
+          totalCredits: 250, // Default free credits
+          usedCredits: 0,
+          availableCredits: 250,
+          lastReset: new Date(),
+          plan: 'free',
+          updatedAt: new Date()
+        };
+        userCreditsDocRef = await db.collection('usage').add(userCredits);
+      } else {
+        userCreditsDocRef = userCreditsSnapshot.docs[0].ref;
+        userCredits = userCreditsSnapshot.docs[0].data();
+      }
+
+      // Check if user has enough credits
+      if (userCredits.availableCredits < cost) {
+        return { 
+          success: false, 
+          availableCredits: userCredits.availableCredits,
+          error: 'Insufficient credits' 
+        };
+      }
+
+      // Update credits immediately
+      const newUsedCredits = userCredits.usedCredits + cost;
+      const newAvailableCredits = userCredits.availableCredits - cost;
+
+      await this.updateWithRetry(async () => {
+        await userCreditsDocRef.update({
+          usedCredits: newUsedCredits,
+          availableCredits: newAvailableCredits,
+          updatedAt: new Date()
+        });
+      });
+
+      // Log the credit usage
+      await this.updateWithRetry(async () => {
+        await db.collection('creditUsageLogs').add({
+          userId,
+          feature,
+          cost,
+          timestamp: new Date(),
+          success: true, // We'll update this later if the action fails
+          metadata,
+          sessionId,
+          availableCreditsAfter: newAvailableCredits
+        });
+      });
+
+      return { 
+        success: true, 
+        availableCredits: newAvailableCredits 
+      };
+
+    } catch (error) {
+      console.error('Error tracking credit usage:', error);
+      return { 
+        success: false, 
+        availableCredits: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  /**
+   * Update credit usage log with final result
+   * Call this after the action completes to mark success/failure
+   */
+  static async updateCreditUsageResult(
+    userId: string,
+    feature: string,
+    sessionId: string,
+    success: boolean,
+    finalMetadata?: any
+  ): Promise<void> {
+    try {
+      const db = getDb();
+      
+      // Find the credit usage log by sessionId
+      const usageLogRef = db.collection('creditUsageLogs')
+        .where('userId', '==', userId)
+        .where('sessionId', '==', sessionId)
+        .where('feature', '==', feature)
+        .orderBy('timestamp', 'desc')
+        .limit(1);
+
+      const usageLogSnapshot = await usageLogRef.get();
+      
+      if (!usageLogSnapshot.empty) {
+        const logDoc = usageLogSnapshot.docs[0];
+        await logDoc.ref.update({
+          success,
+          finalMetadata,
+          completedAt: new Date()
+        });
+      }
+
+    } catch (error) {
+      console.error('Error updating credit usage result:', error);
+    }
+  }
+
+  /**
+   * Refund credits if action fails
+   * Call this if the action fails and you want to refund the credits
+   */
+  static async refundCredits(
+    userId: string,
+    feature: string,
+    sessionId: string
+  ): Promise<{ success: boolean; availableCredits: number }> {
+    try {
+      const db = getDb();
+      const cost = this.getCreditCost(feature);
+
+      // Find the credit usage log
+      const usageLogRef = db.collection('creditUsageLogs')
+        .where('userId', '==', userId)
+        .where('sessionId', '==', sessionId)
+        .where('feature', '==', feature)
+        .orderBy('timestamp', 'desc')
+        .limit(1);
+
+      const usageLogSnapshot = await usageLogRef.get();
+      
+      if (usageLogSnapshot.empty) {
+        return { success: false, availableCredits: 0 };
+      }
+
+      const logDoc = usageLogSnapshot.docs[0];
+      const logData = logDoc.data();
+
+      // Update user credits
+      const userCreditsRef = db.collection('usage').where('userId', '==', userId);
+      const userCreditsSnapshot = await userCreditsRef.get();
+
+      if (!userCreditsSnapshot.empty) {
+        const userCreditsDoc = userCreditsSnapshot.docs[0];
+        const userCredits = userCreditsDoc.data();
+
+        const newUsedCredits = userCredits.usedCredits - cost;
+        const newAvailableCredits = userCredits.availableCredits + cost;
+
+        await this.updateWithRetry(async () => {
+          await userCreditsDoc.ref.update({
+            usedCredits: newUsedCredits,
+            availableCredits: newAvailableCredits,
+            updatedAt: new Date()
+          });
+        });
+
+        // Mark the log as refunded
+        await this.updateWithRetry(async () => {
+          await logDoc.ref.update({
+            refunded: true,
+            refundedAt: new Date(),
+            availableCreditsAfter: newAvailableCredits
+          });
+        });
+
+        return { 
+          success: true, 
+          availableCredits: newAvailableCredits 
+        };
+      }
+
+      return { success: false, availableCredits: 0 };
+
+    } catch (error) {
+      console.error('Error refunding credits:', error);
+      return { 
+        success: false, 
+        availableCredits: 0 
+      };
+    }
+  }
+
+  /**
+   * Get current user credits
+   */
+  static async getUserCredits(userId: string): Promise<UserCredits | null> {
+    try {
+      const db = getDb();
+      const userCreditsRef = db.collection('usage').where('userId', '==', userId);
+      const userCreditsSnapshot = await userCreditsRef.get();
+
+      if (userCreditsSnapshot.empty) {
+        return null;
+      }
+
+      const userCredits = userCreditsSnapshot.docs[0].data();
+      return {
+        userId: userCredits.userId,
+        totalCredits: userCredits.totalCredits,
+        usedCredits: userCredits.usedCredits,
+        availableCredits: userCredits.availableCredits,
+        lastReset: userCredits.lastReset.toDate(),
+        plan: userCredits.plan,
+        expiresAt: userCredits.expiresAt?.toDate()
+      };
+
+    } catch (error) {
+      console.error('Error getting user credits:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Check if user can afford a feature
+   */
+  static async canAffordFeature(userId: string, feature: string): Promise<boolean> {
+    try {
+      const userCredits = await this.getUserCredits(userId);
+      if (!userCredits) return false;
+
+      const cost = this.getCreditCost(feature);
+      return userCredits.availableCredits >= cost;
+
+    } catch (error) {
+      console.error('Error checking if user can afford feature:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get credit cost for a feature
+   */
+  static getCreditCost(feature: string): number {
+    const cost = CREDIT_COSTS.find(c => c.feature === feature);
+    return cost ? cost.cost : 0;
+  }
+
+  /**
+   * Retry mechanism for database operations
+   */
+  private static async updateWithRetry(updateFunction: () => Promise<void>): Promise<void> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
+      try {
+        await updateFunction();
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < this.MAX_RETRIES) {
+          console.log(`⚠️ Credit update attempt ${attempt} failed, retrying in ${this.RETRY_DELAY}ms...`);
+          await this.delay(this.RETRY_DELAY * attempt);
+        }
+      }
+    }
+
+    throw lastError || new Error('Max retries exceeded');
+  }
+
+  /**
+   * Utility function for delays
+   */
+  private static delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+}
 
 // Credit system utilities
 export class CreditSystem {

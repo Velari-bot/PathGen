@@ -7,8 +7,7 @@ import Navbar from '@/components/Navbar';
 import SmoothScroll from '@/components/SmoothScroll';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { creditTracker } from '@/lib/credit-tracker';
-import { CreditSystem } from '@/lib/credit-system';
+import { CreditSystem } from '@/lib/credit-system-client';
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -102,54 +101,76 @@ export default function SettingsPage() {
         setUserProfile((prev: any) => prev ? { ...prev, subscriptionTier: 'pro' } : null);
       }
       
-      // Get user credits from credit tracker
-      let credits = creditTracker.getUserCredits(user.uid);
-      
-      // If no credits found, initialize them
-      if (!credits) {
-        credits = await creditTracker.initializeUserCredits(user.uid, currentTier === 'standard' ? 'pro' : currentTier);
-      }
-      
-      // Ensure the plan matches the userProfile subscription tier and set correct credits
-      if (credits && userProfile?.subscriptionTier) {
-        credits.plan = userProfile.subscriptionTier;
-        
-        // Ensure Pro users have 4000 credits
-        if (userProfile.subscriptionTier === 'pro' || userProfile.subscriptionTier === 'standard') {
-          credits.totalCredits = 4000;
-          credits.availableCredits = 4000;
-          credits.plan = 'pro';
+      // Get user credits from usage collection
+      try {
+        if (!db) {
+          throw new Error('Database not initialized');
         }
-      }
-      
-      setUserCredits(credits);
-    } catch (error) {
-      console.error('Failed to load user credits:', error);
-      // Set default credits if there's an error
-      const currentTier = userProfile?.subscriptionTier || 'free';
-      const defaultCredits = currentTier === 'free' ? 250 : 4000;
-      
-      const mockCredits = {
-        userId: user.uid,
-        totalCredits: defaultCredits,
-        usedCredits: 0,
-        availableCredits: defaultCredits,
-        lastReset: new Date(),
-        plan: currentTier === 'standard' ? 'pro' : currentTier,
-        expiresAt: currentTier === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      };
-      
-      // Ensure Pro users get 4000 credits
-      if (currentTier === 'pro' || currentTier === 'standard') {
-        mockCredits.totalCredits = 4000;
-        mockCredits.availableCredits = 4000;
-        mockCredits.plan = 'pro';
-      }
-      
-      setUserCredits(mockCredits);
-    } finally {
-      setIsLoadingCredits(false);
-    }
+        
+        const usageDocRef = doc(db, 'usage', user.uid);
+        const usageDoc = await getDoc(usageDocRef);
+        
+        let credits;
+        if (usageDoc.exists()) {
+          credits = usageDoc.data();
+        } else {
+          // Initialize default credits based on subscription tier
+          const defaultCredits = currentTier === 'free' ? 250 : 4000;
+          credits = {
+            userId: user.uid,
+            totalCredits: defaultCredits,
+            usedCredits: 0,
+            availableCredits: defaultCredits,
+            lastReset: new Date(),
+            plan: currentTier === 'standard' ? 'pro' : currentTier,
+            expiresAt: currentTier === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          };
+          
+          // Save to Firestore
+          await updateDoc(usageDocRef, credits);
+        }
+        
+        // Ensure the plan matches the userProfile subscription tier and set correct credits
+        if (credits && userProfile?.subscriptionTier) {
+          credits.plan = userProfile.subscriptionTier;
+          
+          // Ensure Pro users have 4000 credits
+          if (userProfile.subscriptionTier === 'pro' || userProfile.subscriptionTier === 'standard') {
+            credits.totalCredits = 4000;
+            credits.availableCredits = 4000;
+            credits.plan = 'pro';
+          }
+        }
+        
+        setUserCredits(credits);
+      } catch (error) {
+        console.error('Failed to load user credits:', error);
+        // Set default credits if there's an error
+        const currentTier = userProfile?.subscriptionTier || 'free';
+        const defaultCredits = currentTier === 'free' ? 250 : 4000;
+        
+        const mockCredits = {
+          userId: user.uid,
+          totalCredits: defaultCredits,
+          usedCredits: 0,
+          availableCredits: defaultCredits,
+          lastReset: new Date(),
+          plan: currentTier === 'standard' ? 'pro' : currentTier,
+          expiresAt: currentTier === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        };
+        
+        // Ensure Pro users get 4000 credits
+        if (currentTier === 'pro' || currentTier === 'standard') {
+          mockCredits.totalCredits = 4000;
+          mockCredits.availableCredits = 4000;
+          mockCredits.plan = 'pro';
+        }
+        
+                 setUserCredits(mockCredits);
+       }
+     } finally {
+       setIsLoadingCredits(false);
+     }
   };
 
   const disconnectEpicAccount = () => {

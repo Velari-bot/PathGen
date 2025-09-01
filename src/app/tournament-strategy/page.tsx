@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { TournamentStrategyService } from '@/lib/tournament-strategy';
 import { TournamentDivision, CompetitiveStrategy } from '@/types';
+import { NAC_TOURNAMENT_DATA, getTournamentEstimate, isUserSafe } from '@/lib/tournament-data';
+import { ALL_TOURNAMENT_DATA, getTournamentsByRegion } from '@/lib/tournament-data';
 
 export default function TournamentStrategyPage() {
   const [selectedDivision, setSelectedDivision] = useState<number>(1);
@@ -81,6 +83,90 @@ export default function TournamentStrategyPage() {
                   <div>⏰ Start on time</div>
                   <div>🎯 Focus on placement</div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tournament Estimates by Region */}
+          <div className="glass-card p-6 mb-8">
+            <h2 className="text-2xl font-semibold text-white mb-4">🏆 Tournament Point Estimates</h2>
+            
+            {/* NAC Region */}
+            <div className="mb-8">
+              <h3 className="text-xl font-semibold text-blue-400 mb-4">🇺🇸 North America Central (NAC)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(NAC_TOURNAMENT_DATA).map(([id, tournament]: [string, any]) => (
+                  <div key={id} className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <h4 className="text-lg font-semibold text-blue-400 mb-3">{tournament.name}</h4>
+                    <div className="space-y-2 text-sm text-gray-300 mb-4">
+                      <div className="flex justify-between">
+                        <span>Top 100:</span>
+                        <span className="text-yellow-400 font-semibold">{tournament.thresholds['top-100']} pts</span>
+                      </div>
+                      {('top-500' in tournament.thresholds) && (
+                        <div className="flex justify-between">
+                          <span>Top 500:</span>
+                          <span className="text-green-400 font-semibold">{tournament.thresholds['top-500']} pts</span>
+                        </div>
+                      )}
+                      {('top-1800' in tournament.thresholds) && (
+                        <div className="flex justify-between">
+                          <span>Top 1800:</span>
+                          <span className="text-purple-400 font-semibold">{tournament.thresholds['top-1800']} pts</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Safe Threshold:</span>
+                        <span className="text-red-400 font-semibold">{tournament.thresholds['safe-threshold']} pts</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 border-t border-white/10 pt-2">
+                      <div className="mb-1">💡 {tournament.breakdown.example}</div>
+                      <div>⏰ {tournament.breakdown.safeQueueTime}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* EU Region */}
+            <div>
+              <h3 className="text-xl font-semibold text-green-400 mb-4">🇪🇺 Europe (EU)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(getTournamentsByRegion('EU')).map(([id, tournament]: [string, any]) => (
+                  <div key={id} className="bg-white/5 p-4 rounded-lg border border-white/10">
+                    <h4 className="text-lg font-semibold text-green-400 mb-3">{tournament.name}</h4>
+                    <div className="space-y-2 text-sm text-gray-300 mb-4">
+                      <div className="flex justify-between">
+                        <span>Top 100:</span>
+                        <span className="text-yellow-400 font-semibold">{tournament.thresholds['top-100']} pts</span>
+                      </div>
+                      {('top-500' in tournament.thresholds) && (
+                        <div className="flex justify-between">
+                          <span>Top 500:</span>
+                          <span className="text-green-400 font-semibold">{tournament.thresholds['top-500']} pts</span>
+                        </div>
+                      )}
+                      {('top-2000' in tournament.thresholds) && (
+                        <div className="flex justify-between">
+                          <span>Top 2000:</span>
+                          <span className="text-purple-400 font-semibold">{tournament.thresholds['top-2000']} pts</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Safe Threshold:</span>
+                        <span className="text-red-400 font-semibold">{tournament.thresholds['safe-threshold']} pts</span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 border-t border-white/10 pt-2">
+                      <div className="mb-1">💡 {tournament.breakdown.example}</div>
+                      {tournament.breakdown.alternativeExample && (
+                        <div className="mb-1">💡 {tournament.breakdown.alternativeExample}</div>
+                      )}
+                      <div>⏰ {tournament.breakdown.safeQueueTime}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

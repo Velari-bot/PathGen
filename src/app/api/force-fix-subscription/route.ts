@@ -15,7 +15,6 @@ export async function POST(request: NextRequest) {
     // Get ALL webhook logs for this user to find the latest pro subscription
     const webhookLogs = await db.collection('webhookLogs')
       .where('userId', '==', userId)
-      .orderBy('timestamp', 'desc')
       .get();
 
     let plan = 'free';

@@ -14,8 +14,9 @@ export const viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
-  title: 'PathGen - AI-Powered Fortnite Improvement',
-  description: 'Get personalized Fortnite coaching with AI analysis of your gameplay stats. Improve your building, strategy, and overall performance.',
+  title: 'PathGen AI - Your AI Fortnite Coach | Improve Building, Strategy & Win Rate',
+  description: 'Get personalized Fortnite coaching with AI analysis. Improve your building, strategy, K/D ratio, and win rate. Upload stats, get instant feedback, and dominate your friends.',
+  keywords: 'Fortnite improvement, AI coaching, Fortnite strategy, building practice, win rate, K/D ratio, Fortnite tips, competitive Fortnite, Fortnite analysis',
   icons: {
     icon: [
       {
@@ -34,15 +35,15 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   openGraph: {
-    title: 'PathGen - AI-Powered Fortnite Improvement',
-    description: 'Get personalized Fortnite coaching with AI analysis of your gameplay stats.',
+    title: 'PathGen AI - Your AI Fortnite Coach | Improve Building, Strategy & Win Rate',
+    description: 'Get personalized Fortnite coaching with AI analysis. Improve your building, strategy, K/D ratio, and win rate.',
     type: 'website',
     images: ['/Black PathGen logo.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PathGen - AI-Powered Fortnite Improvement',
-    description: 'Get personalized Fortnite coaching with AI analysis of your gameplay stats.',
+    title: 'PathGen AI - Your AI Fortnite Coach | Improve Building, Strategy & Win Rate',
+    description: 'Get personalized Fortnite coaching with AI analysis. Improve your building, strategy, K/D ratio, and win rate.',
     images: ['/Black PathGen logo.png'],
   },
 }

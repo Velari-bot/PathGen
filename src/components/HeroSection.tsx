@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import Image from 'next/image';
@@ -10,6 +10,54 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function HeroSection() {
   const router = useRouter();
   const { user } = useAuth();
+  const [currentTitleIndex, setCurrentTitleIndex] = useState(0);
+  const [displayText, setDisplayText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+
+  const titles = [
+    "Your AI Fortnite Coach",
+    "The AI Coach That Makes You Better", 
+    "Unlock Pro-Level Gameplay"
+  ];
+
+  useEffect(() => {
+    let currentIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+
+    const typeText = () => {
+      const currentTitle = titles[currentIndex];
+      
+      if (isDeleting) {
+        setDisplayText(currentTitle.substring(0, charIndex - 1));
+        charIndex--;
+      } else {
+        setDisplayText(currentTitle.substring(0, charIndex + 1));
+        charIndex++;
+      }
+
+      let typeSpeed = 100;
+
+      if (isDeleting) {
+        typeSpeed = 50;
+      } else {
+        typeSpeed = 150;
+      }
+
+      if (!isDeleting && charIndex === currentTitle.length) {
+        typeSpeed = 2000; // Pause at end
+        isDeleting = true;
+      } else if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        currentIndex = (currentIndex + 1) % titles.length;
+        typeSpeed = 500; // Pause before next word
+      }
+
+      setTimeout(typeText, typeSpeed);
+    };
+
+    typeText();
+  }, []);
 
   const handleTryForFree = () => {
     if (user) {
@@ -150,18 +198,17 @@ export default function HeroSection() {
           </div>
         </div>
 
-        {/* Main Title */}
+        {/* Main Title with Typing Animation */}
         <h1 className="hero-title text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold mb-4 sm:mb-6 leading-tight">
-          <span className="text-primary-text">🔥 The AI Coach That</span>
-          <br />
-          <span className="text-gradient bg-gradient-to-r from-white via-gray-200 to-white bg-clip-text text-transparent">
-            Makes You Better
+          <span className="text-primary-text">
+            {displayText}
+            <span className="animate-pulse">|</span>
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="hero-subtitle text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl text-secondary-text mb-8 sm:mb-10 lg:mb-12 max-w-4xl mx-auto leading-relaxed px-4">
-          Stop guessing why you lose. Upload your stats, get instant coaching, and finally start improving.
+          Unlock pro-level gameplay insights with PathGen AI.
         </p>
 
         {/* CTA Buttons */}
@@ -171,7 +218,7 @@ export default function HeroSection() {
             className="btn-primary text-sm sm:text-base lg:text-lg px-6 sm:px-8 py-3 sm:py-4 group w-full sm:w-auto touch-friendly"
           >
             <span className="group-hover:scale-110 transition-transform duration-300 inline-block">
-              Start Free →
+              Start Free – Upgrade Anytime
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-white to-gray-200 rounded-xl opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
           </button>
@@ -204,6 +251,21 @@ export default function HeroSection() {
           <div className="text-center mobile-spacing">
             <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1 sm:mb-2">Instant</div>
             <div className="text-secondary-text text-sm sm:text-base">Analysis & Feedback</div>
+          </div>
+        </div>
+
+        {/* Scarcity & FOMO Section */}
+        <div className="mt-8 sm:mt-10 lg:mt-12 max-w-4xl mx-auto px-4 mb-16">
+          <div className="glass-card p-6 text-center">
+            <div className="text-2xl mb-4">⏰</div>
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
+              Early users lock in $6.99/month forever
+            </h3>
+            <p className="text-secondary-text text-sm sm:text-base mb-4">
+              Price going up soon. Don't fall behind other players improving with PathGen.
+            </p>
+            <div className="text-3xl font-bold text-yellow-400 mb-2">200+ Fortnite matches analyzed</div>
+            <p className="text-secondary-text text-sm">Join the players already dominating their friends</p>
           </div>
         </div>
       </div>

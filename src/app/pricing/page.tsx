@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { CREDIT_PLANS, CreditSystem } from '@/lib/credit-system';
+import { CREDIT_PLANS, CreditSystem } from '@/lib/credit-system-client';
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false);
@@ -280,31 +280,45 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* Value Proposition */}
+        {/* Strong CTA Section */}
         <div className="max-w-4xl mx-auto mb-16">
           <div className="glass-card p-8 text-center">
-            <h2 className="text-3xl font-bold text-primary-text mb-6">
-              $6.99 vs $100+ for Coaching
+            <div className="text-6xl mb-6">🔥</div>
+            <h2 className="text-3xl font-bold text-white mb-6">
+              Don't Just Play Fortnite. Get Better at It.
             </h2>
             <p className="text-xl text-secondary-text mb-8">
-              PathGen Pro makes Pro-level coaching affordable and accessible 24/7.
+              Every game without PathGen is a game you don't improve. Your opponents are getting smarter.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
               <div className="text-center">
-                <div className="text-4xl mb-4">🚀</div>
-                <h3 className="text-xl font-semibold text-white mb-2">16x More Value</h3>
-                <p className="text-secondary-text">Get 16x more AI messages, replay uploads, and tournament strategies</p>
+                <div className="text-3xl font-bold text-green-400 mb-2">+47%</div>
+                <div className="text-secondary-text">Average Win Rate Improvement</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl mb-4">🎯</div>
-                <h3 className="text-xl font-semibold text-white mb-2">Personalized Drills</h3>
-                <p className="text-secondary-text">Get strategies and fixes unique to your gameplay</p>
+                <div className="text-3xl font-bold text-blue-400 mb-2">+0.8</div>
+                <div className="text-secondary-text">K/D Ratio Boost</div>
               </div>
               <div className="text-center">
-                <div className="text-4xl mb-4">⚡</div>
-                <h3 className="text-xl font-semibold text-white mb-2">Priority Responses</h3>
-                <p className="text-secondary-text">Track improvement over time with advanced analytics</p>
+                <div className="text-3xl font-bold text-purple-400 mb-2">24/7</div>
+                <div className="text-secondary-text">AI Coach Available</div>
               </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button 
+                onClick={() => handleSubscribe('pro')}
+                disabled={loading}
+                className="btn-primary text-xl px-10 py-4 font-bold"
+              >
+                {loading ? 'Processing...' : 'Start Free Trial'}
+              </button>
+              <button 
+                onClick={() => handleSubscribe('pro')}
+                disabled={loading}
+                className="btn-secondary text-xl px-10 py-4 font-bold"
+              >
+                {loading ? 'Processing...' : 'Go Pro – $6.99/month'}
+              </button>
             </div>
           </div>
         </div>
@@ -349,8 +363,8 @@ export default function PricingPage() {
               <p className="text-secondary-text">We offer a 5-day money-back guarantee if you're not satisfied.</p>
             </div>
             <div className="glass-card p-6">
-              <h3 className="text-lg font-semibold text-white mb-3">How does the AI coaching work?</h3>
-              <p className="text-secondary-text">Our AI analyzes your gameplay and provides personalized training plans to improve your Fortnite skills.</p>
+              <h3 className="text-lg font-semibold text-white mb-3">Why not just play more?</h3>
+              <p className="text-secondary-text">Practice doesn't equal improvement. PathGen AI identifies your specific weaknesses and gives you targeted strategies to fix them.</p>
             </div>
             <div className="glass-card p-6">
               <h3 className="text-lg font-semibold text-white mb-3">What happens to my credits when I upgrade?</h3>

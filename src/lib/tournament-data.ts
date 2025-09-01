@@ -374,9 +374,167 @@ export class LiveTournamentService {
   }
 }
 
-// Export all tournament data
+// Tournament estimation data for NAC region
+export const NAC_TOURNAMENT_DATA = {
+  // C6S4 AXE OF CHAMPIONS CUP
+  'axe-of-champions-cup': {
+    name: 'C6S4 AXE OF CHAMPIONS CUP',
+    region: 'NAC',
+    date: '2025-08-30',
+    thresholds: {
+      'top-100': 330,
+      'top-1800': 272,
+      'safe-threshold': 277,
+      'minimum-chance': 268
+    },
+    breakdown: {
+      example: '280 points looks like: 2 Top 5s with 3 Elims, 2 Top 10s with 2 Elims, 3 Top 25s with 1 Elim, 3 spare games',
+      safeQueueTime: '6 minutes for safe queue time if you\'re in the Top 100, 5 minutes is safe for everyone else'
+    }
+  },
+  
+  // C6S4 Console Cash Cup #3
+  'console-cash-cup-3': {
+    name: 'C6S4 Console Cash Cup #3',
+    region: 'NAC',
+    date: '2025-08-29',
+    thresholds: {
+      'top-100': 264,
+      'top-500': 228,
+      'top-1000': 208,
+      'top-2500': 172,
+      'top-7500': 88,
+      'safe-threshold': 233,
+      'minimum-chance': 225
+    },
+    breakdown: {
+      example: '235 points looks like: 1 Win with 7 Elims, 2 Top 5s with 4 Elims, 1 Top 10 with 3 Elims, 1 Top 20 with 2 Elims, 2 spare games',
+      safeQueueTime: '6 minutes for safe queue time if you\'re in the Top 100, 5 minutes is safe for everyone else'
+    }
+  },
+  
+  // C6S4 CHAMPION SURF WITCH CUP
+  'champion-surf-witch-cup': {
+    name: 'C6S4 CHAMPION SURF WITCH CUP',
+    region: 'NAC',
+    date: '2025-08-29',
+    thresholds: {
+      'top-100': 330,
+      'top-1800': 275,
+      'safe-threshold': 281,
+      'minimum-chance': 270
+    },
+    breakdown: {
+      example: '275 points looks like: 1 Top 5s with 4 Elims, 3 Top 10s with 2 Elims, 3 Top 25s with 1 Elim, 3 spare games',
+      safeQueueTime: '6 minutes for safe queue time if you\'re in the Top 100, 5 minutes is safe for everyone else'
+    }
+  }
+};
+
+// Helper function to get tournament estimates
+export function getTournamentEstimate(tournamentId: string, placement: string): number | null {
+  const tournament = ALL_TOURNAMENT_DATA[tournamentId as keyof typeof ALL_TOURNAMENT_DATA];
+  if (!tournament) return null;
+  
+  return tournament.thresholds[placement as keyof typeof tournament.thresholds] || null;
+}
+
+// Helper function to get tournament breakdown
+export function getTournamentBreakdown(tournamentId: string): any {
+  const tournament = ALL_TOURNAMENT_DATA[tournamentId as keyof typeof ALL_TOURNAMENT_DATA];
+  if (!tournament) return null;
+  
+  return tournament.breakdown;
+}
+
+// Helper function to calculate if user is safe for a placement
+export function isUserSafe(tournamentId: string, placement: string, userPoints: number): boolean {
+  const tournament = ALL_TOURNAMENT_DATA[tournamentId as keyof typeof ALL_TOURNAMENT_DATA];
+  if (!tournament) return false;
+  
+  const safeThreshold = tournament.thresholds['safe-threshold'];
+  return userPoints >= safeThreshold;
+}
+
+// Helper function to get minimum points needed for a chance
+export function getMinimumChance(tournamentId: string): number | null {
+  const tournament = ALL_TOURNAMENT_DATA[tournamentId as keyof typeof ALL_TOURNAMENT_DATA];
+  if (!tournament) return null;
+  
+  return tournament.thresholds['minimum-chance'];
+}
+
+// Helper function to get tournaments by region
+export function getTournamentsByRegion(region: 'NAC' | 'EU'): any {
+  if (region === 'NAC') {
+    return NAC_TOURNAMENT_DATA;
+  } else if (region === 'EU') {
+    return EU_TOURNAMENT_DATA;
+  }
+  return {};
+}
+
+// Tournament estimation data for EU region
+export const EU_TOURNAMENT_DATA = {
+  // C6S4 AXE OF CHAMPIONS CUP
+  'axe-of-champions-cup-eu': {
+    name: 'C6S4 AXE OF CHAMPIONS CUP',
+    region: 'EU',
+    date: '2025-08-30',
+    thresholds: {
+      'top-100': 345,
+      'top-2000': 296,
+      'safe-threshold': 300,
+      'minimum-chance': 292
+    },
+    breakdown: {
+      example: '295 points looks like: 3 Top 5s with 3 Elims, 2 Top 10s with 1 Elim, 2 Top 25s with 0 Elims, 3 spare games',
+      alternativeExample: '295 points with a big win to start: 1 Win with 15 Elims, 2 Top 10s with 2 Elims, 4 Top 25s with 0 Elims, 3 spare games',
+      safeQueueTime: '6 minutes for safe queue time if you don\'t queue bug'
+    }
+  },
+  
+  // C6S4 Console Victory Cash Cup #3
+  'console-victory-cash-cup-3-eu': {
+    name: 'C6S4 Console Victory Cash Cup #3',
+    region: 'EU',
+    date: '2025-08-29',
+    thresholds: {
+      'top-100': 279,
+      'top-500': 250,
+      'top-1000': 232,
+      'top-2500': 205,
+      'top-7500': 158,
+      'safe-threshold': 252,
+      'minimum-chance': 244
+    },
+    breakdown: {
+      example: '248 points looks like: 1 Win with 8 Elims, 2 Top 5s with 6 Elims, 1 Top 10 with 4 Elims, 1 Top 20 with 2 Elims, 2 spare games',
+      safeQueueTime: '6 minutes for safe queue time if you\'re in the Top 100, 5 minutes is safe for everyone else'
+    }
+  },
+  
+  // C6S4 CHAMPION SURF WITCH CUP
+  'champion-surf-witch-cup-eu': {
+    name: 'C6S4 CHAMPION SURF WITCH CUP',
+    region: 'EU',
+    date: '2025-08-29',
+    thresholds: {
+      'top-100': 345,
+      'top-2000': 292,
+      'safe-threshold': 298,
+      'minimum-chance': 288
+    },
+    breakdown: {
+      example: '295 points looks like: 3 Top 5s with 3 Elims, 2 Top 10s with 1 Elim, 2 Top 25s with 0 Elims, 3 spare games',
+      alternativeExample: '295 points with a big win to start: 1 Win with 15 Elims, 2 Top 10s with 2 Elims, 4 Top 25s with 0 Elims, 3 spare games',
+      safeQueueTime: '6 minutes for safe queue time if you\'re in the Top 100, 5 minutes is safe for everyone else'
+    }
+  }
+};
+
+// Combined tournament data for all regions
 export const ALL_TOURNAMENT_DATA = {
-  iconReloadCups: ICON_RELOAD_CUPS,
-  consoleVictoryCashCup: CONSOLE_VICTORY_CASH_CUP,
-  bladeOfChampionsCup: BLADE_OF_CHAMPIONS_CUP
+  ...NAC_TOURNAMENT_DATA,
+  ...EU_TOURNAMENT_DATA
 };
