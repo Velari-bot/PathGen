@@ -249,40 +249,112 @@ async function handleSubscriptionCreated(subscription) {
     }
     const plan = getPlanFromPriceId(subscription.items.data[0].price.id);
     const planLimits = getPlanLimits(plan);
-    // Create subscription document
-    const subscriptionData = {
-        userId,
-        stripeSubscriptionId: subscription.id,
-        stripeCustomerId: customerId,
-        plan,
-        status: subscription.status === 'active' ? 'active' : 'unpaid',
-        currentPeriodStart: admin.firestore.Timestamp.fromDate(new Date(subscription.current_period_start * 1000)),
-        currentPeriodEnd: admin.firestore.Timestamp.fromDate(new Date(subscription.current_period_end * 1000)),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        trialEnd: subscription.trial_end ? admin.firestore.Timestamp.fromDate(new Date(subscription.trial_end * 1000)) : null,
-        limits: planLimits,
-        usage: {
-            messagesUsed: 0,
-            tokensUsed: 0,
-            dataPullsUsed: 0,
-            replayUploadsUsed: 0,
-            tournamentStrategiesUsed: 0,
-            resetDate: admin.firestore.Timestamp.fromDate(new Date())
-        },
-        createdAt: admin.firestore.Timestamp.now(),
-        updatedAt: admin.firestore.Timestamp.now()
-    };
-    // Update user document
-    await db.collection('users').doc(userId).update({
-        subscription: subscriptionData,
-        'subscription.plan': plan,
-        'subscription.status': subscription.status
-    });
-    // Create subscription document
-    await db.collection('subscriptions').doc(subscription.id).set(subscriptionData);
-    console.log(`✅ Subscription created for user ${userId}: ${plan}`);
-    // TODO: Send welcome email/notification
-    await sendSubscriptionWelcomeEmail(userId, plan);
+    try {
+        // Use robust subscription update with retry logic
+        const db = admin.firestore();
+        // Update user document with retry logic
+        await updateWithRetry(async () => {
+            await db.collection('users').doc(userId).update({
+                subscription: {
+                    status: subscription.status === 'active' ? 'active' : 'unpaid',
+                    tier: plan,
+                    plan,
+                    startDate: admin.firestore.Timestamp.fromDate(new Date(subscription.current_period_start * 1000)),
+                    endDate: null,
+                    autoRenew: !subscription.cancel_at_period_end,
+                    paymentMethod: null,
+                    stripeCustomerId: customerId,
+                    stripeSubscriptionId: subscription.id,
+                    updatedAt: admin.firestore.Timestamp.now()
+                },
+                subscriptionStatus: subscription.status === 'active' ? 'active' : 'unpaid',
+                subscriptionTier: plan,
+                updatedAt: admin.firestore.Timestamp.now()
+            });
+        });
+        // Create subscription document with retry logic
+        await updateWithRetry(async () => {
+            const subscriptionData = {
+                userId,
+                stripeSubscriptionId: subscription.id,
+                stripeCustomerId: customerId,
+                plan,
+                status: subscription.status === 'active' ? 'active' : 'unpaid',
+                currentPeriodStart: admin.firestore.Timestamp.fromDate(new Date(subscription.current_period_start * 1000)),
+                currentPeriodEnd: admin.firestore.Timestamp.fromDate(new Date(subscription.current_period_end * 1000)),
+                cancelAtPeriodEnd: subscription.cancel_at_period_end,
+                trialEnd: subscription.trial_end ? admin.firestore.Timestamp.fromDate(new Date(subscription.trial_end * 1000)) : null,
+                limits: planLimits,
+                usage: {
+                    messagesUsed: 0,
+                    tokensUsed: 0,
+                    dataPullsUsed: 0,
+                    replayUploadsUsed: 0,
+                    tournamentStrategiesUsed: 0,
+                    resetDate: admin.firestore.Timestamp.fromDate(new Date())
+                },
+                createdAt: admin.firestore.Timestamp.now(),
+                updatedAt: admin.firestore.Timestamp.now()
+            };
+            await db.collection('subscriptions').doc(subscription.id).set(subscriptionData);
+        });
+        // Update usage document with retry logic
+        await updateWithRetry(async () => {
+            const usageData = {
+                userId,
+                subscriptionTier: plan,
+                totalCredits: plan === 'pro' ? 4000 : 250,
+                usedCredits: 0,
+                availableCredits: plan === 'pro' ? 4000 : 250,
+                lastReset: admin.firestore.Timestamp.fromDate(new Date()),
+                updatedAt: admin.firestore.Timestamp.now()
+            };
+            const usageSnapshot = await db.collection('usage')
+                .where('userId', '==', userId)
+                .get();
+            if (!usageSnapshot.empty) {
+                await usageSnapshot.docs[0].ref.update(usageData);
+            }
+            else {
+                await db.collection('usage').add(usageData);
+            }
+        });
+        // Log the subscription creation
+        await updateWithRetry(async () => {
+            await db.collection('webhookLogs').add({
+                eventType: 'subscription.created',
+                userId,
+                plan,
+                status: subscription.status,
+                timestamp: admin.firestore.Timestamp.now(),
+                success: true,
+                message: `Subscription created for user ${userId}: ${plan}`,
+                stripeSubscriptionId: subscription.id
+            });
+        });
+        console.log(`✅ Subscription created for user ${userId}: ${plan}`);
+        // TODO: Send welcome email/notification
+        await sendSubscriptionWelcomeEmail(userId, plan);
+    }
+    catch (error) {
+        console.error(`❌ Error creating subscription for user ${userId}:`, error);
+        // Log the error but don't fail the webhook
+        try {
+            await db.collection('webhookLogs').add({
+                eventType: 'subscription.created.error',
+                userId,
+                plan,
+                status: 'error',
+                timestamp: admin.firestore.Timestamp.now(),
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                stripeSubscriptionId: subscription.id
+            });
+        }
+        catch (logError) {
+            console.error('⚠️ Failed to log error:', logError);
+        }
+    }
 }
 // Handle subscription updated
 async function handleSubscriptionUpdated(subscription) {
@@ -396,6 +468,28 @@ function getPlanLimits(plan) {
         pro: { messagesUsed: -1, tokensUsed: -1, dataPullsUsed: -1, replayUploadsUsed: -1, tournamentStrategiesUsed: -1 }
     };
     return limits[plan] || limits.free;
+}
+// Retry utility function for database operations
+async function updateWithRetry(updateFunction, maxRetries = 3) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            await updateFunction();
+            return; // Success, exit retry loop
+        }
+        catch (error) {
+            lastError = error instanceof Error ? error : new Error(String(error));
+            if (attempt < maxRetries) {
+                console.log(`⚠️ Update attempt ${attempt} failed, retrying in ${attempt * 1000}ms...`);
+                await delay(attempt * 1000); // Exponential backoff
+            }
+        }
+    }
+    throw lastError || new Error('Max retries exceeded');
+}
+// Utility function for delays
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 // Placeholder functions for notifications
 async function sendSubscriptionWelcomeEmail(userId, plan) {
