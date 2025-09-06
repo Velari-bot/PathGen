@@ -4,7 +4,6 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
 import { UsageTracker } from '@/lib/usage-tracker';
-import { CreditBackendService } from '@/lib/credit-backend-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -441,6 +440,8 @@ export async function POST(request: NextRequest) {
 
          // Deduct credits for Osirion pull (50 credits)
          try {
+           // Dynamic import to avoid build-time issues
+           const { CreditBackendService } = await import('@/lib/credit-backend-service');
            const creditService = new CreditBackendService();
            const creditResult = await creditService.deductCredits(
              userId,

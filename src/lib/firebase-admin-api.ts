@@ -57,11 +57,23 @@ export function getFirebaseAdmin() {
 
 // Convenience exports
 export const getDb = () => {
-  console.log('🔍 getDb() called');
-  const admin = getFirebaseAdmin();
-  console.log('🔍 Firebase Admin instance:', admin);
-  const db = admin.getDb();
-  console.log('🔍 Firestore instance:', db);
-  return db;
+  // Only initialize Firebase Admin at runtime, not during build
+  if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production' || process.env.NODE_ENV === 'production') {
+    console.log('🔍 getDb() called');
+    const admin = getFirebaseAdmin();
+    console.log('🔍 Firebase Admin instance:', admin);
+    const db = admin.getDb();
+    console.log('🔍 Firestore instance:', db);
+    return db;
+  }
+  
+  // During build time, return a mock or throw an error
+  throw new Error('Firebase Admin should only be initialized at runtime');
 };
-export const getAuth = () => getFirebaseAdmin().getAuth();
+
+export const getAuth = () => {
+  if (typeof window === 'undefined' && process.env.NODE_ENV !== 'production' || process.env.NODE_ENV === 'production') {
+    return getFirebaseAdmin().getAuth();
+  }
+  throw new Error('Firebase Admin should only be initialized at runtime');
+};
