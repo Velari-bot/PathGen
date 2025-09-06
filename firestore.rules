@@ -85,7 +85,7 @@ service cloud.firestore {
     // Epic accounts - users can read/write their own
     match /epicAccounts/{docId} {
       allow read, write: if isAuthenticated() && 
-        isOwner(resource.data.userId);
+        (isOwner(resource.data.userId) || isOwner(request.resource.data.userId));
       allow create: if isAuthenticated() && 
         isOwner(request.resource.data.userId);
     }
@@ -128,6 +128,14 @@ service cloud.firestore {
 
     // Fortnite stats - users can read/write their own
     match /fortniteStats/{docId} {
+      allow read, write: if isAuthenticated() && 
+        (isOwner(docId) || isOwner(resource.data.userId));
+      allow create: if isAuthenticated() && 
+        (isOwner(docId) || isOwner(request.resource.data.userId));
+    }
+
+    // Fortnite data - users can read/write their own
+    match /fortniteData/{docId} {
       allow read, write: if isAuthenticated() && 
         (isOwner(docId) || isOwner(resource.data.userId));
       allow create: if isAuthenticated() && 
