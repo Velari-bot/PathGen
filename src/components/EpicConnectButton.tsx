@@ -51,11 +51,12 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
 
       // Epic Games OAuth endpoint
       const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
-      console.log('Epic OAuth Debug:', {
+      console.log('Epic OAuth Debug (v2.0):', {
         epicClientId,
         redirectUri,
         epicOAuthUrl,
-        params: params.toString()
+        params: params.toString(),
+        timestamp: new Date().toISOString()
       });
       window.location.href = epicOAuthUrl;
 
