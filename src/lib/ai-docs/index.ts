@@ -345,6 +345,174 @@ export const zoneGuides = `
 4. Supernova Academy: 1.43
 5. Pumpkin Pipes: 1.42
 
+## 🏆 COMPREHENSIVE TOURNAMENT STRATEGY & IMPROVEMENT GUIDE
+
+### 🎯 DUO PREPARATION & ROLE SELECTION
+
+#### **Role-Based Stat Analysis**
+
+**➡️ FRAGGERS - Key Stats to Evaluate:**
+- **Damage Dealt**: Compare to teammates - fraggers should almost always have more damage than their IGL
+- **Damage Ratio**: Under 1.0 is concerning, but can happen with best fraggers in hard lobbies
+- **Tournament Consistency**: Check stats over multiple tournaments, not just one
+- **Leaderboard Position**: Verify they were high/low consistently across tournaments
+
+**➡️ IGLs (In-Game Leaders) - Key Stats to Evaluate:**
+- **Damage Ratio**: More important than total damage for IGLs
+- **Fighting Ability**: Good damage ratio proves they can fight when needed
+- **Decision Making**: Cannot be measured in stats - comes from VOD review
+- **Tarp Quality**: Cannot be measured in stats - comes from gameplay analysis
+
+**❌ STATS THAT DON'T MATTER FOR ROLE SELECTION:**
+- **Builds Placed**: Meaningless for determining skill level
+- **Mats Farmed**: Doesn't indicate strategic value
+- **Total Damage (for IGLs)**: Getting lots of damage isn't the IGL's role
+
+#### **LFG Post Optimization**
+
+**✅ ESSENTIAL ELEMENTS FOR GOOD LFG POSTS:**
+
+**1. Show You're Worth Playing With:**
+- Introduce yourself properly
+- Demonstrate motivation to work hard together
+- Show commitment to improvement
+
+**2. Realistic PR Requirements:**
+- If you have 400 PR, don't say "LFD 500+ PR"
+- Use range: "300-500 PR" instead of minimums
+- Prevents mismatches and expands your pool
+
+**3. Optimal Length:**
+- Not too long: Avoid ChatGPT-style lists with 100 requirements
+- Not too short: Include essential info (roles, languages, PR)
+- Be specific but concise
+
+**✅ EXAMPLE OF GOOD LFG POST:**
+"LFD. I'm an EU IGL with 500 PR who is really motivated to improve. I'm looking for a crazy fragger with similar PR who can play scrims most days. Speak English/German."
+
+**❌ AVOID THESE MISTAKES:**
+- Generic requirements everyone knows
+- Unrealistic PR expectations
+- Missing essential information
+- Overly long requirement lists
+
+### 📚 STRUCTURED TRAINING PLAN (10-20-30-40 RULE)
+
+#### **Weekly Time Allocation Strategy**
+
+**10% - VOD Pros**
+- Watch players who land at your dropspot
+- Study how they fight off spawn and rotate out
+- Analyze recent tournament winners
+- Watch educational videos about pro victories
+- Focus on specific aspects: rotations, fights, decision-making
+
+**20% - VOD Yourself**
+- Review after each tournament (1 hour minimum)
+- Find mistakes that caused deaths
+- Write down specific errors and solutions
+- Track improvement over time
+- Focus on decision-making patterns
+
+**30% - Scrims**
+- Get to know teammates well
+- Improve endgame scenarios significantly
+- Practice team coordination
+- If no team: reduce scrimming, increase individual practice
+- Focus on competitive scenarios
+
+**40% - Creative Training**
+- 1v1s, 2v2s, boxfights
+- Solo mechanics training
+- Build/edit accuracy practice
+- Go slow sometimes for precision
+- Focus on mechanical improvement
+
+#### **EXAMPLE WEEKLY SCHEDULE (10 Hours Available):**
+- **1 hour**: VOD pros
+- **2 hours**: VOD yourself  
+- **3 hours**: Scrims
+- **4 hours**: Creative training
+
+#### **RANKED/RELOAD INTEGRATION:**
+- **Not part of official improvement time**
+- Use for relaxation after focused training
+- Play with friends casually
+- Don't require full concentration
+- Other 4 activities are far more important
+
+### 🗺️ DROPSPOT ANALYSIS METHODOLOGY
+
+#### **The "Best Dropspot" Formula**
+
+**Key Factors to Balance:**
+1. **Loot Quality** - Higher loot = better gear
+2. **Contest Level** - More contested = higher risk
+3. **Materials Available** - Especially metal for building
+4. **Survival Rate** - Chances of surviving off spawn
+5. **Loot Splitting** - Probability of sharing with other teams
+
+#### **Dropspot Comparison Framework**
+
+**Example Analysis: The Hive vs Demons**
+- **The Hive**: 81 loot, 1.15 avg teams, 600 metal, 54% survival
+- **Demons**: 74 loot, 1.34 avg teams, 500 metal, 53% survival
+- **Winner**: The Hive (better across all metrics)
+
+**Example Analysis: The Hive vs Shining Span**
+- **The Hive**: 81 loot, 1.15 avg teams, 600 metal, 54% survival
+- **Shining Span**: 40 loot, 1.01 avg teams, 2600 metal, 66% survival
+- **Decision**: Depends on playstyle (loot vs survival vs materials)
+
+#### **Overall Rating System**
+- Combines all 4 metrics into single score
+- Ranks dropspots objectively
+- Accounts for personal preferences
+- Provides shortlist of best options
+
+#### **Current Season Dropspot Intelligence**
+
+**🟢 RECOMMENDED DROPSPOTS:**
+- **Mountain West of Demon's**: 80% survival rate in EU Div 3
+- **Half games uncon**: Excellent for spawn survival
+- **Low contest**: Minimal early fights
+
+**🔴 AVOID THESE DROPSPOTS:**
+- **Supernova Academy**: 
+  - Bad loot unless golden POI with drones
+  - Overcontested (1.69 avg teams)
+  - High risk, low reward
+
+**⚠️ PREVIOUSLY GOOD DROPSPOTS (Now Contested):**
+- **Outpost**: Getting much more contested this season
+- **First Order**: No longer safe, higher competition
+
+#### **Dropspot Selection Strategy**
+1. **Personal Preference**: POIs vs center map vs edge
+2. **Playstyle Match**: Aggressive vs passive vs balanced
+3. **Tournament Format**: Different strategies for different formats
+4. **Team Composition**: Fragger/IGL landing preferences
+5. **Meta Considerations**: Current season changes
+
+### 🎮 ADVANCED COMPETITIVE INSIGHTS
+
+#### **Landing Priority**
+- **Land First = Win Off Spawn 90% of the time**
+- **Dropmap Strategy**: Essential for consistent landing
+- **Spawn Control**: Critical for tournament success
+
+#### **Tournament Preparation**
+- **Solid Plan Required**: Never go into games without strategy
+- **Data-Driven Decisions**: Use actual tournament data
+- **Community Advantage**: Access to premium analysis tools
+- **Consistent Results**: Proven track record of improvements
+
+#### **Meta Evolution Awareness**
+- **Season Changes**: Dropspots change in popularity
+- **Contest Level Shifts**: Previously safe spots become contested
+- **Loot Updates**: POI changes affect viability
+- **Stay Updated**: Regular analysis prevents outdated strategies
+
 ## Advanced Zone Prediction & Mechanics
 
 ### 🔁 The Double Pull Phenomenon
