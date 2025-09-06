@@ -113,7 +113,7 @@ export function useCreditTracking(): CreditTrackingState {
     }
   }, [user?.uid]);
 
-  // Convenience functions for specific features
+  // Convenience functions for specific features - these only check affordability
   const useCreditsForChat = useCallback(async (): Promise<boolean> => {
     return useCreditsGeneric(CREDIT_COSTS.AI_CHAT, 'ai_chat');
   }, [useCreditsGeneric]);

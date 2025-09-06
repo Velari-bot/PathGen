@@ -15,6 +15,7 @@ export const CreditTrackingExample: React.FC = () => {
     useCreditsForStatsLookup,
     useCreditsForTournamentStrategy,
     useCreditsForPOIAnalysis,
+    deductCreditsAfterAction,
     canAfford,
     refreshCredits 
   } = useCreditTracking();
@@ -30,11 +31,26 @@ export const CreditTrackingExample: React.FC = () => {
     setActionResult(`🔄 Processing ${actionName}...`);
     
     try {
-      const success = await action();
-      if (success) {
+      // First check affordability (this is what the convenience functions do)
+      const canProceed = await action();
+      if (!canProceed) {
+        setActionResult(`❌ Cannot proceed with ${actionName}. Insufficient credits.`);
+        return;
+      }
+
+      // Simulate the action (in real usage, this would be the actual feature)
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing
+      
+      // Deduct credits after successful action
+      const deductSuccess = await deductCreditsAfterAction(cost, actionName.toLowerCase().replace(/\s+/g, '_'), {
+        timestamp: new Date().toISOString(),
+        simulated: true
+      });
+      
+      if (deductSuccess) {
         setActionResult(`✅ ${actionName} completed successfully! ${cost} credits deducted.`);
       } else {
-        setActionResult(`❌ ${actionName} failed. Credits not deducted.`);
+        setActionResult(`⚠️ ${actionName} completed but failed to deduct credits.`);
       }
     } catch (err) {
       setActionResult(`❌ Error during ${actionName}: ${err instanceof Error ? err.message : 'Unknown error'}`);

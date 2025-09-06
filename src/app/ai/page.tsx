@@ -22,7 +22,7 @@ import { CreditDisplay } from '@/components/CreditDisplay';
 export default function AIPage() {
   const { user, loading } = useAuth();
   const { trackUsage } = useSubscription();
-  const { useCreditsForChat, canAfford } = useCreditTracking();
+  const { useCreditsForChat, canAfford, deductCreditsAfterAction } = useCreditTracking();
   const router = useRouter();
   const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -213,21 +213,6 @@ export default function AIPage() {
       return;
     }
 
-    // Use credits for AI chat
-    console.log('🔍 Using 1 credit for AI chat...');
-    try {
-      const success = await useCreditsForChat();
-      if (!success) {
-        alert('Failed to use credits. Please try again.');
-        return;
-      }
-      console.log('✅ Credit used successfully for AI chat');
-    } catch (error) {
-      console.error('Failed to use credits:', error);
-      alert('Failed to use credits. Please try again.');
-      return;
-    }
-
     const userMessage = {
       role: 'user' as const,
       content: inputMessage,
@@ -301,6 +286,23 @@ export default function AIPage() {
       // Save entire chat to Firebase
       const updatedMessages = [...messages, userMessage, assistantMessage];
       await saveChatToFirebase(updatedMessages);
+      
+      // Deduct credits AFTER successful message processing
+      console.log('🔍 Deducting 1 credit for AI chat...');
+      try {
+        const success = await deductCreditsAfterAction(1, 'ai_chat', {
+          messageId: userMessage.timestamp.getTime(),
+          chatId: currentChatId
+        });
+        if (success) {
+          console.log('✅ Credit deducted successfully for AI chat');
+        } else {
+          console.warn('⚠️ Failed to deduct credit, but message was sent');
+        }
+      } catch (error) {
+        console.error('Failed to deduct credit:', error);
+        // Don't fail the entire operation if credit deduction fails
+      }
       
     } catch (error) {
       console.error('Error processing message:', error);
