@@ -27,6 +27,6 @@ jobs:
       - name: Test build output
         run: |
           echo "✅ Build completed successfully!"
-          echo "📁 Build output directory: out/"
-          ls -la out/
+          echo "📁 Build output directory: .next/"
+          ls -la .next/
           echo "🚀 Ready for manual deployment to Firebase"
