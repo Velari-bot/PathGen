@@ -314,8 +314,8 @@ export default function DashboardPage() {
       prompt: 'consent',
     });
 
-    // Epic uses https://www.epicgames.com/id/authorize for OAuth
-    const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
+    // Epic uses Epic Games Services OAuth endpoint
+    const epicOAuthUrl = `https://api.epicgames.dev/epic/oauth/v1/authorize?${params.toString()}`;
     window.location.href = epicOAuthUrl;
   };
 

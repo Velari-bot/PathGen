@@ -48,8 +48,8 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
         state: user.uid, // Pass user ID for security
       });
 
-      // Redirect to Epic OAuth
-      const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
+      // Try Epic Games Services OAuth endpoint first
+      const epicOAuthUrl = `https://api.epicgames.dev/epic/oauth/v1/authorize?${params.toString()}`;
       console.log('Redirecting to Epic OAuth:', epicOAuthUrl);
       window.location.href = epicOAuthUrl;
 
