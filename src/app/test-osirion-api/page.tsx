@@ -134,11 +134,11 @@ export default function TestOsirionAPIPage() {
     setIsLoading(true);
     setTestResults(['🔄 Checking Epic OAuth configuration...']);
 
+    // Epic Games OAuth flow - define variables outside try-catch for scope
+    const epicClientId = process.env.NEXT_PUBLIC_EPIC_CLIENT_ID;
+    const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback';
+
     try {
-      // Epic Games OAuth flow
-      const epicClientId = process.env.NEXT_PUBLIC_EPIC_CLIENT_ID;
-      // Force localhost for local development
-      const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback';
       
       console.log('Epic OAuth Debug:', {
         epicClientId,
