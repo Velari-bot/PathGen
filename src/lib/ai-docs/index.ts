@@ -26,67 +26,324 @@ export const zoneGuides = `
 
 ## Chapter 6 Season 4 POI Data & Landing Strategy
 
-### 🗺️ POI Statistics & Ratings
+### 🗺️ Current Season POI Statistics & Ratings
 
-#### **EU Server - Top Landing Spots**
+#### **🏆 TOP TIER LANDING SPOTS (Best Overall)**
 
-**High-Tier Landing Spots (Overall Rating 100+)**
-- **Martial Maneuvers** - Zone 3, 9300 loot, 1600 metal, 1.24 avg teams, 62% survival rate, **109 rating**
-- **Rocky Rus** - Zone 6, 9300 loot, 1600 metal, 1.24 avg teams, 62% survival rate, **109 rating**
-- **Swarmy Stash** - Zone 7, 9300 loot, 1600 metal, 1.24 avg teams, 62% survival rate, **109 rating**
-- **Pumpkin Pipes** - Zone 9, 9300 loot, 1600 metal, 1.24 avg teams, 62% survival rate, **109 rating**
-- **Open-Air Onsen** - Zone 10, 9300 loot, 1600 metal, 1.24 avg teams, 62% survival rate, **109 rating**
+**Shiny Shafts** - Zone 128
+- **Loot Score:** 109 (Highest in game)
+- **Metal Amount:** 9,300
+- **Avg Teams:** 1.14
+- **Survival Rate:** 75%
+- **Rating:** Best Overall
+- **Strategy:** Highest loot potential with good survival rate
 
-**Mid-Tier Landing Spots (Overall Rating 70)**
-- **Yacht Stop** - Zone 2, 72 loot, 2600 metal, 1.31 avg teams, 50% survival rate, **70 rating**
-- **Supernova Academy** - Zone 5, 72 loot, 2600 metal, 1.31 avg teams, 50% survival rate, **70 rating**
-- **O.Z.P. HQ Base Tunnel** - Zone 8, 72 loot, 2600 metal, 1.31 avg teams, 50% survival rate, **70 rating**
-- **Overlook Lighthouse** - Zone 11, 72 loot, 2600 metal, 1.31 avg teams, 50% survival rate, **70 rating**
-- **Shining Span** - Zone 12, 72 loot, 2600 metal, 1.31 avg teams, 50% survival rate, **70 rating**
+**Rocky Rus** - Zone 29
+- **Loot Score:** 81
+- **Metal Amount:** 9,300
+- **Avg Teams:** 1.12
+- **Survival Rate:** 42%
+- **Rating:** High Loot + Metal
+- **Strategy:** Excellent for aggressive players seeking high loot and building materials
 
-**Low-Tier Landing Spots (Overall Rating 41)**
-- **Fighting Frogs** - Zone 1, 38 loot, 1600 metal, 0.48 avg teams, 24% survival rate, **41 rating**
-- **First Order Base** - Zone 4, 38 loot, 1600 metal, 0.48 avg teams, 24% survival rate, **41 rating**
-- **Salty Docks** - Zone 13, 38 loot, 1600 metal, 0.48 avg teams, 24% survival rate, **41 rating**
-- **Kappa Kappa Factory** - Zone 14, 38 loot, 1600 metal, 0.48 avg teams, 24% survival rate, **41 rating**
-- **Utopia City** - Zone 15, 38 loot, 1600 metal, 0.48 avg teams, 24% survival rate, **41 rating**
+**First Order Base** - Zone 23
+- **Loot Score:** 74
+- **Metal Amount:** 500
+- **Avg Teams:** 1.64
+- **Survival Rate:** 53%
+- **Rating:** High Loot
+- **Strategy:** High competition but excellent loot rewards
 
-#### **NA Server - Top Landing Spots**
+#### **🛡️ SAFEST LANDING SPOTS (High Survival)**
 
-**High-Value Landing Spots**
-- **Crabby Cove** - Zone 121, 101 loot, 9300 metal, 0.96 avg teams, 58% survival rate
-- **Rogue Slurp Room Market** - Zone 59, 49 loot, 9600 metal, 1.11 avg teams, 63% survival rate
-- **Kappa Kappa Factory** - Zone 55, 57 loot, 3500 metal, 1.53 avg teams, 63% survival rate
-- **Rolling Blossoms Farm** - Zone 62, 75 loot, 3400 metal, 1.26 avg teams, 60% survival rate
-- **Outpost Enclave** - Zone 74, 75 loot, 2600 metal, 1.28 avg teams, 62% survival rate
+**Sakura Stadium** - Zone 126
+- **Loot Score:** 34
+- **Metal Amount:** 200
+- **Avg Teams:** 0.13 (Lowest competition)
+- **Survival Rate:** 100% (Perfect survival)
+- **Rating:** Safest + Low Loot
+- **Strategy:** Perfect for passive players prioritizing survival
 
-**Strategic Landing Considerations**
-- **Low Competition:** Fighting Frogs (0.48 avg teams), First Order Base (0.48 avg teams)
-- **High Metal:** First Order Base (10,000 metal), Rogue Slurp Room Market (9600 metal)
-- **High Survival:** Kappa Kappa Factory (63%), Rogue Slurp Room Market (63%)
-- **Balanced Loot:** Most POIs offer 48-75 loot with 200-10,000 metal
+**Utopia City** - Zone 67
+- **Loot Score:** 49
+- **Metal Amount:** 8,300
+- **Avg Teams:** 0.92
+- **Survival Rate:** 75%
+- **Rating:** Very Safe + High Metal
+- **Strategy:** Excellent balance of safety and resources
 
-### 🎯 Landing Strategy Based on POI Data
+**Rolling Blossoms Farm** - Zone 69
+- **Loot Score:** 50
+- **Metal Amount:** 10,000 (Highest metal)
+- **Avg Teams:** 0.82
+- **Survival Rate:** 72%
+- **Rating:** Very Safe + High Metal
+- **Strategy:** Best for building-focused players
+
+**Way Station** - Zone 75
+- **Loot Score:** 47
+- **Metal Amount:** 2,000
+- **Avg Teams:** 0.61
+- **Survival Rate:** 71%
+- **Rating:** Very Safe
+- **Strategy:** Low competition with decent loot
+
+**Outpost Enclave** - Zone 77
+- **Loot Score:** 38
+- **Metal Amount:** 1,600
+- **Avg Teams:** 0.42
+- **Survival Rate:** 73%
+- **Rating:** Very Safe
+- **Strategy:** Minimal early fights, focus on survival
+
+#### **⚔️ HIGH ACTION LANDING SPOTS (Aggressive Players)**
+
+**Fighting Frogs** - Zone 19
+- **Loot Score:** 50
+- **Metal Amount:** 6,000
+- **Avg Teams:** 1.51
+- **Survival Rate:** 40%
+- **Rating:** High Action
+- **Strategy:** High competition, prepare for early fights
+
+**Yacht Stop** - Zone 20
+- **Loot Score:** 55
+- **Metal Amount:** 750
+- **Avg Teams:** 1.43
+- **Survival Rate:** 48%
+- **Rating:** Balanced
+- **Strategy:** Moderate competition with decent loot
+
+**Pumpkin Pipes** - Zone 41
+- **Loot Score:** 56
+- **Metal Amount:** 3,000
+- **Avg Teams:** 1.42
+- **Survival Rate:** 61%
+- **Rating:** Balanced
+- **Strategy:** Good balance of action and safety
+
+#### **🏗️ HIGH METAL LANDING SPOTS (Building Focus)**
+
+**Rolling Blossoms Farm** - Zone 69
+- **Metal Amount:** 10,000 (Highest)
+- **Strategy:** Best for endgame building
+
+**Overlook Lighthouse** - Zone 46
+- **Metal Amount:** 10,000
+- **Survival Rate:** 68%
+- **Rating:** High Metal + Safe
+- **Strategy:** Safe high-metal location
+
+**Swarmy Stash** - Zone 33
+- **Metal Amount:** 9,600
+- **Avg Teams:** 1.20
+- **Survival Rate:** 49%
+- **Rating:** High Metal
+- **Strategy:** Good metal with moderate competition
+
+**Shining Span** - Zone 46
+- **Metal Amount:** 7,500
+- **Avg Teams:** 1.29
+- **Survival Rate:** 63%
+- **Rating:** High Metal
+- **Strategy:** Balanced metal and safety
+
+#### **🎯 BALANCED LANDING SPOTS (Versatile Players)**
+
+**Rogue Slurp Room Market** - Zone 68
+- **Loot Score:** 71
+- **Metal Amount:** 3,300
+- **Avg Teams:** 1.26
+- **Survival Rate:** 68%
+- **Rating:** High Loot + Safe
+- **Strategy:** Excellent balance of loot and safety
+
+**Salty Docks** - Zone 50
+- **Loot Score:** 72
+- **Metal Amount:** 2,600
+- **Avg Teams:** 1.24
+- **Survival Rate:** 59%
+- **Rating:** High Loot
+- **Strategy:** Good loot with moderate competition
+
+**Open-Air Onsen** - Zone 43
+- **Loot Score:** 55
+- **Metal Amount:** 2,400
+- **Avg Teams:** 1.39
+- **Survival Rate:** 67%
+- **Rating:** Safe
+- **Strategy:** Safe location with decent resources
+
+**Crabby Cove** - Zone 112
+- **Loot Score:** 53
+- **Metal Amount:** 5,300
+- **Avg Teams:** 0.69
+- **Survival Rate:** 69%
+- **Rating:** Safe + High Metal
+- **Strategy:** Low competition with good metal
+
+#### **⚠️ LOW LOOT LOCATIONS (Avoid Unless Necessary)**
+
+**Kite's Flight** - Zone 78
+- **Loot Score:** 1 (Lowest)
+- **Metal Amount:** 3,500
+- **Avg Teams:** 0.89
+- **Survival Rate:** 71%
+- **Rating:** Very Safe + Low Loot
+- **Strategy:** Only for extreme survival focus
+
+**The Great Turtle** - Zone 78
+- **Loot Score:** 1
+- **Metal Amount:** 23
+- **Avg Teams:** 0.89
+- **Survival Rate:** 72%
+- **Rating:** Very Safe + Low Loot
+- **Strategy:** Minimal resources, maximum safety
+
+### 🎯 Landing Strategy Based on Current Season POI Data
 
 #### **Aggressive Players (High Competition)**
-- Target **Martial Maneuvers, Rocky Rus, Swarmy Stash** for high loot potential
-- Expect 1.24 avg teams but high survival rate (62%)
-- High metal availability (1600) for building-intensive playstyles
+- Target **Shiny Shafts, Rocky Rus, First Order Base** for highest loot potential
+- Expect 1.12-1.64 avg teams but high loot rewards
+- High metal availability (9,300+) for building-intensive playstyles
+- **Best Aggressive Spots:** Shiny Shafts (109 loot), Rocky Rus (81 loot), First Order Base (74 loot)
 
 #### **Passive Players (Low Competition)**
-- Land at **Fighting Frogs, First Order Base** for minimal early fights
-- Lower loot (38) but very low competition (0.48 avg teams)
-- Good for survival-focused gameplay
+- Land at **Sakura Stadium, Utopia City, Rolling Blossoms Farm** for minimal early fights
+- Lower competition (0.13-0.92 avg teams) with good survival rates
+- **Best Passive Spots:** Sakura Stadium (100% survival), Utopia City (75% survival), Way Station (71% survival)
 
 #### **Resource-Focused Players**
-- **First Order Base** offers 10,000 metal (highest in dataset)
-- **Rogue Slurp Room Market** provides 9600 metal
-- **Crabby Cove** offers 9300 metal with low competition
+- **Rolling Blossoms Farm** offers 10,000 metal (highest in current season)
+- **Overlook Lighthouse** provides 10,000 metal with 68% survival rate
+- **Swarmy Stash** offers 9,600 metal with moderate competition
+- **Best Metal Spots:** Rolling Blossoms Farm (10k), Overlook Lighthouse (10k), Swarmy Stash (9.6k)
+
+#### **Balanced Players (Versatile Strategy)**
+- **Rogue Slurp Room Market** offers excellent balance (71 loot, 68% survival)
+- **Salty Docks** provides high loot (72) with moderate competition
+- **Open-Air Onsen** offers safe gameplay (67% survival) with decent resources
+- **Best Balanced Spots:** Rogue Slurp Room Market, Salty Docks, Open-Air Onsen
 
 #### **Zone-Aware Landing**
-- **Zone 1-3:** Focus on guaranteed coverage areas using zone prediction mechanics
-- **Zone 4-6:** Consider Rift Island mechanics when choosing landing spots
-- **Late Zones:** Prioritize survival rate over loot quantity
+- **Zone 19-23:** Focus on high-action spots like Fighting Frogs, Yacht Stop, First Order Base
+- **Zone 29-33:** Target high-metal locations like Rocky Rus, Swarmy Stash
+- **Zone 41-50:** Balanced options like Pumpkin Pipes, Salty Docks
+- **Zone 67-78:** Safe, low-competition areas like Utopia City, Rolling Blossoms Farm, Way Station
+- **Zone 112-128:** Endgame-focused spots like Crabby Cove, Sakura Stadium, Shiny Shafts
+
+### 📊 Complete POI Analysis Database (Current Season)
+
+#### **All POI Locations with Full Statistics**
+
+**Fighting Frogs** - Zone 19
+- Loot Score: 50, Metal: 6,000, Avg Teams: 1.51, Survival: 40%, Rating: High Action
+
+**Yacht Stop** - Zone 20  
+- Loot Score: 55, Metal: 750, Avg Teams: 1.43, Survival: 48%, Rating: Balanced
+
+**Martial Maneuvers** - Zone 21
+- Loot Score: 41, Metal: 1,900, Avg Teams: 1.15, Survival: 65%, Rating: Safe
+
+**First Order Base** - Zone 23
+- Loot Score: 74, Metal: 500, Avg Teams: 1.64, Survival: 53%, Rating: High Loot
+
+**Supernova Academy** - Zone 28
+- Loot Score: 40, Metal: 2,600, Avg Teams: 1.43, Survival: 63%, Rating: Safe
+
+**Rocky Rus** - Zone 29
+- Loot Score: 81, Metal: 9,300, Avg Teams: 1.12, Survival: 42%, Rating: High Loot + Metal
+
+**Swarmy Stash** - Zone 33
+- Loot Score: 55, Metal: 9,600, Avg Teams: 1.20, Survival: 49%, Rating: High Metal
+
+**O.Z.P. HQ Base Tunnel** - Zone 35
+- Loot Score: 40, Metal: 2,100, Avg Teams: 1.20, Survival: 67%, Rating: Safe
+
+**Pumpkin Pipes** - Zone 41
+- Loot Score: 56, Metal: 3,000, Avg Teams: 1.42, Survival: 61%, Rating: Balanced
+
+**Open-Air Onsen** - Zone 43
+- Loot Score: 55, Metal: 2,400, Avg Teams: 1.39, Survival: 67%, Rating: Safe
+
+**Overlook Lighthouse** - Zone 46
+- Loot Score: 53, Metal: 10,000, Avg Teams: 1.44, Survival: 68%, Rating: High Metal + Safe
+
+**Shining Span** - Zone 46
+- Loot Score: 56, Metal: 7,500, Avg Teams: 1.29, Survival: 63%, Rating: High Metal
+
+**Salty Docks** - Zone 50
+- Loot Score: 72, Metal: 2,600, Avg Teams: 1.24, Survival: 59%, Rating: High Loot
+
+**Kappa Kappa Factory** - Zone 55
+- Loot Score: 57, Metal: 2,200, Avg Teams: 1.10, Survival: 67%, Rating: Safe
+
+**Utopia City** - Zone 67
+- Loot Score: 49, Metal: 8,300, Avg Teams: 0.92, Survival: 75%, Rating: Very Safe + High Metal
+
+**Rogue Slurp Room Market** - Zone 68
+- Loot Score: 71, Metal: 3,300, Avg Teams: 1.26, Survival: 68%, Rating: High Loot + Safe
+
+**Rolling Blossoms Farm** - Zone 69
+- Loot Score: 50, Metal: 10,000, Avg Teams: 0.82, Survival: 72%, Rating: Very Safe + High Metal
+
+**Way Station** - Zone 75
+- Loot Score: 47, Metal: 2,000, Avg Teams: 0.61, Survival: 71%, Rating: Very Safe
+
+**Outpost Enclave** - Zone 77
+- Loot Score: 38, Metal: 1,600, Avg Teams: 0.42, Survival: 73%, Rating: Very Safe
+
+**Kite's Flight** - Zone 78
+- Loot Score: 1, Metal: 3,500, Avg Teams: 0.89, Survival: 71%, Rating: Very Safe + Low Loot
+
+**The Great Turtle** - Zone 78
+- Loot Score: 1, Metal: 23, Avg Teams: 0.89, Survival: 72%, Rating: Very Safe + Low Loot
+
+**Crabby Cove** - Zone 112
+- Loot Score: 53, Metal: 5,300, Avg Teams: 0.69, Survival: 69%, Rating: Safe + High Metal
+
+**Sakura Stadium** - Zone 126
+- Loot Score: 34, Metal: 200, Avg Teams: 0.13, Survival: 100%, Rating: Safest + Low Loot
+
+**Shiny Shafts** - Zone 128
+- Loot Score: 109, Metal: 9,300, Avg Teams: 1.14, Survival: 75%, Rating: Best Overall
+
+#### **POI Analysis Summary Statistics**
+
+**Highest Loot Scores:**
+1. Shiny Shafts: 109
+2. Rocky Rus: 81  
+3. First Order Base: 74
+4. Salty Docks: 72
+5. Rogue Slurp Room Market: 71
+
+**Highest Metal Amounts:**
+1. Rolling Blossoms Farm: 10,000
+2. Overlook Lighthouse: 10,000
+3. Swarmy Stash: 9,600
+4. Rocky Rus: 9,300
+5. Shiny Shafts: 9,300
+
+**Highest Survival Rates:**
+1. Sakura Stadium: 100%
+2. Utopia City: 75%
+3. Shiny Shafts: 75%
+4. Rolling Blossoms Farm: 72%
+5. The Great Turtle: 72%
+
+**Lowest Competition (Avg Teams):**
+1. Sakura Stadium: 0.13
+2. Outpost Enclave: 0.42
+3. Way Station: 0.61
+4. Crabby Cove: 0.69
+5. Rolling Blossoms Farm: 0.82
+
+**Highest Competition (Avg Teams):**
+1. First Order Base: 1.64
+2. Fighting Frogs: 1.51
+3. Yacht Stop: 1.43
+4. Supernova Academy: 1.43
+5. Pumpkin Pipes: 1.42
 
 ## Advanced Zone Prediction & Mechanics
 
