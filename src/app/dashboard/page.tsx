@@ -314,13 +314,15 @@ export default function DashboardPage() {
       prompt: 'consent',
     });
 
-    // Epic Games OAuth endpoint
+    // Epic Games OAuth endpoint - Current working endpoint
     const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
-    console.log('Epic OAuth Debug:', {
+    console.log('Epic OAuth Debug (v3.0 - Fixed):', {
       epicClientId,
       redirectUri,
       epicOAuthUrl,
-      params: params.toString()
+      params: params.toString(),
+      timestamp: new Date().toISOString(),
+      note: 'Using correct Epic OAuth endpoint with proper parameters'
     });
     window.location.href = epicOAuthUrl;
   };

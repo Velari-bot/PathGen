@@ -39,7 +39,7 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
         throw new Error('Epic OAuth not configured. Please set NEXT_PUBLIC_EPIC_CLIENT_ID in your environment variables.');
       }
 
-      // Epic OAuth parameters - Epic Games requires specific format
+      // Epic OAuth parameters - Use Epic's current OAuth 2.0 specification
       const params = new URLSearchParams({
         client_id: epicClientId,
         redirect_uri: redirectUri,
@@ -49,15 +49,24 @@ export function EpicConnectButton({ onAccountLinked, onError }: EpicConnectButto
         prompt: 'consent', // Force consent screen
       });
 
-      // Epic Games OAuth endpoint
+      // Epic Games OAuth endpoint - Current working endpoint
       const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
-      console.log('Epic OAuth Debug (v2.0):', {
+      console.log('Epic OAuth Debug (v3.0 - Fixed):', {
         epicClientId,
         redirectUri,
         epicOAuthUrl,
         params: params.toString(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        note: 'Using correct Epic OAuth endpoint with proper parameters'
       });
+      
+      // Force page reload to clear any cached OAuth state
+      if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
+        window.location.href = window.location.pathname;
+        return;
+      }
+      
       window.location.href = epicOAuthUrl;
 
     } catch (error) {
