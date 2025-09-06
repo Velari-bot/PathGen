@@ -138,7 +138,7 @@ export default function TestOsirionAPIPage() {
       // Epic Games OAuth flow
       const epicClientId = process.env.NEXT_PUBLIC_EPIC_CLIENT_ID;
       // Force localhost for local development
-      const redirectUri = 'http://localhost:3000/auth/callback';
+      const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback';
       
       console.log('Epic OAuth Debug:', {
         epicClientId,
@@ -154,7 +154,7 @@ export default function TestOsirionAPIPage() {
       // Epic OAuth parameters - Epic uses a different OAuth flow
       const params = new URLSearchParams({
         client_id: epicClientId,
-        redirect_uri: 'http://localhost:3000/auth/callback', // Try the original callback page
+        redirect_uri: redirectUri, // Use environment variable
         response_type: 'code',
         scope: 'basic_profile friends_list country presence', // Request all required permissions
         state: user.uid, // Pass user ID for security
@@ -168,7 +168,7 @@ export default function TestOsirionAPIPage() {
       setTestResults([
         '🔄 Epic OAuth Configuration Found!',
         `Client ID: ${epicClientId.substring(0, 8)}...`,
-        `Redirect URI: http://localhost:3000/auth/callback`,
+        `Redirect URI: ${redirectUri}`,
         'Redirecting to Epic OAuth...',
         '',
         'IMPORTANT: Make sure to check ALL permission boxes on Epic\'s page!',
@@ -189,7 +189,7 @@ export default function TestOsirionAPIPage() {
         '2. Create a new application',
         '3. Set NEXT_PUBLIC_EPIC_CLIENT_ID in .env.local',
         '4. Set EPIC_CLIENT_SECRET in .env.local',
-        '5. Add redirect URI: http://localhost:3000/auth/callback',
+        `5. Add redirect URI: ${redirectUri}`,
         '',
         'Current environment check:',
         `NEXT_PUBLIC_EPIC_CLIENT_ID: ${process.env.NEXT_PUBLIC_EPIC_CLIENT_ID ? 'SET' : 'NOT SET'}`,

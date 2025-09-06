@@ -297,7 +297,7 @@ export default function DashboardPage() {
 
     // Epic Games OAuth flow
     const epicClientId = process.env.NEXT_PUBLIC_EPIC_CLIENT_ID;
-    const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'http://localhost:3000/auth/callback';
+    const redirectUri = process.env.NEXT_PUBLIC_EPIC_REDIRECT_URI || 'https://pathgen.online/auth/callback';
     
     if (!epicClientId) {
       alert('Epic OAuth not configured. Please contact support.');
