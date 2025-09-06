@@ -28,6 +28,14 @@ export async function POST(request: NextRequest) {
 
     const userData = userSnap.data();
     
+    // Ensure we have Epic ID for stats fetching
+    if (!userData?.epicId) {
+      return NextResponse.json(
+        { error: 'Epic account not connected. Please connect your Epic account to get personalized coaching.' },
+        { status: 400 }
+      );
+    }
+    
     // Get conversation history if chatId is provided
     let conversationHistory = [];
     if (chatId) {

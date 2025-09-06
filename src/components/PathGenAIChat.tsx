@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePathgenAI } from '@/hooks/usePathgenAI';
 import { CoachingCard } from '@/components/CoachingCard';
+import { EpicRequiredBanner } from '@/components/EpicRequiredBanner';
 import { AICoachingResponse } from '@/types/ai-coaching';
 import { ConversationManager } from '@/lib/conversation-manager';
 
@@ -12,12 +13,32 @@ export const PathGenAIChat: React.FC = () => {
   const { askAI, isLoading, error, lastResponse } = usePathgenAI();
   const [inputMessage, setInputMessage] = useState('');
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [conversationHistory, setConversationHistory] = useState<Array<{
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
     aiResponse?: AICoachingResponse;
   }>>([]);
+
+  // Load user profile to check Epic account connection
+  useEffect(() => {
+    if (user) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  const loadUserProfile = async () => {
+    try {
+      const response = await fetch(`/api/user-profile?userId=${user?.uid}`);
+      if (response.ok) {
+        const data = await response.json();
+        setUserProfile(data.profile);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
 
   // Initialize conversation
   useEffect(() => {
@@ -94,6 +115,31 @@ export const PathGenAIChat: React.FC = () => {
     return (
       <div className="bg-gray-800 rounded-lg p-6 text-center">
         <p className="text-gray-400">Please log in to use PathGen AI</p>
+      </div>
+    );
+  }
+
+  // Check if Epic account is connected
+  if (!userProfile?.epicId) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <EpicRequiredBanner 
+          message="Connect your Epic account to get personalized AI coaching based on your Fortnite stats"
+          className="mb-6"
+        />
+        
+        {/* Show basic AI chat without stats */}
+        <div className="bg-gray-800 rounded-lg p-6 text-center">
+          <h3 className="text-lg font-bold text-white mb-2">Basic AI Chat Available</h3>
+          <p className="text-gray-400 mb-4">
+            You can still ask general Fortnite questions, but personalized coaching requires Epic account connection.
+          </p>
+          <div className="text-sm text-gray-500">
+            <p>• General Fortnite strategy advice</p>
+            <p>• Meta discussions and tips</p>
+            <p>• Basic improvement guidance</p>
+          </div>
+        </div>
       </div>
     );
   }
