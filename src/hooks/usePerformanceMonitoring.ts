@@ -43,6 +43,9 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     if ('memory' in performance) {
       const memory = (performance as any).memory;
       setMetrics(prev => ({
+        loadTime: prev?.loadTime || 0,
+        renderTime: prev?.renderTime || 0,
+        networkLatency: prev?.networkLatency || 0,
         ...prev,
         memoryUsage: memory.usedJSHeapSize / 1024 / 1024 // MB
       }));
@@ -74,7 +77,7 @@ export const PerformanceMonitor: React.FC<PerformanceMonitorProps> = ({
     };
   }, [componentName, metrics]);
 
-  return <>{children}</>;
+  return React.createElement(React.Fragment, null, children);
 };
 
 // Hook for monitoring API call performance

@@ -6,7 +6,7 @@ import { usePathgenAI } from '@/hooks/usePathgenAI';
 import { CoachingCard } from '@/components/CoachingCard';
 import { EpicRequiredBanner } from '@/components/EpicRequiredBanner';
 import { AICoachingResponse } from '@/types/ai-coaching';
-import { ConversationManager } from '@/lib/conversation-manager';
+// Remove direct import of ConversationManager - use API calls instead
 
 export const PathGenAIChat: React.FC = () => {
   const { user } = useAuth();
@@ -49,8 +49,18 @@ export const PathGenAIChat: React.FC = () => {
 
   const initializeConversation = async () => {
     try {
-      const chatId = await ConversationManager.createConversation(user!.uid);
-      setCurrentChatId(chatId);
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user!.uid })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentChatId(data.chatId);
+      } else {
+        console.error('Failed to create conversation');
+      }
     } catch (error) {
       console.error('Error initializing conversation:', error);
     }
@@ -106,7 +116,12 @@ export const PathGenAIChat: React.FC = () => {
   const clearConversation = () => {
     setConversationHistory([]);
     if (currentChatId) {
-      ConversationManager.deleteConversation(currentChatId);
+      // Delete conversation via API
+      fetch(`/api/conversations/${currentChatId}`, {
+        method: 'DELETE'
+      }).catch(error => {
+        console.error('Error deleting conversation:', error);
+      });
       initializeConversation();
     }
   };

@@ -106,38 +106,40 @@ Player Data:`;
     if (recentStats) {
       prompt += `
 - Comprehensive Match Statistics:
-  * Username: ${recentStats.username || 'Unknown'}
-  * Total Matches: ${recentStats.totalMatches}
-  * Win Rate: ${recentStats.winRate.toFixed(1)}%
-  * Average Placement: ${recentStats.avgPlacement.toFixed(1)}
-  * Average Kills: ${recentStats.avgKills.toFixed(1)}
-  * K/D Ratio: ${recentStats.kd.toFixed(2)}
-  * Top 10 Rate: ${recentStats.top10Rate.toFixed(1)}%
-  * Average Survival Time: ${recentStats.avgSurvivalMinutes.toFixed(1)} minutes
+  * Username: ${(recentStats as any).username || 'Unknown'}
+  * Total Matches: ${(recentStats as any).totalMatches || recentStats.matches || 0}
+  * Win Rate: ${(recentStats as any).winRate?.toFixed(1) || (recentStats.winRate * 100).toFixed(1)}%
+  * Average Placement: ${(recentStats as any).avgPlacement?.toFixed(1) || recentStats.avgPlacement?.toFixed(1) || 'N/A'}
+  * Average Kills: ${(recentStats as any).avgKills?.toFixed(1) || 'N/A'}
+  * K/D Ratio: ${(recentStats as any).kd?.toFixed(2) || recentStats.kd?.toFixed(2) || 'N/A'}
+  * Top 10 Rate: ${(recentStats as any).top10Rate?.toFixed(1) || 'N/A'}%
+  * Average Survival Time: ${(recentStats as any).avgSurvivalMinutes?.toFixed(1) || 'N/A'} minutes
   
 - Recent Performance (Last 10 Matches):
-  * Recent Win Rate: ${recentStats.recentWinRate.toFixed(1)}%
-  * Recent Avg Placement: ${recentStats.recentAvgPlacement.toFixed(1)}
-  * Recent Avg Kills: ${recentStats.recentAvgKills.toFixed(1)}
+  * Recent Win Rate: ${(recentStats as any).recentWinRate?.toFixed(1) || 'N/A'}%
+  * Recent Avg Placement: ${(recentStats as any).recentAvgPlacement?.toFixed(1) || 'N/A'}
+  * Recent Avg Kills: ${(recentStats as any).recentAvgKills?.toFixed(1) || 'N/A'}
   
 - Performance Consistency:
-  * Placement Consistency: ${recentStats.placementConsistency.toFixed(1)} (lower = more consistent)
-  * Kill Consistency: ${recentStats.killConsistency.toFixed(1)} (lower = more consistent)
+  * Placement Consistency: ${(recentStats as any).placementConsistency?.toFixed(1) || 'N/A'} (lower = more consistent)
+  * Kill Consistency: ${(recentStats as any).killConsistency?.toFixed(1) || 'N/A'} (lower = more consistent)
   
 - Performance Range:
-  * Best Placement: ${recentStats.bestPlacement}
-  * Worst Placement: ${recentStats.worstPlacement}
-  * Highest Kills: ${recentStats.highestKills}
-  * Average Damage: ${recentStats.avgDamage.toFixed(0)}
-  * Longest Survival: ${recentStats.longestSurvival.toFixed(1)} minutes
-  * Shortest Survival: ${recentStats.shortestSurvival.toFixed(1)} minutes
+  * Best Placement: ${(recentStats as any).bestPlacement || 'N/A'}
+  * Worst Placement: ${(recentStats as any).worstPlacement || 'N/A'}
+  * Highest Kills: ${(recentStats as any).highestKills || 'N/A'}
+  * Average Damage: ${(recentStats as any).avgDamage?.toFixed(0) || 'N/A'}
+  * Longest Survival: ${(recentStats as any).longestSurvival?.toFixed(1) || 'N/A'} minutes
+  * Shortest Survival: ${(recentStats as any).shortestSurvival?.toFixed(1) || 'N/A'} minutes
 
 - Recent Match Details:`;
       
-      recentStats.recentMatches.forEach((match, index) => {
-        prompt += `
+      if ((recentStats as any).recentMatches) {
+        (recentStats as any).recentMatches.forEach((match: any, index: number) => {
+          prompt += `
   * Match ${index + 1}: Placement ${match.placement}, ${match.kills} kills, ${match.damage} damage, ${(match.survivalTime / 60).toFixed(1)} min`;
-      });
+        });
+      }
     }
 
     if (replayData) {

@@ -25,7 +25,15 @@ export const EpicRequiredBanner: React.FC<EpicRequiredProps> = ({
           </div>
         </div>
         <div className="ml-6">
-          <EpicConnectButton />
+          <EpicConnectButton 
+            onAccountLinked={() => {
+              console.log('Epic account linked successfully');
+              window.location.reload();
+            }}
+            onError={(error) => {
+              console.error('Epic account connection error:', error);
+            }}
+          />
         </div>
       </div>
     </div>

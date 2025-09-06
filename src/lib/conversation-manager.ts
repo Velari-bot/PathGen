@@ -1,11 +1,25 @@
-import { db } from '@/lib/firebase-admin';
 import { Conversation } from '@/types/ai-coaching';
+
+// Server-side only imports
+let db: any = null;
+if (typeof window === 'undefined') {
+  try {
+    const { db: adminDb } = require('@/lib/firebase-admin');
+    db = adminDb;
+  } catch (error) {
+    console.warn('Firebase Admin SDK not available on client side');
+  }
+}
 
 export class ConversationManager {
   /**
    * Create a new conversation
    */
   static async createConversation(userId: string): Promise<string> {
+    if (!db) {
+      throw new Error('ConversationManager can only be used server-side');
+    }
+    
     try {
       const conversationRef = db.collection('conversations').doc();
       const chatId = conversationRef.id;
@@ -31,6 +45,10 @@ export class ConversationManager {
    * Get conversation by ID
    */
   static async getConversation(chatId: string): Promise<Conversation | null> {
+    if (!db) {
+      throw new Error('ConversationManager can only be used server-side');
+    }
+    
     try {
       const conversationRef = db.collection('conversations').doc(chatId);
       const conversationSnap = await conversationRef.get();
@@ -50,6 +68,10 @@ export class ConversationManager {
    * Get all conversations for a user
    */
   static async getUserConversations(userId: string): Promise<Conversation[]> {
+    if (!db) {
+      throw new Error('ConversationManager can only be used server-side');
+    }
+    
     try {
       const conversationsRef = db.collection('conversations')
         .where('userId', '==', userId)
@@ -59,7 +81,7 @@ export class ConversationManager {
       const conversationsSnap = await conversationsRef.get();
       const conversations: Conversation[] = [];
 
-      conversationsSnap.forEach(doc => {
+      conversationsSnap.forEach((doc: any) => {
         conversations.push(doc.data() as Conversation);
       });
 
@@ -79,6 +101,10 @@ export class ConversationManager {
     content: string,
     aiResponse?: any
   ): Promise<void> {
+    if (!db) {
+      throw new Error('ConversationManager can only be used server-side');
+    }
+    
     try {
       const conversationRef = db.collection('conversations').doc(chatId);
       const conversationSnap = await conversationRef.get();
@@ -110,6 +136,10 @@ export class ConversationManager {
    * Delete conversation
    */
   static async deleteConversation(chatId: string): Promise<void> {
+    if (!db) {
+      throw new Error('ConversationManager can only be used server-side');
+    }
+    
     try {
       const conversationRef = db.collection('conversations').doc(chatId);
       await conversationRef.delete();
@@ -126,6 +156,10 @@ export class ConversationManager {
     chatId: string,
     metadata: Partial<Conversation>
   ): Promise<void> {
+    if (!db) {
+      throw new Error('ConversationManager can only be used server-side');
+    }
+    
     try {
       const conversationRef = db.collection('conversations').doc(chatId);
       await conversationRef.update({
