@@ -161,9 +161,14 @@ export default function TestOsirionAPIPage() {
         prompt: 'consent', // Force Epic to show consent screen
       });
 
-      // Epic uses Epic Games Services OAuth endpoint
-      const epicOAuthUrl = `https://api.epicgames.dev/epic/oauth/v1/authorize?${params.toString()}`;
-      console.log('Redirecting to Epic OAuth:', epicOAuthUrl);
+      // Epic Games OAuth endpoint
+      const epicOAuthUrl = `https://www.epicgames.com/id/authorize?${params.toString()}`;
+      console.log('Epic OAuth Debug:', {
+        epicClientId,
+        redirectUri,
+        epicOAuthUrl,
+        params: params.toString()
+      });
       
       setTestResults([
         '🔄 Epic OAuth Configuration Found!',
