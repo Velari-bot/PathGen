@@ -4,6 +4,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import * as admin from 'firebase-admin';
 import { UsageTracker } from '@/lib/usage-tracker';
+import { CreditBackendService } from '@/lib/credit-backend-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -436,6 +437,30 @@ export async function POST(request: NextRequest) {
            console.log('📊 Usage counter incremented successfully');
          } catch (incrementError) {
            console.error('⚠️ Warning: Could not increment usage counter:', incrementError);
+         }
+
+         // Deduct credits for Osirion pull (50 credits)
+         try {
+           const creditService = new CreditBackendService();
+           const creditResult = await creditService.deductCredits(
+             userId,
+             50, // Osirion pull costs 50 credits
+             'osirion_pull',
+             {
+               epicId: epicId,
+               platform: platform,
+               timestamp: new Date().toISOString(),
+               source: 'osirion_api'
+             }
+           );
+           
+           if (creditResult.success) {
+             console.log(`✅ Credits deducted successfully: ${creditResult.creditsChanged} credits used, ${creditResult.creditsRemaining} remaining`);
+           } else {
+             console.error('❌ Failed to deduct credits:', creditResult.message);
+           }
+         } catch (creditError) {
+           console.error('⚠️ Warning: Could not deduct credits:', creditError);
          }
 
       } catch (firebaseError) {

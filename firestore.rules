@@ -84,8 +84,10 @@ service cloud.firestore {
 
     // Epic accounts - users can read/write their own
     match /epicAccounts/{docId} {
-      allow read, write, create: if isAuthenticated() && 
+      allow read, write: if isAuthenticated() && 
         isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        isOwner(request.resource.data.userId);
     }
 
     // Usage collection - users can read/write their own
