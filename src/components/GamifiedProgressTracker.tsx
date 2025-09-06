@@ -43,6 +43,7 @@ export default function GamifiedProgressTracker() {
       }
 
       try {
+        console.log('Loading tournament progress for user:', user.uid);
         // Get user's Fortnite stats from Firestore
         const statsRef = doc(db, 'fortniteStats', user.uid);
         const statsDoc = await getDoc(statsRef);
@@ -61,10 +62,14 @@ export default function GamifiedProgressTracker() {
         }
       } catch (err) {
         console.error('Error loading tournament progress:', err);
+        console.error('Error details:', {
+          message: err instanceof Error ? err.message : 'Unknown error',
+          code: (err as any)?.code || 'unknown',
+          user: user?.uid,
+          authenticated: !!user
+        });
         setError('Failed to load progress data');
-        // Fallback to default progress
-        const fallbackProgress = calculateTournamentProgress({}, isPro);
-        setTournamentProgress(fallbackProgress);
+        // Don't set fallback progress here - let the error state handle it
       } finally {
         setLoading(false);
       }
@@ -190,11 +195,78 @@ export default function GamifiedProgressTracker() {
     );
   }
 
-  if (error || !tournamentProgress) {
+  if (error) {
     return (
       <div className="glass-card p-6">
         <div className="text-center">
           <p className="text-red-400">Failed to load progress data</p>
+          <p className="text-secondary-text mt-2">Please try refreshing the page</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!tournamentProgress) {
+    return (
+      <div className="glass-card p-6">
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-white mb-2">Your Skill Score</h3>
+          <div className="text-4xl font-bold text-blue-400 mb-2">50</div>
+          <div className="text-lg text-secondary-text">Current Level: Beginner</div>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-secondary-text text-sm">Progress to Intermediate</span>
+            <span className="text-sm font-semibold text-yellow-400">0%</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-3">
+            <div className="h-3 rounded-full transition-all duration-500 bg-yellow-400" style={{ width: '0%' }}></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-red-400 mb-1">Current: 50</div>
+            <div className="text-secondary-text text-sm">Your skill level</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-400 mb-1">Target: 65</div>
+            <div className="text-secondary-text text-sm">With PathGen Pro</div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-lg p-4 mb-6">
+          <h4 className="text-lg font-semibold text-white mb-3">Tournament Performance</h4>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-text text-sm">Tournaments Played</span>
+              <span className="text-blue-400 text-sm">0</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-text text-sm">Best Placement</span>
+              <span className="text-green-400 text-sm">N/A</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-text text-sm">Tournaments Won</span>
+              <span className="text-yellow-400 text-sm">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-800 rounded-lg p-4 mb-6">
+          <h4 className="text-lg font-semibold text-white mb-3">Get Started</h4>
+          <div className="text-center">
+            <p className="text-secondary-text mb-4">
+              Connect your Epic Games account to start tracking your tournament progress and unlock personalized coaching!
+            </p>
+            <div className="text-lg font-semibold text-white mb-2">
+              +15 Skill Points Available
+            </div>
+            <div className="text-secondary-text text-sm">
+              Play tournaments to unlock your full potential
+            </div>
+          </div>
         </div>
       </div>
     );

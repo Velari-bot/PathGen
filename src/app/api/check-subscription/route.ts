@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/firebase-admin-api';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 // Subscription plan limits
 const SUBSCRIPTION_PLANS = {
   free: {

@@ -1,42 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CreditTracker } from '@/lib/credit-system';
+import { getDb } from '@/lib/firebase-admin-api';
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, feature, sessionId } = await request.json();
+    const { userId, amount, reason } = await request.json();
 
-    if (!userId || !feature || !sessionId) {
-      return NextResponse.json({ 
-        error: 'User ID, feature, and session ID are required' 
-      }, { status: 400 });
+    if (!userId || !amount || !reason) {
+      return NextResponse.json(
+        { error: 'Missing required fields: userId, amount, reason' },
+        { status: 400 }
+      );
     }
 
-    console.log(`💸 Refunding credits for user ${userId}, feature: ${feature}`);
-
-    // Refund credits
-    const result = await CreditTracker.refundCredits(userId, feature, sessionId);
-
-    if (!result.success) {
-      return NextResponse.json({
-        success: false,
-        error: 'Failed to refund credits',
-        availableCredits: result.availableCredits
-      }, { status: 400 });
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Firebase Admin not initialized' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return NextResponse.json(
+        { error: 'User document not found' },
+        { status: 404 }
+      );
+    }
+
+    const userData = userDoc.data();
+    const currentCreditsUsed = userData?.credits_used || 0;
+    const currentCreditsRemaining = userData?.credits_remaining || 0;
+    const newCreditsUsed = Math.max(0, currentCreditsUsed - amount);
+    const newCreditsRemaining = currentCreditsRemaining + amount;
+
+    // Update Firestore
+    await userRef.update({
+      credits_used: newCreditsUsed,
+      credits_remaining: newCreditsRemaining,
+      last_updated: new Date()
+    });
+
+    // Log the refund
+    await db.collection('creditUsage').add({
+      userId,
+      amount: -amount,
+      feature: `refund: ${reason}`,
+      timestamp: new Date(),
       success: true,
-      availableCredits: result.availableCredits,
-      message: `Credits refunded for ${feature}`
+      metadata: { reason }
+    });
+
+    console.log(`Credits refunded: ${amount} for ${reason} to user ${userId}`);
+
+    return NextResponse.json({ 
+      success: true,
+      credits_remaining: newCreditsRemaining,
+      credits_used: newCreditsUsed
     });
 
   } catch (error) {
-    console.error('Error refunding credits:', error);
+    console.error('Error in refund-credits API:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to refund credits', 
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

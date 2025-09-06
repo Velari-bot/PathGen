@@ -547,7 +547,13 @@ export class CreditSystem {
 
   static formatCredits(credits: number): string {
     if (credits >= 1000) {
-      return `${(credits / 1000).toFixed(1)}k`;
+      const kValue = credits / 1000;
+      // Show more precision for values close to whole numbers
+      if (kValue >= 9.9) {
+        return `${kValue.toFixed(1)}k`;
+      } else {
+        return `${kValue.toFixed(3)}k`;
+      }
     }
     return credits.toString();
   }

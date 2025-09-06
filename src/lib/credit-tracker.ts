@@ -1,319 +1,250 @@
-import { CreditSystem, CREDIT_COSTS, UserCredits } from './credit-system';
-
-export interface CreditTransaction {
-  id: string;
-  userId: string;
-  feature: string;
-  cost: number;
-  description: string;
-  timestamp: Date;
-  success: boolean;
-  remainingCredits: number;
-  metadata?: any;
-}
+import { doc, updateDoc, increment, getDoc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export interface CreditUsage {
   userId: string;
-  totalSpent: number;
-  featureBreakdown: Record<string, number>;
-  lastUsed: Date;
-  averageDailyUsage: number;
+  amount: number;
+  feature: string;
+  timestamp: Date;
+  success: boolean;
+  metadata?: any;
+}
+
+export interface UserCredits {
+  credits_total: number;
+  credits_used: number;
+  credits_remaining: number;
+  last_updated: Date;
 }
 
 export class CreditTracker {
-  private static instance: CreditTracker;
-  private transactions: CreditTransaction[] = [];
-  private userCredits: Map<string, UserCredits> = new Map();
+  private static listeners: Map<string, () => void> = new Map();
 
-  private constructor() {}
-
-  static getInstance(): CreditTracker {
-    if (!CreditTracker.instance) {
-      CreditTracker.instance = new CreditTracker();
-    }
-    return CreditTracker.instance;
-  }
-
-  // Initialize user credits (called when user signs up or subscribes)
-  async initializeUserCredits(userId: string, plan: string): Promise<UserCredits> {
-    const defaultCredits = plan === 'free' ? 250 : 4000;
-    
-    const userCredits: UserCredits = {
-      userId,
-      totalCredits: defaultCredits,
-      usedCredits: 0,
-      availableCredits: defaultCredits,
-      lastReset: new Date(),
-      plan,
-      expiresAt: plan === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    };
-
-    this.userCredits.set(userId, userCredits);
-    
-    // TODO: Save to database
-    await this.saveUserCredits(userCredits);
-    
-    return userCredits;
-  }
-
-  // Check if user can afford a feature
-  canAffordFeature(userId: string, feature: string): boolean {
-    const userCredits = this.userCredits.get(userId);
-    if (!userCredits) return false;
-    
-    const cost = CreditSystem.getCreditCost(feature);
-    return userCredits.availableCredits >= cost;
-  }
-
-  // Use credits for a feature
-  async useCredits(userId: string, feature: string, metadata?: any): Promise<{
-    success: boolean;
-    remainingCredits: number;
-    transaction: CreditTransaction | null;
-    error?: string;
-  }> {
-    const userCredits = this.userCredits.get(userId);
-    if (!userCredits) {
-      return {
-        success: false,
-        remainingCredits: 0,
-        transaction: null,
-        error: 'User credits not found'
-      };
-    }
-
-    const cost = CreditSystem.getCreditCost(feature);
-    if (userCredits.availableCredits < cost) {
-      return {
-        success: false,
-        remainingCredits: userCredits.availableCredits,
-        transaction: null,
-        error: `Insufficient credits. Need ${cost}, have ${userCredits.availableCredits}`
-      };
-    }
-
-    // Deduct credits
-    userCredits.usedCredits += cost;
-    userCredits.availableCredits -= cost;
-
-    // Create transaction record
-    const transaction: CreditTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId,
-      feature,
-      cost,
-      description: CreditSystem.getFeatureCategory(feature),
-      timestamp: new Date(),
-      success: true,
-      remainingCredits: userCredits.availableCredits,
-      metadata
-    };
-
-    this.transactions.push(transaction);
-    this.userCredits.set(userId, userCredits);
-
-    // TODO: Save to database
-    await this.saveUserCredits(userCredits);
-    await this.saveTransaction(transaction);
-
-    return {
-      success: true,
-      remainingCredits: userCredits.availableCredits,
-      transaction
-    };
-  }
-
-  // Add credits (for purchases, bonuses, etc.)
-  async addCredits(userId: string, amount: number, reason: string): Promise<UserCredits | null> {
-    const userCredits = this.userCredits.get(userId);
-    if (!userCredits) return null;
-
-    userCredits.totalCredits += amount;
-    userCredits.availableCredits += amount;
-
-    // Create transaction record for credit addition
-    const transaction: CreditTransaction = {
-      id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      userId,
-      feature: 'credit_purchase',
-      cost: -amount, // Negative cost indicates credit addition
-      description: `Credits added: ${reason}`,
-      timestamp: new Date(),
-      success: true,
-      remainingCredits: userCredits.availableCredits,
-      metadata: { reason, amount }
-    };
-
-    this.transactions.push(transaction);
-    this.userCredits.set(userId, userCredits);
-
-    // TODO: Save to database
-    await this.saveUserCredits(userCredits);
-    await this.saveTransaction(transaction);
-
-    return userCredits;
-  }
-
-  // Get user's current credit status
-  getUserCredits(userId: string): UserCredits | null {
-    return this.userCredits.get(userId) || null;
-  }
-
-  // Get credit usage statistics
-  getCreditUsage(userId: string): CreditUsage | null {
-    const userTransactions = this.transactions.filter(t => t.userId === userId && t.cost > 0);
-    if (userTransactions.length === 0) return null;
-
-    const totalSpent = userTransactions.reduce((sum, t) => sum + t.cost, 0);
-    const featureBreakdown: Record<string, number> = {};
-    
-    userTransactions.forEach(t => {
-      featureBreakdown[t.feature] = (featureBreakdown[t.feature] || 0) + t.cost;
-    });
-
-    const lastUsed = new Date(Math.max(...userTransactions.map(t => t.timestamp.getTime())));
-    
-    // Calculate average daily usage (last 30 days)
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentTransactions = userTransactions.filter(t => t.timestamp > thirtyDaysAgo);
-    const averageDailyUsage = recentTransactions.reduce((sum, t) => sum + t.cost, 0) / 30;
-
-    return {
-      userId,
-      totalSpent,
-      featureBreakdown,
-      lastUsed,
-      averageDailyUsage
-    };
-  }
-
-  // Reset monthly credits (for subscription plans)
-  async resetMonthlyCredits(userId: string): Promise<UserCredits | null> {
-    const userCredits = this.userCredits.get(userId);
-    if (!userCredits || userCredits.plan === 'free') return userCredits || null;
-
-    userCredits.usedCredits = 0;
-    userCredits.availableCredits = userCredits.totalCredits;
-    userCredits.lastReset = new Date();
-    userCredits.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-
-    this.userCredits.set(userId, userCredits);
-    
-    // TODO: Save to database
-    await this.saveUserCredits(userCredits);
-
-    return userCredits;
-  }
-
-  // Get transaction history
-  getTransactionHistory(userId: string, limit: number = 50): CreditTransaction[] {
-    return this.transactions
-      .filter(t => t.userId === userId)
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, limit);
-  }
-
-  // Get feature usage breakdown
-  getFeatureUsageBreakdown(userId: string): Record<string, { count: number; totalCost: number }> {
-    const userTransactions = this.transactions.filter(t => t.userId === userId && t.cost > 0);
-    const breakdown: Record<string, { count: number; totalCost: number }> = {};
-
-    userTransactions.forEach(t => {
-      if (!breakdown[t.feature]) {
-        breakdown[t.feature] = { count: 0, totalCost: 0 };
+  /**
+   * Check if user has enough credits for an action (client-side)
+   * @param userId - The user's ID
+   * @param amount - Number of credits required
+   * @returns Promise<boolean> - Whether user can afford the action
+   */
+  static async canAffordCredits(userId: string, amount: number): Promise<boolean> {
+    try {
+      const response = await fetch(`/api/get-credits?userId=${userId}`);
+      
+      if (!response.ok) {
+        console.error('Error checking credits:', response.statusText);
+        return false;
       }
-      breakdown[t.feature].count++;
-      breakdown[t.feature].totalCost += t.cost;
-    });
 
-    return breakdown;
+      const result = await response.json();
+      const credits = result.credits;
+      
+      return credits && credits.credits_remaining >= amount;
+
+    } catch (error) {
+      console.error('Error checking credits:', error);
+      return false;
+    }
   }
 
-  // Predict credit needs based on usage patterns
-  predictCreditNeeds(userId: string): { daily: number; weekly: number; monthly: number } {
-    const usage = this.getCreditUsage(userId);
-    if (!usage) return { daily: 0, weekly: 0, monthly: 0 };
+  /**
+   * Use credits for a specific action AFTER the action succeeds (client-side)
+   * @param userId - The user's ID
+   * @param amount - Number of credits to deduct
+   * @param feature - The feature/action being used
+   * @param metadata - Optional metadata about the action
+   * @returns Promise<boolean> - Success status
+   */
+  static async useCredits(
+    userId: string, 
+    amount: number, 
+    feature: string, 
+    metadata?: any
+  ): Promise<boolean> {
+    try {
+      // Call the API route instead of direct Firestore access
+      const response = await fetch('/api/use-credits/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          amount,
+          feature,
+          metadata
+        })
+      });
 
-    const daily = usage.averageDailyUsage;
-    const weekly = daily * 7;
-    const monthly = daily * 30;
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Error using credits:', error);
+        return false;
+      }
 
-    return { daily, weekly, monthly };
+      const result = await response.json();
+      console.log(`Credits used: ${amount} for ${feature} by user ${userId}`);
+      
+      // Trigger a refresh of credit listeners
+      this.notifyListeners(userId);
+      
+      return result.success;
+
+    } catch (error) {
+      console.error('Error using credits:', error);
+      return false;
+    }
   }
 
-  // Check if user should upgrade plan
-  shouldUpgradePlan(userId: string): { shouldUpgrade: boolean; reason: string; recommendedPlan: string } {
-    const userCredits = this.userCredits.get(userId);
-    if (!userCredits) return { shouldUpgrade: false, reason: '', recommendedPlan: '' };
+  /**
+   * Get current credit status for a user (client-side)
+   * @param userId - The user's ID
+   * @returns Promise<UserCredits | null>
+   */
+  static async getUserCredits(userId: string): Promise<UserCredits | null> {
+    try {
+      const response = await fetch(`/api/get-credits?userId=${userId}`);
+      
+      if (!response.ok) {
+        console.error('Error getting user credits:', response.statusText);
+        return null;
+      }
 
-    const usage = this.getCreditUsage(userId);
-    if (!usage) return { shouldUpgrade: false, reason: '', recommendedPlan: '' };
+      const result = await response.json();
+      return result.credits;
 
-    const monthlyUsage = usage.averageDailyUsage * 30;
-    
-    if (userCredits.plan === 'free' && monthlyUsage > 200) {
-      return {
-        shouldUpgrade: true,
-        reason: 'High usage detected. Free plan may not be sufficient.',
-        recommendedPlan: 'pro'
-      };
+    } catch (error) {
+      console.error('Error getting user credits:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Refund credits to a user (client-side)
+   * @param userId - The user's ID
+   * @param amount - Number of credits to refund
+   * @param reason - Reason for refund
+   * @returns Promise<boolean> - Success status
+   */
+  static async refundCredits(
+    userId: string, 
+    amount: number, 
+    reason: string
+  ): Promise<boolean> {
+    try {
+      const response = await fetch('/api/refund-credits/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          amount,
+          reason
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Error refunding credits:', response.statusText);
+        return false;
+      }
+
+      const result = await response.json();
+      console.log(`Credits refunded: ${amount} for ${reason} to user ${userId}`);
+      return result.success;
+
+    } catch (error) {
+      console.error('Error refunding credits:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Subscribe to real-time credit updates
+   * @param userId - The user's ID
+   * @param callback - Callback function to handle updates
+   * @returns Unsubscribe function
+   */
+  static subscribeToCredits(userId: string, callback: (credits: UserCredits) => void): () => void {
+    if (!db) {
+      console.error('Firebase db not initialized');
+      return () => {};
     }
 
-    return { shouldUpgrade: false, reason: '', recommendedPlan: '' };
-  }
+    const unsubscribe = onSnapshot(
+      doc(db, 'users', userId),
+      (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          const credits: UserCredits = {
+            credits_total: data?.credits_total || 0,
+            credits_used: data?.credits_used || 0,
+            credits_remaining: data?.credits_remaining || 0,
+            last_updated: data?.last_updated?.toDate() || new Date()
+          };
+          console.log('📊 Credit subscription update:', credits);
+          callback(credits);
+        }
+      },
+      (error) => {
+        console.error('Error subscribing to credits:', error);
+      }
+    );
 
-  // Private methods for database operations (to be implemented)
-  private async saveUserCredits(userCredits: UserCredits): Promise<void> {
-    // TODO: Implement database save
-    console.log('Saving user credits:', userCredits);
-  }
+    // Store the unsubscribe function
+    this.listeners.set(userId, unsubscribe);
 
-  private async saveTransaction(transaction: CreditTransaction): Promise<void> {
-    // TODO: Implement database save
-    console.log('Saving transaction:', transaction);
-  }
-
-  // Export data for analytics
-  exportData(): { transactions: CreditTransaction[]; userCredits: UserCredits[] } {
-    return {
-      transactions: [...this.transactions],
-      userCredits: Array.from(this.userCredits.values())
+    return () => {
+      unsubscribe();
+      this.listeners.delete(userId);
     };
   }
 
-  // Clear data (for testing)
-  clearData(): void {
-    this.transactions = [];
-    this.userCredits.clear();
+  /**
+   * Notify all listeners for a specific user to refresh their data
+   */
+  static notifyListeners(userId: string): void {
+    const listener = this.listeners.get(userId);
+    if (listener) {
+      // Trigger a refresh by calling the listener
+      listener();
+    }
+  }
+
+  /**
+   * Clean up all listeners
+   */
+  static cleanup(): void {
+    this.listeners.forEach(unsubscribe => unsubscribe());
+    this.listeners.clear();
   }
 }
 
-// Global instance
-export const creditTracker = CreditTracker.getInstance();
+// Credit costs for different features
+export const CREDIT_COSTS = {
+  AI_CHAT: 1,
+  REPLAY_UPLOAD: 20,
+  OSIRION_PULL: 50,
+  STATS_LOOKUP: 2,
+  TOURNAMENT_STRATEGY: 5,
+  POI_ANALYSIS: 10
+} as const;
 
-// Helper functions for common credit operations
-export const useCreditsForAI = async (userId: string, messageType: 'simple' | 'complex' | 'coaching') => {
-  const feature = messageType === 'simple' ? 'ai_chat_simple' : 
-                  messageType === 'complex' ? 'ai_chat_complex' : 'ai_coaching_session';
-  
-  return await creditTracker.useCredits(userId, feature, { messageType });
+// Convenience functions for common actions
+export const useCredits = {
+  forChat: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.AI_CHAT, 'ai_chat'),
+  forReplayUpload: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.REPLAY_UPLOAD, 'replay_upload'),
+  forOsirionPull: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.OSIRION_PULL, 'osirion_pull'),
+  forStatsLookup: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.STATS_LOOKUP, 'stats_lookup'),
+  forTournamentStrategy: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.TOURNAMENT_STRATEGY, 'tournament_strategy'),
+  forPOIAnalysis: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.POI_ANALYSIS, 'poi_analysis')
 };
 
-export const useCreditsForStats = async (userId: string, analysisType: 'basic' | 'detailed' | 'performance') => {
-  const feature = analysisType === 'basic' ? 'stat_lookup_basic' : 
-                  analysisType === 'detailed' ? 'stat_lookup_detailed' : 'performance_analysis';
-  
-  return await creditTracker.useCredits(userId, feature, { analysisType });
-};
-
-export const useCreditsForReplay = async (userId: string, action: 'upload' | 'analysis') => {
-  const feature = action === 'upload' ? 'replay_upload' : 'replay_analysis';
-  
-  return await creditTracker.useCredits(userId, feature, { action });
-};
-
-export const useCreditsForOsirion = async (userId: string, dataType: 'basic' | 'premium') => {
-  const feature = dataType === 'basic' ? 'osirion_pull_basic' : 'osirion_pull_premium';
-  
-  return await creditTracker.useCredits(userId, feature, { dataType });
+// Convenience functions for checking if user can afford actions
+export const canAffordCredits = {
+  forChat: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.AI_CHAT),
+  forReplayUpload: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.REPLAY_UPLOAD),
+  forOsirionPull: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.OSIRION_PULL),
+  forStatsLookup: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.STATS_LOOKUP),
+  forTournamentStrategy: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.TOURNAMENT_STRATEGY),
+  forPOIAnalysis: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.POI_ANALYSIS)
 };

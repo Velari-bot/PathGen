@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import SmoothScroll from '@/components/SmoothScroll';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { CreditSystem } from '@/lib/credit-system-client';
+import { useCreditsDisplay } from '@/hooks/useCreditTracking';
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -17,8 +17,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [epicAccount, setEpicAccount] = useState<any>(null);
-  const [userCredits, setUserCredits] = useState<any>(null);
-  const [isLoadingCredits, setIsLoadingCredits] = useState(false);
+  const { credits: userCredits, isLoading: isLoadingCredits, error: creditsError } = useCreditsDisplay();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showCreditCosts, setShowCreditCosts] = useState(true);
 
@@ -32,7 +31,6 @@ export default function SettingsPage() {
     if (user) {
       setDisplayName(user.displayName || '');
       loadEpicAccount();
-      loadUserCredits();
       loadUserProfile();
     }
   }, [user]);
@@ -73,105 +71,13 @@ export default function SettingsPage() {
           profileData.subscriptionTier = 'pro';
         }
         
-        // Refresh credits after profile is loaded
-        if (profileData.subscriptionTier !== userProfile?.subscriptionTier) {
-          loadUserCredits();
-        }
+        // Credits will be automatically updated via the useCreditsDisplay hook
       }
     } catch (error) {
       console.error('Failed to load user profile:', error);
     }
   };
 
-  const loadUserCredits = async () => {
-    if (!user) return;
-    
-    setIsLoadingCredits(true);
-    try {
-      // Get the current subscription tier from userProfile or default to free
-      const currentTier = userProfile?.subscriptionTier || 'free';
-      
-      // Convert standard to pro if needed
-      if (currentTier === 'standard' && db) {
-        const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, {
-          subscriptionTier: 'pro'
-        });
-        // Update local state
-        setUserProfile((prev: any) => prev ? { ...prev, subscriptionTier: 'pro' } : null);
-      }
-      
-      // Get user credits from usage collection
-      try {
-        if (!db) {
-          throw new Error('Database not initialized');
-        }
-        
-        const usageDocRef = doc(db, 'usage', user.uid);
-        const usageDoc = await getDoc(usageDocRef);
-        
-        let credits;
-        if (usageDoc.exists()) {
-          credits = usageDoc.data();
-        } else {
-          // Initialize default credits based on subscription tier
-          const defaultCredits = currentTier === 'free' ? 250 : 4000;
-          credits = {
-            userId: user.uid,
-            totalCredits: defaultCredits,
-            usedCredits: 0,
-            availableCredits: defaultCredits,
-            lastReset: new Date(),
-            plan: currentTier === 'standard' ? 'pro' : currentTier,
-            expiresAt: currentTier === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          };
-          
-          // Save to Firestore
-          await updateDoc(usageDocRef, credits);
-        }
-        
-        // Ensure the plan matches the userProfile subscription tier and set correct credits
-        if (credits && userProfile?.subscriptionTier) {
-          credits.plan = userProfile.subscriptionTier;
-          
-          // Ensure Pro users have 4000 credits
-          if (userProfile.subscriptionTier === 'pro' || userProfile.subscriptionTier === 'standard') {
-            credits.totalCredits = 4000;
-            credits.availableCredits = 4000;
-            credits.plan = 'pro';
-          }
-        }
-        
-        setUserCredits(credits);
-      } catch (error) {
-        console.error('Failed to load user credits:', error);
-        // Set default credits if there's an error
-        const currentTier = userProfile?.subscriptionTier || 'free';
-        const defaultCredits = currentTier === 'free' ? 250 : 4000;
-        
-        const mockCredits = {
-          userId: user.uid,
-          totalCredits: defaultCredits,
-          usedCredits: 0,
-          availableCredits: defaultCredits,
-          lastReset: new Date(),
-          plan: currentTier === 'standard' ? 'pro' : currentTier,
-          expiresAt: currentTier === 'free' ? undefined : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        };
-        
-        // Ensure Pro users get 4000 credits
-        if (currentTier === 'pro' || currentTier === 'standard') {
-          mockCredits.totalCredits = 4000;
-          mockCredits.availableCredits = 4000;
-          mockCredits.plan = 'pro';
-        }
-        
-                 setUserCredits(mockCredits);
-       }
-     } finally {
-       setIsLoadingCredits(false);
-     }
-  };
 
   const disconnectEpicAccount = () => {
     if (confirm('Are you sure you want to disconnect your Epic Games account? This will remove all linked data.')) {
@@ -397,7 +303,7 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                   {/* Credit Overview */}
                   <div className="bg-white/10 border border-white/20 rounded-lg p-4">
-                    <h3 className="text-white font-semibold mb-2">Current Plan: {(userProfile?.subscriptionTier || userCredits?.plan || 'free').toUpperCase()}</h3>
+                    <h3 className="text-white font-semibold mb-2">Current Plan: {(userProfile?.subscriptionTier || 'free').toUpperCase()}</h3>
                     <p className="text-white/80 text-sm">Track your credit balance and usage</p>
                   </div>
 
@@ -410,19 +316,19 @@ export default function SettingsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-white">
-                          {CreditSystem.formatCredits(userCredits.availableCredits)}
+                          {userCredits ? `${(userCredits.credits_remaining / 1000).toFixed(3)}k` : '0'}
                         </div>
                         <div className="text-gray-300 text-sm">Available</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-white">
-                          {CreditSystem.formatCredits(userCredits.usedCredits)}
+                          {userCredits ? userCredits.credits_used : '0'}
                         </div>
                         <div className="text-gray-300 text-sm">Used</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-white">
-                          {CreditSystem.formatCredits(userCredits.totalCredits)}
+                          {userCredits ? `${(userCredits.credits_total / 1000).toFixed(1)}k` : '0'}
                         </div>
                         <div className="text-gray-300 text-sm">Total</div>
                       </div>
@@ -432,12 +338,12 @@ export default function SettingsPage() {
                     <div className="mb-4">
                       <div className="flex justify-between text-sm text-gray-300 mb-2">
                         <span>Credit Usage</span>
-                        <span>{((userCredits.usedCredits / userCredits.totalCredits) * 100).toFixed(1)}%</span>
+                        <span>{userCredits ? ((userCredits.credits_used / userCredits.credits_total) * 100).toFixed(1) : '0'}%</span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2">
                         <div 
                           className="h-2 rounded-full transition-all duration-300 bg-white"
-                          style={{ width: `${Math.min((userCredits.usedCredits / userCredits.totalCredits) * 100, 100)}%` }}
+                          style={{ width: `${userCredits ? Math.min((userCredits.credits_used / userCredits.credits_total) * 100, 100) : 0}%` }}
                         ></div>
                       </div>
                     </div>
@@ -446,19 +352,11 @@ export default function SettingsPage() {
                     <div className="bg-gray-700 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-white font-medium">Current Plan: {(userProfile?.subscriptionTier || userCredits.plan).toUpperCase()}</div>
+                          <div className="text-white font-medium">Current Plan: {(userProfile?.subscriptionTier || 'free').toUpperCase()}</div>
                           <div className="text-gray-300 text-sm">
-                            {(userProfile?.subscriptionTier || userCredits.plan) === 'free' ? 'One-time allocation' : 'Monthly allocation'}
+                            {(userProfile?.subscriptionTier || 'free') === 'free' ? 'One-time allocation' : 'Monthly allocation'}
                           </div>
                         </div>
-                        {userCredits.expiresAt && (
-                          <div className="text-right">
-                            <div className="text-gray-300 text-sm">Resets</div>
-                            <div className="text-white font-medium">
-                              {userCredits.expiresAt.toLocaleDateString()}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -502,10 +400,10 @@ export default function SettingsPage() {
                 <div className="text-center py-8">
                   <p className="text-white/60">No credit data available</p>
                   <button
-                    onClick={loadUserCredits}
+                    onClick={() => window.location.reload()}
                     className="mt-2 px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    Load Credit Data
+                    Refresh Page
                   </button>
                 </div>
               )}
@@ -515,14 +413,14 @@ export default function SettingsPage() {
             <div className="glass-card p-6">
               <h2 className="text-xl font-semibold text-white mb-4">Account Status</h2>
               <p className="text-secondary-text mb-4">
-                Your account is currently active with the {(userProfile?.subscriptionTier || userCredits?.plan || 'free')} plan. 
-                {(userProfile?.subscriptionTier || userCredits?.plan) === 'free' ? ' Upgrade to Pro for unlimited credits and premium features.' : ' You have access to all premium features.'}
+                Your account is currently active with the {(userProfile?.subscriptionTier || 'free')} plan. 
+                {(userProfile?.subscriptionTier || 'free') === 'free' ? ' Upgrade to Pro for unlimited credits and premium features.' : ' You have access to all premium features.'}
               </p>
               <button
                 onClick={() => router.push('/pricing')}
                 className="px-6 py-3 bg-white text-gray-900 rounded-lg transition-all duration-300 transform hover:scale-105 hover:bg-gray-100"
               >
-                {(userProfile?.subscriptionTier || userCredits?.plan) === 'free' ? 'Upgrade to Pro' : 'View Pricing Plans'}
+                {(userProfile?.subscriptionTier || 'free') === 'free' ? 'Upgrade to Pro' : 'View Pricing Plans'}
               </button>
             </div>
 

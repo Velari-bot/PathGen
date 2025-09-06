@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useCreditTracking } from '@/hooks/useCreditTracking';
 import { UsageTrackingRequest } from '@/types/subscription';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
@@ -12,6 +13,7 @@ import { EpicConnectButton } from '@/components/EpicConnectButton';
 import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service';
 import { UsageTracker } from '@/lib/usage-tracker';
 import Footer from '@/components/Footer';
+import { CreditDisplay } from '@/components/CreditDisplay';
 
 
 
@@ -20,6 +22,7 @@ import Footer from '@/components/Footer';
 export default function AIPage() {
   const { user, loading } = useAuth();
   const { trackUsage } = useSubscription();
+  const { useCreditsForChat, canAfford } = useCreditTracking();
   const router = useRouter();
   const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -204,23 +207,25 @@ export default function AIPage() {
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user || !currentChatId) return;
 
-    // Track credit usage for AI chat
-    const trackingData: UsageTrackingRequest = {
-      feature: 'message',
-      tokensUsed: 1,
-      metadata: { messageType: 'ai_chat' }
-    };
-    console.log('🔍 Sending tracking data:', JSON.stringify(trackingData));
+    // Check if user has enough credits for AI chat
+    if (!canAfford(1)) {
+      alert('Insufficient credits. You need 1 credit to send a message.');
+      return;
+    }
+
+    // Use credits for AI chat
+    console.log('🔍 Using 1 credit for AI chat...');
     try {
-      const result = await trackUsage(trackingData);
-      console.log('✅ Credit tracking successful:', result);
-      
-      // Force refresh of credit display by triggering a re-render
-      // The real-time listeners in CreditDisplay will pick up the change
+      const success = await useCreditsForChat();
+      if (!success) {
+        alert('Failed to use credits. Please try again.');
+        return;
+      }
+      console.log('✅ Credit used successfully for AI chat');
     } catch (error) {
-      console.error('Failed to track credit usage:', error);
-      console.log('⚠️ Continuing without credit tracking for now');
-      // Continue with the message even if credit tracking fails
+      console.error('Failed to use credits:', error);
+      alert('Failed to use credits. Please try again.');
+      return;
     }
 
     const userMessage = {
@@ -394,6 +399,227 @@ export default function AIPage() {
           estimate: "30 points (likely 29-31 range)",
           note: "There is Elo"
         }
+      },
+      c6s4DuosSolos: {
+        name: "C6S4 DUOS/SOLOS TOURNAMENTS",
+        status: "Active",
+        duoTrials: {
+          name: "Duo Trials + Div Cups",
+          trial: {
+            date: "13th Sept",
+            regionLock: "Yes - region-locked",
+            qualifications: {
+              div2: "Top 1000 in Trials",
+              div3: "1001-3000 in Trials (EU/NAC only)",
+              div4: "3001-13000 in Trials (EU), 3001-7000 in Trials (NAC)",
+              default: "Div 5 EU/NAC, Div 3 other regions"
+            },
+            notes: [
+              "Some Trios Div 1 players go straight to Duos Div 1",
+              "Check in-game to see if Div 1 is unlocked",
+              "If in Div 1, you can't play the Trial"
+            ]
+          },
+          divCups: {
+            frequency: "2 cups each week",
+            regionLock: "No - you can start in bottom division of every region",
+            elo: "No points-based matchmaking except in lowest division",
+            div1: "Like Trio Div Cups - play both days with same teammates, qualify from cumulative leaderboard",
+            divs2to5: "2 separate tournaments per day, can change teammates between them",
+            flexibility: "Can play lower divisions and return to higher divisions anytime"
+          }
+        },
+        soloSeries: {
+          name: "Solo Series",
+          frequency: "1 tournament per week",
+          format: "Like Solo Cash Cup Round 1",
+          regionLock: "No",
+          elo: "Yes - points-based matchmaking",
+          totalTournaments: 6,
+          qualification: "Add up 4 highest points totals, top 100 qualify for end-of-season Final",
+          notes: [
+            "Many players don't have realistic chance of qualifying for finals",
+            "Still worth playing for personal improvement and PR",
+            "Focus on consistent performance across multiple tournaments"
+          ]
+        }
+      },
+      playstationCup: {
+        name: "C6S4 PlayStation Cup",
+        status: "Active",
+        rules: {
+          regionLock: "No - play as many as you want",
+          elo: "Normal Elo (points-based matchmaking)",
+          qualification: "Top 100 qualify",
+          pr: "PR given for Console rankings"
+        },
+        pointsSystem: {
+          startAt: "Top 50",
+          win: "60 points",
+          elim: "2 points",
+          note: "Mostly about placement. Big wins help but consistent placement is key"
+        },
+        playstyle: {
+          rankRequired: "No Rank required",
+          strategy: "Use easier lobbies for good placements, not for keying",
+          qualificationExample: "Player qualified in 41st with only 12 elims (placements: 1st, 2nd, 4th, 5th, 6th, 7th, 30th)",
+          averageElims: "Players around 90th-100th averaging 35 total elims",
+          advice: [
+            "If better than other players, just win the game",
+            "Get 60-70 points rather than risky fights for 100 points",
+            "Don't start fights yourself to play more endgames",
+            "Get 200 damage by end of zone 4 then follow surge in top lobbies"
+          ]
+        },
+        dropspots: {
+          reference: "Look at green locations from Axe of Champions Cup",
+          euLink: "https://discord.com/channels/758774033704681512/1075102287522959371/1411479993841877013",
+          nacLink: "https://discord.com/channels/758774033704681512/1075102663009636432/1411480355793276948",
+          note: "Similar to Axe of Champions Cup but not exactly the same"
+        },
+        loadout: {
+          weapons: [
+            "Sentinel Pump",
+            "Fury AR (recommended for solos - better spray in endgame/boxfights)"
+          ],
+          utility: "Crash Pads",
+          heals: [
+            "Double Heals",
+            "Legendary Slurps + Fizz (best)",
+            "Chug splashes (next best)",
+            "Minis/Bigs/MedKits"
+          ]
+        },
+        liveEstimates: {
+          nac: {
+            top100Qual: "311 points (304+ for any chance, 318+ to be fully safe)",
+            top1000: "254 points",
+            lastUpdated: "Live updates by @m8 Toom",
+            breakdown: {
+              description: "What 325 points looks like while playing placement:",
+              games: [
+                "1 Win with 4 Elims",
+                "2 Top 5s with 2 Elims", 
+                "3 Top 10s with 1 Elim",
+                "1 Top 25 with 0 Elims",
+                "3 spare games"
+              ]
+            },
+            queueTimes: {
+              top100: "6 minutes for safe queue if you're in the Top 100",
+              everyoneElse: "5 minutes for everyone else"
+            },
+            calculator: "Use 🤖tourney-calc-pro to help calculate what you need in your final game",
+            targeting: {
+              qual: "Aim for Qual if you often get Top 1k in tourneys",
+              top1000: "Otherwise you can aim for Top 1000"
+            }
+          },
+          eu: {
+            top100Qual: "331 points (325+ for any chance, 337+ to be fully safe)",
+            top1000: "280 points",
+            lastUpdated: "Live updates by @Kinch [KNCH]",
+            breakdown: {
+              description: "What 325 points looks like while playing placement:",
+              games: [
+                "1 Win with 4 Elims",
+                "2 Top 5s with 2 Elims", 
+                "3 Top 10s with 1 Elim",
+                "1 Top 25 with 0 Elims",
+                "3 spare games"
+              ]
+            },
+            queueTimes: {
+              top100: "6 minutes for safe queue if you're in the Top 100",
+              everyoneElse: "5 minutes for everyone else"
+            },
+            calculator: "Use 🤖tourney-calc-pro to help calculate what you need in your final game",
+            targeting: {
+              qual: "Aim for Qual if you often get Top 1k in tourneys",
+              top1000: "Otherwise you can aim for Top 1000"
+            },
+            finalResults: {
+              top100: "331 points",
+              top1000: "280 points"
+            }
+          }
+        }
+      },
+      reloadQuickCups: {
+        name: "RELOAD QUICK CUPS",
+        status: "Active",
+        rules: {
+          format: "Duos Reload (Slurp Rush map)",
+          regionLock: "No Region Lock",
+          qualification: "Get a 15-point game in Round 1 to get to Round 2 Group 1. If you get any points you'll still be able to play Group 2 or 3",
+          elo: "There is Elo in Round 2"
+        },
+        pointsSystem: {
+          placement: "1 point per placement from Top 10 (out of 20 teams) onwards",
+          win: "10 points",
+          elim: "1 point. Max of 5 points from elims"
+        },
+        rounds: {
+          round1: {
+            name: "Round 1",
+            description: "Full placement for all 3 games",
+            strategy: [
+              "You should usually get 5 elims naturally by winning",
+              "Make sure you think about elims once you're in moving zones",
+              "Don't over-commit to fights - try to make sure one of you can stay alive",
+              "Carrying shocks will help you stay alive"
+            ]
+          },
+          round2: {
+            name: "Round 2",
+            group1: "In Group 1 you can aim to place Top 20 to get to Round 3!",
+            groups2and3: "In Groups 2 and 3 there is no 'prize' to aim for, but you should play anyway if you enjoy Reload!",
+            strategy: [
+              "Play full placement in every game no matter what your situation is",
+              "Keying doesn't really give you extra points (because the elim cap is 5)",
+              "If you do well in the first game, your next game will be hard because there is elo (points based matchmaking)"
+            ]
+          },
+          round3: {
+            name: "Round 3",
+            format: "Victory Cup format",
+            strategy: "You just need to try and win!"
+          }
+        },
+        loadout: {
+          weapons: [
+            "Charge is the best shotgun",
+            "Take Mammoth Pistol because it's OP",
+            "Drop the pistol for a burst AR or six shooter nearer the endgame so that you have a faster-firing weapon to help you in moving zones"
+          ],
+          utility: "Crashpads or Shocks for Rotation",
+          heals: [
+            "Ideal heals is Fizz (to help rotation) + Legendary Slurp Juice",
+            "Chug jug is the next best heal",
+            "Then all the usual stuff - minis/bigs/medkits/medmistbomb"
+          ],
+          note: "The lootpool was changed today and it's basically 'really bad weapons'"
+        }
+      }
+    };
+
+    // Latest game updates and mechanics changes
+    const gameUpdates = {
+      latestUpdate: {
+        date: "Recent Night Update",
+        title: "COMP UPDATE - Epic Updated Loot Pool & Game Mechanics",
+        changes: [
+          "Disabled player/vehicle damage for drop pods",
+          "Disabled POI reclaim and defense activities",
+          "Bomber spawn chance increased from 30% -> 50%",
+          "Small changes to medium/small bugs"
+        ],
+        notes: [
+          "Vulture boon from reclaiming POI is removed",
+          "Drop pods are now safe for players and vehicles",
+          "POI reclaim activities are no longer available",
+          "Bomber spawns are more frequent (50% chance)"
+        ]
       }
     };
 
@@ -559,12 +785,194 @@ export default function AIPage() {
         response += `• Note: ${currentTournaments.eliteZadieReload.eu.note}\n\n`;
       }
       
+      // Add C6S4 Duos/Solos Tournament Information
+      response += `**🏆 ${currentTournaments.c6s4DuosSolos.name}**\n\n`;
+      
+      // Duo Trials + Div Cups
+      response += `**${currentTournaments.c6s4DuosSolos.duoTrials.name}**\n`;
+      response += `**Trial (${currentTournaments.c6s4DuosSolos.duoTrials.trial.date}):**\n`;
+      response += `• Region Lock: ${currentTournaments.c6s4DuosSolos.duoTrials.trial.regionLock}\n`;
+      response += `• Div 2: ${currentTournaments.c6s4DuosSolos.duoTrials.trial.qualifications.div2}\n`;
+      response += `• Div 3: ${currentTournaments.c6s4DuosSolos.duoTrials.trial.qualifications.div3}\n`;
+      response += `• Div 4: ${currentTournaments.c6s4DuosSolos.duoTrials.trial.qualifications.div4}\n`;
+      response += `• Default: ${currentTournaments.c6s4DuosSolos.duoTrials.trial.qualifications.default}\n`;
+      response += `• Notes: ${currentTournaments.c6s4DuosSolos.duoTrials.trial.notes.join(', ')}\n\n`;
+      
+      response += `**Div Cups:**\n`;
+      response += `• Frequency: ${currentTournaments.c6s4DuosSolos.duoTrials.divCups.frequency}\n`;
+      response += `• Region Lock: ${currentTournaments.c6s4DuosSolos.duoTrials.divCups.regionLock}\n`;
+      response += `• Elo: ${currentTournaments.c6s4DuosSolos.duoTrials.divCups.elo}\n`;
+      response += `• Div 1: ${currentTournaments.c6s4DuosSolos.duoTrials.divCups.div1}\n`;
+      response += `• Divs 2-5: ${currentTournaments.c6s4DuosSolos.duoTrials.divCups.divs2to5}\n`;
+      response += `• Flexibility: ${currentTournaments.c6s4DuosSolos.duoTrials.divCups.flexibility}\n\n`;
+      
+      // Solo Series
+      response += `**${currentTournaments.c6s4DuosSolos.soloSeries.name}:**\n`;
+      response += `• Frequency: ${currentTournaments.c6s4DuosSolos.soloSeries.frequency}\n`;
+      response += `• Format: ${currentTournaments.c6s4DuosSolos.soloSeries.format}\n`;
+      response += `• Region Lock: ${currentTournaments.c6s4DuosSolos.soloSeries.regionLock}\n`;
+      response += `• Elo: ${currentTournaments.c6s4DuosSolos.soloSeries.elo}\n`;
+      response += `• Total Tournaments: ${currentTournaments.c6s4DuosSolos.soloSeries.totalTournaments}\n`;
+      response += `• Qualification: ${currentTournaments.c6s4DuosSolos.soloSeries.qualification}\n`;
+      response += `• Notes: ${currentTournaments.c6s4DuosSolos.soloSeries.notes.join(', ')}\n\n`;
+      
+      // PlayStation Cup
+      response += `**🏆 ${currentTournaments.playstationCup.name}**\n`;
+      response += `**Rules:**\n`;
+      response += `• Region Lock: ${currentTournaments.playstationCup.rules.regionLock}\n`;
+      response += `• Elo: ${currentTournaments.playstationCup.rules.elo}\n`;
+      response += `• Qualification: ${currentTournaments.playstationCup.rules.qualification}\n`;
+      response += `• PR: ${currentTournaments.playstationCup.rules.pr}\n\n`;
+      
+      response += `**Points System:**\n`;
+      response += `• Points Start: ${currentTournaments.playstationCup.pointsSystem.startAt}\n`;
+      response += `• Win: ${currentTournaments.playstationCup.pointsSystem.win}\n`;
+      response += `• Elim: ${currentTournaments.playstationCup.pointsSystem.elim}\n`;
+      response += `• Note: ${currentTournaments.playstationCup.pointsSystem.note}\n\n`;
+      
+      response += `**Playstyle:**\n`;
+      response += `• Rank Required: ${currentTournaments.playstationCup.playstyle.rankRequired}\n`;
+      response += `• Strategy: ${currentTournaments.playstationCup.playstyle.strategy}\n`;
+      response += `• Qualification Example: ${currentTournaments.playstationCup.playstyle.qualificationExample}\n`;
+      response += `• Average Eliminations: ${currentTournaments.playstationCup.playstyle.averageElims}\n`;
+      response += `• Advice: ${currentTournaments.playstationCup.playstyle.advice.join(', ')}\n\n`;
+      
+      response += `**Dropspots:**\n`;
+      response += `• Reference: ${currentTournaments.playstationCup.dropspots.reference}\n`;
+      response += `• EU Link: ${currentTournaments.playstationCup.dropspots.euLink}\n`;
+      response += `• NAC Link: ${currentTournaments.playstationCup.dropspots.nacLink}\n`;
+      response += `• Note: ${currentTournaments.playstationCup.dropspots.note}\n\n`;
+      
+      response += `**Loadout:**\n`;
+      response += `• Weapons: ${currentTournaments.playstationCup.loadout.weapons.join(', ')}\n`;
+      response += `• Utility: ${currentTournaments.playstationCup.loadout.utility}\n`;
+      response += `• Heals: ${currentTournaments.playstationCup.loadout.heals.join(', ')}\n\n`;
+      
+      // Add live estimates for NAC
+      response += `**📈 Live Estimates (NAC):**\n`;
+      response += `• Top 100 (Qual): ${currentTournaments.playstationCup.liveEstimates.nac.top100Qual}\n`;
+      response += `• Top 1000: ${currentTournaments.playstationCup.liveEstimates.nac.top1000}\n`;
+      response += `• Last Updated: ${currentTournaments.playstationCup.liveEstimates.nac.lastUpdated}\n\n`;
+      
+      response += `**Targeting Strategy:**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.nac.targeting.qual}\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.nac.targeting.top1000}\n\n`;
+      
+      response += `**📊 Point Breakdown Example:**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.nac.breakdown.description}\n`;
+      currentTournaments.playstationCup.liveEstimates.nac.breakdown.games.forEach(game => {
+        response += `• ${game}\n`;
+      });
+      response += `\n`;
+      
+      response += `**⏰ Queue Times:**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.nac.queueTimes.top100}\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.nac.queueTimes.everyoneElse}\n\n`;
+      
+      response += `**🛠️ Tools:**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.nac.calculator}\n\n`;
+      
+      // Add live estimates for EU
+      response += `**📈 Live Estimates (EU):**\n`;
+      response += `• Top 100 (Qual): ${currentTournaments.playstationCup.liveEstimates.eu.top100Qual}\n`;
+      response += `• Top 1000: ${currentTournaments.playstationCup.liveEstimates.eu.top1000}\n`;
+      response += `• Last Updated: ${currentTournaments.playstationCup.liveEstimates.eu.lastUpdated}\n`;
+      response += `• Final Results - Top 100: ${currentTournaments.playstationCup.liveEstimates.eu.finalResults.top100}\n`;
+      response += `• Final Results - Top 1000: ${currentTournaments.playstationCup.liveEstimates.eu.finalResults.top1000}\n\n`;
+      
+      response += `**Targeting Strategy (EU):**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.eu.targeting.qual}\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.eu.targeting.top1000}\n\n`;
+      
+      response += `**📊 Point Breakdown Example (EU):**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.eu.breakdown.description}\n`;
+      currentTournaments.playstationCup.liveEstimates.eu.breakdown.games.forEach(game => {
+        response += `• ${game}\n`;
+      });
+      response += `\n`;
+      
+      response += `**⏰ Queue Times (EU):**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.eu.queueTimes.top100}\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.eu.queueTimes.everyoneElse}\n\n`;
+      
+      response += `**🛠️ Tools (EU):**\n`;
+      response += `• ${currentTournaments.playstationCup.liveEstimates.eu.calculator}\n\n`;
+      
+      // Add Reload Quick Cups Information
+      response += `**🏆 ${currentTournaments.reloadQuickCups.name}**\n`;
+      response += `**Rules:**\n`;
+      response += `• Format: ${currentTournaments.reloadQuickCups.rules.format}\n`;
+      response += `• Region Lock: ${currentTournaments.reloadQuickCups.rules.regionLock}\n`;
+      response += `• Qualification: ${currentTournaments.reloadQuickCups.rules.qualification}\n`;
+      response += `• Elo: ${currentTournaments.reloadQuickCups.rules.elo}\n\n`;
+      
+      response += `**Points System:**\n`;
+      response += `• Placement: ${currentTournaments.reloadQuickCups.pointsSystem.placement}\n`;
+      response += `• Win: ${currentTournaments.reloadQuickCups.pointsSystem.win}\n`;
+      response += `• Elim: ${currentTournaments.reloadQuickCups.pointsSystem.elim}\n\n`;
+      
+      response += `**Round Strategies:**\n`;
+      response += `**${currentTournaments.reloadQuickCups.rounds.round1.name}:**\n`;
+      response += `• ${currentTournaments.reloadQuickCups.rounds.round1.description}\n`;
+      currentTournaments.reloadQuickCups.rounds.round1.strategy.forEach(strategy => {
+        response += `• ${strategy}\n`;
+      });
+      response += `\n`;
+      
+      response += `**${currentTournaments.reloadQuickCups.rounds.round2.name}:**\n`;
+      response += `• ${currentTournaments.reloadQuickCups.rounds.round2.group1}\n`;
+      response += `• ${currentTournaments.reloadQuickCups.rounds.round2.groups2and3}\n`;
+      currentTournaments.reloadQuickCups.rounds.round2.strategy.forEach(strategy => {
+        response += `• ${strategy}\n`;
+      });
+      response += `\n`;
+      
+      response += `**${currentTournaments.reloadQuickCups.rounds.round3.name}:**\n`;
+      response += `• Format: ${currentTournaments.reloadQuickCups.rounds.round3.format}\n`;
+      response += `• Strategy: ${currentTournaments.reloadQuickCups.rounds.round3.strategy}\n\n`;
+      
+      response += `**Loadout:**\n`;
+      response += `• Note: ${currentTournaments.reloadQuickCups.loadout.note}\n`;
+      currentTournaments.reloadQuickCups.loadout.weapons.forEach(weapon => {
+        response += `• ${weapon}\n`;
+      });
+      response += `• Utility: ${currentTournaments.reloadQuickCups.loadout.utility}\n`;
+      currentTournaments.reloadQuickCups.loadout.heals.forEach(heal => {
+        response += `• ${heal}\n`;
+      });
+      response += `\n`;
+      
       response += `**Tournament Tips:**\n`;
       response += `• Queue Bug Alert: Re-queue if waiting too long (Div 1/3: 6 min, Div 2: 2 min)\n`;
       response += `• Focus on consistent placements over high-kill games\n`;
       response += `• Practice end-game scenarios in creative\n`;
       response += `• Study previous tournament VODs for meta strategies\n`;
       response += `• Use tourney-calc-pro to calculate needed points for final games\n`;
+    }
+
+    // Game updates and mechanics changes
+    if (question.includes('update') || question.includes('mechanic') || question.includes('loot') || question.includes('drop pod') || question.includes('poi') || question.includes('bomber') || question.includes('vulture') || question.includes('reclaim')) {
+      response += `**🔄 ${gameUpdates.latestUpdate.title}**\n`;
+      response += `**Date:** ${gameUpdates.latestUpdate.date}\n\n`;
+      
+      response += `**📋 Key Changes:**\n`;
+      gameUpdates.latestUpdate.changes.forEach(change => {
+        response += `• ${change}\n`;
+      });
+      response += `\n`;
+      
+      response += `**📝 Important Notes:**\n`;
+      gameUpdates.latestUpdate.notes.forEach(note => {
+        response += `• ${note}\n`;
+      });
+      response += `\n`;
+      
+      response += `**🎯 Strategy Impact:**\n`;
+      response += `• Drop pods are now safe landing spots - no more damage risk\n`;
+      response += `• POI reclaim activities are disabled - focus on other loot sources\n`;
+      response += `• Vulture boon is removed - adjust your POI strategy\n`;
+      response += `• Bomber spawns are more frequent (50%) - be prepared for more aerial threats\n`;
+      response += `• Small/medium bugs may have minor changes - stay adaptable\n`;
     }
 
     // Add general tips if no specific area was asked about
@@ -728,6 +1136,17 @@ export default function AIPage() {
             </div>
           )}
 
+          {/* Credits Section */}
+          <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
+            <h2 className="text-2xl font-bold text-white mb-4">💎 Your Credits</h2>
+            <CreditDisplay compact={true} />
+            <div className="mt-4 text-sm text-gray-400">
+              <p>• AI Chat messages cost 1 credit each</p>
+              <p>• Credits are deducted when you send a message</p>
+              <p>• Pro users get 4,000 credits, Free users get 250 credits</p>
+            </div>
+          </div>
+
           {/* Chat Controls */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
@@ -753,16 +1172,29 @@ export default function AIPage() {
                 Clear Chat
               </button>
             </div>
-            <button 
-              onClick={() => {
-                setMessages([]);
-                setCurrentChatId(null);
-                initializeChat();
-              }}
-              className="px-4 py-2 bg-white text-black border border-white rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              + New Chat
-            </button>
+            
+            {/* Credit Display */}
+            <div className="flex items-center space-x-4">
+              <div className="bg-[#2A2A2A] rounded-lg px-3 py-2 border border-[#3A3A3A]">
+                <div className="flex items-center space-x-2">
+                  <span className="text-yellow-400 text-lg">💎</span>
+                  <span className="text-white text-sm font-medium">
+                    {canAfford(1) ? 'Ready to Chat' : 'Need Credits'}
+                  </span>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => {
+                  setMessages([]);
+                  setCurrentChatId(null);
+                  initializeChat();
+                }}
+                className="px-4 py-2 bg-white text-black border border-white rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                + New Chat
+              </button>
+            </div>
           </div>
 
             {/* Chat Panel */}
@@ -865,6 +1297,30 @@ export default function AIPage() {
                   className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
                 >
                   🏆 Current Tournaments
+                </button>
+                <button 
+                  onClick={() => setInputMessage('C6S4 duos solos tournaments and PlayStation Cup details')}
+                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
+                >
+                  🎮 C6S4 Tournaments
+                </button>
+                <button 
+                  onClick={() => setInputMessage('PlayStation Cup live estimates and NAC targeting strategy')}
+                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
+                >
+                  📈 PS Cup Live
+                </button>
+                <button 
+                  onClick={() => setInputMessage('latest game updates and mechanics changes')}
+                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
+                >
+                  🔄 Game Updates
+                </button>
+                <button 
+                  onClick={() => setInputMessage('Reload Quick Cups tournament details and strategies')}
+                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
+                >
+                  🏆 Reload Cups
                 </button>
                 <button 
                   onClick={() => setInputMessage('game sense and positioning')}

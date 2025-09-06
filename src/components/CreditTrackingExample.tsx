@@ -2,210 +2,184 @@
 
 import React, { useState } from 'react';
 import { useCreditTracking } from '@/hooks/useCreditTracking';
-import { useAuth } from '@/contexts/AuthContext';
-import { CreditSystem } from '@/lib/credit-system-client';
+import { CREDIT_COSTS } from '@/lib/credit-tracker';
 
-export default function CreditTrackingExample() {
-  const { user } = useAuth();
-  const { trackCreditUsage, updateCreditResult, refundCredits, isTracking } = useCreditTracking();
-  const [result, setResult] = useState<string>('');
-  const [availableCredits, setAvailableCredits] = useState<number>(0);
+export const CreditTrackingExample: React.FC = () => {
+  const { 
+    credits, 
+    isLoading, 
+    error, 
+    useCreditsForChat, 
+    useCreditsForReplayUpload, 
+    useCreditsForOsirionPull,
+    useCreditsForStatsLookup,
+    useCreditsForTournamentStrategy,
+    useCreditsForPOIAnalysis,
+    canAfford,
+    refreshCredits 
+  } = useCreditTracking();
 
-  const handleAIChat = async () => {
-    if (!user) {
-      setResult('Please log in to use this feature');
+  const [actionResult, setActionResult] = useState<string>('');
+
+  const handleAction = async (action: () => Promise<boolean>, actionName: string, cost: number) => {
+    if (!canAfford(cost)) {
+      setActionResult(`❌ Insufficient credits for ${actionName}. Need ${cost} credits.`);
       return;
     }
 
-    // Step 1: Track credit usage immediately when user clicks
-    const trackResult = await trackCreditUsage('ai_chat_simple', {
-      messageLength: 'short',
-      timestamp: new Date().toISOString()
-    });
-
-    if (!trackResult.success) {
-      setResult(`Error: ${trackResult.error}`);
-      setAvailableCredits(trackResult.availableCredits);
-      return;
-    }
-
-    setAvailableCredits(trackResult.availableCredits);
-    setResult(`Credits deducted. Available: ${trackResult.availableCredits}`);
-
-    // Step 2: Simulate AI chat processing
+    setActionResult(`🔄 Processing ${actionName}...`);
+    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Step 3: Update credit usage result (success)
-      await updateCreditResult('ai_chat_simple', trackResult.sessionId!, true, {
-        responseReceived: true,
-        tokensUsed: 150
-      });
-
-      setResult(`AI Chat completed successfully! Available credits: ${trackResult.availableCredits}`);
-
-    } catch (error) {
-      // Step 3: Update credit usage result (failure)
-      await updateCreditResult('ai_chat_simple', trackResult.sessionId!, false, {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-
-      // Step 4: Optionally refund credits if action failed
-      const refundResult = await refundCredits('ai_chat_simple', trackResult.sessionId!);
-      
-      if (refundResult.success) {
-        setAvailableCredits(refundResult.availableCredits);
-        setResult(`Action failed. Credits refunded. Available: ${refundResult.availableCredits}`);
+      const success = await action();
+      if (success) {
+        setActionResult(`✅ ${actionName} completed successfully! ${cost} credits deducted.`);
       } else {
-        setResult('Action failed. Credits not refunded.');
+        setActionResult(`❌ ${actionName} failed. Credits not deducted.`);
       }
+    } catch (err) {
+      setActionResult(`❌ Error during ${actionName}: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
-  const handleReplayUpload = async () => {
-    if (!user) {
-      setResult('Please log in to use this feature');
-      return;
-    }
+  if (isLoading) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6">
+        <div className="text-center text-gray-400">Loading credit system...</div>
+      </div>
+    );
+  }
 
-    // Track credit usage immediately
-    const trackResult = await trackCreditUsage('replay_upload', {
-      fileSize: '2.5MB',
-      timestamp: new Date().toISOString()
-    });
-
-    if (!trackResult.success) {
-      setResult(`Error: ${trackResult.error}`);
-      setAvailableCredits(trackResult.availableCredits);
-      return;
-    }
-
-    setAvailableCredits(trackResult.availableCredits);
-    setResult(`Replay upload started. Credits deducted. Available: ${trackResult.availableCredits}`);
-
-    // Simulate upload processing
-    try {
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      await updateCreditResult('replay_upload', trackResult.sessionId!, true, {
-        uploadComplete: true,
-        analysisComplete: true
-      });
-
-      setResult(`Replay upload completed! Available credits: ${trackResult.availableCredits}`);
-
-    } catch (error) {
-      await updateCreditResult('replay_upload', trackResult.sessionId!, false, {
-        error: error instanceof Error ? error.message : 'Upload failed'
-      });
-
-      const refundResult = await refundCredits('replay_upload', trackResult.sessionId!);
-      
-      if (refundResult.success) {
-        setAvailableCredits(refundResult.availableCredits);
-        setResult(`Upload failed. Credits refunded. Available: ${refundResult.availableCredits}`);
-      } else {
-        setResult('Upload failed. Credits not refunded.');
-      }
-    }
-  };
-
-  const handleStatsLookup = async () => {
-    if (!user) {
-      setResult('Please log in to use this feature');
-      return;
-    }
-
-    const trackResult = await trackCreditUsage('stat_lookup_basic', {
-      playerName: 'example_player',
-      timestamp: new Date().toISOString()
-    });
-
-    if (!trackResult.success) {
-      setResult(`Error: ${trackResult.error}`);
-      setAvailableCredits(trackResult.availableCredits);
-      return;
-    }
-
-    setAvailableCredits(trackResult.availableCredits);
-    setResult(`Stats lookup started. Credits deducted. Available: ${trackResult.availableCredits}`);
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      await updateCreditResult('stat_lookup_basic', trackResult.sessionId!, true, {
-        statsRetrieved: true,
-        matchesFound: 25
-      });
-
-      setResult(`Stats lookup completed! Available credits: ${trackResult.availableCredits}`);
-
-    } catch (error) {
-      await updateCreditResult('stat_lookup_basic', trackResult.sessionId!, false, {
-        error: error instanceof Error ? error.message : 'Lookup failed'
-      });
-
-      const refundResult = await refundCredits('stat_lookup_basic', trackResult.sessionId!);
-      
-      if (refundResult.success) {
-        setAvailableCredits(refundResult.availableCredits);
-        setResult(`Lookup failed. Credits refunded. Available: ${refundResult.availableCredits}`);
-      } else {
-        setResult('Lookup failed. Credits not refunded.');
-      }
-    }
-  };
+  if (error) {
+    return (
+      <div className="bg-gray-800 rounded-lg p-6">
+        <div className="text-center text-red-400">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="glass-card p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold text-white mb-6">Credit Tracking Examples</h2>
+    <div className="bg-gray-800 rounded-lg p-6">
+      <h2 className="text-xl font-bold text-white mb-4">Credit Tracking Demo</h2>
       
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-blue-400 mb-2">Available Credits: {availableCredits}</h3>
-        <p className="text-secondary-text text-sm">Credits are deducted immediately when actions are triggered</p>
+      {/* Current Credits Display */}
+      {credits && (
+        <div className="bg-gray-700 rounded-lg p-4 mb-6">
+          <h3 className="text-lg font-semibold text-white mb-3">Current Credits</h3>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{credits.credits_remaining}</div>
+              <div className="text-gray-300 text-sm">Available</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{credits.credits_used}</div>
+              <div className="text-gray-300 text-sm">Used</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{credits.credits_total}</div>
+              <div className="text-gray-300 text-sm">Total</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <button
+          onClick={() => handleAction(useCreditsForChat, 'AI Chat', CREDIT_COSTS.AI_CHAT)}
+          disabled={!canAfford(CREDIT_COSTS.AI_CHAT)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+          Send AI Message ({CREDIT_COSTS.AI_CHAT} credit)
+        </button>
+
+        <button
+          onClick={() => handleAction(useCreditsForStatsLookup, 'Stats Lookup', CREDIT_COSTS.STATS_LOOKUP)}
+          disabled={!canAfford(CREDIT_COSTS.STATS_LOOKUP)}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+          Lookup Stats ({CREDIT_COSTS.STATS_LOOKUP} credits)
+        </button>
+
+        <button
+          onClick={() => handleAction(useCreditsForReplayUpload, 'Replay Upload', CREDIT_COSTS.REPLAY_UPLOAD)}
+          disabled={!canAfford(CREDIT_COSTS.REPLAY_UPLOAD)}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+          Upload Replay ({CREDIT_COSTS.REPLAY_UPLOAD} credits)
+        </button>
+
+        <button
+          onClick={() => handleAction(useCreditsForOsirionPull, 'Osirion Pull', CREDIT_COSTS.OSIRION_PULL)}
+          disabled={!canAfford(CREDIT_COSTS.OSIRION_PULL)}
+          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+          Osirion Pull ({CREDIT_COSTS.OSIRION_PULL} credits)
+        </button>
+
+        <button
+          onClick={() => handleAction(useCreditsForTournamentStrategy, 'Tournament Strategy', CREDIT_COSTS.TOURNAMENT_STRATEGY)}
+          disabled={!canAfford(CREDIT_COSTS.TOURNAMENT_STRATEGY)}
+          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+          Get Strategy ({CREDIT_COSTS.TOURNAMENT_STRATEGY} credits)
+        </button>
+
+        <button
+          onClick={() => handleAction(useCreditsForPOIAnalysis, 'POI Analysis', CREDIT_COSTS.POI_ANALYSIS)}
+          disabled={!canAfford(CREDIT_COSTS.POI_ANALYSIS)}
+          className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
+        >
+          POI Analysis ({CREDIT_COSTS.POI_ANALYSIS} credits)
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Action Result */}
+      {actionResult && (
+        <div className="bg-gray-700 rounded-lg p-4 mb-4">
+          <div className="text-white">{actionResult}</div>
+        </div>
+      )}
+
+      {/* Refresh Button */}
+      <div className="text-center">
         <button
-          onClick={handleAIChat}
-          disabled={isTracking}
-          className="btn-primary disabled:opacity-50"
+          onClick={refreshCredits}
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
         >
-          {isTracking ? 'Processing...' : 'AI Chat (1 credit)'}
-        </button>
-        
-        <button
-          onClick={handleReplayUpload}
-          disabled={isTracking}
-          className="btn-secondary disabled:opacity-50"
-        >
-          {isTracking ? 'Processing...' : 'Replay Upload (20 credits)'}
-        </button>
-        
-        <button
-          onClick={handleStatsLookup}
-          disabled={isTracking}
-          className="btn-primary disabled:opacity-50"
-        >
-          {isTracking ? 'Processing...' : 'Stats Lookup (2 credits)'}
+          Refresh Credits
         </button>
       </div>
 
-      <div className="bg-gray-800 rounded-lg p-4">
-        <h4 className="text-lg font-semibold text-white mb-2">Result:</h4>
-        <p className="text-secondary-text">{result || 'Click a button to test credit tracking'}</p>
-      </div>
-
-      <div className="mt-6 text-sm text-gray-400">
-        <h4 className="font-semibold text-white mb-2">How it works:</h4>
-        <ol className="list-decimal list-inside space-y-1">
-          <li>Credits are deducted immediately when you click a button</li>
-          <li>Action is processed (simulated here)</li>
-          <li>Result is logged as success or failure</li>
-          <li>Credits can be refunded if action fails</li>
-        </ol>
+      {/* Credit Costs Info */}
+      <div className="mt-6 bg-gray-700 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-white mb-3">Credit Costs</h3>
+        <div className="grid grid-cols-2 gap-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-gray-300">AI Chat Message</span>
+            <span className="text-white">{CREDIT_COSTS.AI_CHAT} credit</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-300">Stats Lookup</span>
+            <span className="text-white">{CREDIT_COSTS.STATS_LOOKUP} credits</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-300">Replay Upload</span>
+            <span className="text-white">{CREDIT_COSTS.REPLAY_UPLOAD} credits</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-300">Osirion Pull</span>
+            <span className="text-white">{CREDIT_COSTS.OSIRION_PULL} credits</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-300">Tournament Strategy</span>
+            <span className="text-white">{CREDIT_COSTS.TOURNAMENT_STRATEGY} credits</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-gray-300">POI Analysis</span>
+            <span className="text-white">{CREDIT_COSTS.POI_ANALYSIS} credits</span>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
+};

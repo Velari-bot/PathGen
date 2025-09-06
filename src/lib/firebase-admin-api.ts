@@ -56,5 +56,12 @@ export function getFirebaseAdmin() {
 }
 
 // Convenience exports
-export const getDb = () => getFirebaseAdmin().getDb();
+export const getDb = () => {
+  console.log('🔍 getDb() called');
+  const admin = getFirebaseAdmin();
+  console.log('🔍 Firebase Admin instance:', admin);
+  const db = admin.getDb();
+  console.log('🔍 Firestore instance:', db);
+  return db;
+};
 export const getAuth = () => getFirebaseAdmin().getAuth();

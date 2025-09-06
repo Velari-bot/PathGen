@@ -92,5 +92,74 @@ service cloud.firestore {
     match /usage/{userId} {
       allow read, write: if isAuthenticated() && isOwner(userId);
     }
+
+    // Credit usage tracking - users can read/write their own
+    match /creditUsage/{docId} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        isOwner(request.resource.data.userId);
+    }
+
+    // Tournament progress - users can read/write their own
+    match /tournamentProgress/{docId} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        isOwner(request.resource.data.userId);
+    }
+
+    // Tournament data - public read access for all authenticated users
+    match /tournaments/{tournamentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin(request.auth.uid);
+    }
+
+    // Tournament results - users can read their own, admins can write
+    match /tournamentResults/{docId} {
+      allow read: if isAuthenticated() && 
+        isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        isOwner(request.resource.data.userId);
+      allow write: if isAdmin(request.auth.uid);
+    }
+
+    // Fortnite stats - users can read/write their own
+    match /fortniteStats/{docId} {
+      allow read, write: if isAuthenticated() && 
+        (isOwner(docId) || isOwner(resource.data.userId));
+      allow create: if isAuthenticated() && 
+        (isOwner(docId) || isOwner(request.resource.data.userId));
+    }
+
+    // Replay uploads - users can read/write their own
+    match /replayUploads/{docId} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        isOwner(request.resource.data.userId);
+    }
+
+    // Conversations - users can read/write their own
+    match /conversations/{docId} {
+      allow read, write: if isAuthenticated() && 
+        isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+        isOwner(request.resource.data.userId);
+      
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated() && 
+          isOwner(get(/databases/$(database)/documents/conversations/$(docId)).data.userId);
+        allow create: if isAuthenticated() && 
+          isOwner(get(/databases/$(database)/documents/conversations/$(docId)).data.userId);
+      }
+    }
+
+    // Webhook logs - admins can read, webhooks can write
+    match /webhookLogs/{docId} {
+      allow read: if isAdmin(request.auth.uid);
+      allow write: if true; // Allow webhook writes
+    }
   }
 }
