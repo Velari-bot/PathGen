@@ -47,7 +47,10 @@ export default function DashboardPage() {
     const success = urlParams.get('success');
     const sessionId = urlParams.get('session_id');
     
+    console.log('🔍 URL parameters check:', { code: !!code, state: !!state, user: !!user });
+    
     if (code && state && user) {
+      console.log('🚀 Calling handleEpicOAuthCallback with:', { code: code.substring(0, 10) + '...', state });
       handleEpicOAuthCallback(code, state);
     }
     
@@ -163,7 +166,10 @@ export default function DashboardPage() {
   };
 
   const handleEpicOAuthCallback = async (code: string, state: string) => {
+    console.log('🎯 handleEpicOAuthCallback called with:', { code: code.substring(0, 10) + '...', state, userId: user?.uid });
+    
     if (!user || user.uid !== state) {
+      console.error('❌ Invalid user state for Epic OAuth:', { userId: user?.uid, state });
       alert('Invalid user state for Epic OAuth');
       return;
     }
@@ -335,7 +341,12 @@ export default function DashboardPage() {
   };
 
   const pullStatsFromOsirion = async (account: any) => {
-    if (!account || !user) return;
+    console.log('🔄 pullStatsFromOsirion called with account:', account);
+    
+    if (!account || !user) {
+      console.log('❌ Missing account or user for stats pull');
+      return;
+    }
     
     try {
       console.log('🔄 Immediately pulling stats from Osirion API after OAuth success...');
