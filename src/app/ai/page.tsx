@@ -33,6 +33,7 @@ export default function AIPage() {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [epicAccount, setEpicAccount] = useState<any>(null);
   const [epicError, setEpicError] = useState<string | null>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Function to parse markdown-style bold text
   const parseBoldText = (text: string) => {
@@ -58,6 +59,15 @@ export default function AIPage() {
       loadEpicAccount();
     }
   }, [user]);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoadingResponse]);
 
   // Auto-save chat to Firebase when messages change
   useEffect(() => {
@@ -1415,6 +1425,9 @@ ${trainingSystems}`;
                     </div>
                   </div>
                 )}
+                
+                {/* Scroll target for auto-scroll */}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Input */}
