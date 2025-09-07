@@ -243,16 +243,153 @@ export default function AIPage() {
         console.warn('Could not load Epic account info:', error);
       }
       
-      // Prepare user stats context
+      // Prepare comprehensive user stats context
       if (fortniteStats) {
         const overallStats = fortniteStats.overall;
+        const soloStats = fortniteStats.solo;
+        const duoStats = fortniteStats.duo;
+        const squadStats = fortniteStats.squad;
+        const arenaStats = fortniteStats.arena;
+        const tournamentStats = fortniteStats.tournaments;
+        const weaponStats = fortniteStats.weapons;
+        const buildingStats = fortniteStats.building;
+        const performanceStats = fortniteStats.performance;
+        const rawOsirionData = fortniteStats.rawOsirionData;
+        const metadata = fortniteStats.metadata;
+
+        let statsAnalysis = '';
+
         if (overallStats) {
-          userStats = `K/D: ${overallStats.kd.toFixed(2)}, Win Rate: ${(overallStats.winRate * 100).toFixed(1)}%, Matches: ${overallStats.matches}, Avg Placement: ${overallStats.avgPlace.toFixed(1)}`;
+          statsAnalysis += `**OVERALL PERFORMANCE:**
+- K/D: ${overallStats.kd.toFixed(2)}
+- Win Rate: ${(overallStats.winRate * 100).toFixed(1)}%
+- Matches: ${overallStats.matches}
+- Avg Placement: ${overallStats.avgPlace.toFixed(1)}
+- Top 1: ${overallStats.top1} | Top 3: ${overallStats.top3} | Top 5: ${overallStats.top5} | Top 10: ${overallStats.top10} | Top 25: ${overallStats.top25}
+- Kills: ${overallStats.kills} | Deaths: ${overallStats.deaths} | Assists: ${overallStats.assists}
+- Damage Dealt: ${overallStats.damageDealt.toLocaleString()} | Damage Taken: ${overallStats.damageTaken.toLocaleString()}
+- Time Alive: ${(overallStats.timeAlive / 3600).toFixed(1)} hours
+- Distance Traveled: ${(overallStats.distanceTraveled / 1000).toFixed(1)} km
+- Materials Gathered: ${overallStats.materialsGathered.toLocaleString()}
+- Structures Built: ${overallStats.structuresBuilt.toLocaleString()}
+
+`;
         }
+
+        if (soloStats) {
+          statsAnalysis += `**SOLO PERFORMANCE:**
+- K/D: ${soloStats.kd.toFixed(2)} | Win Rate: ${(soloStats.winRate * 100).toFixed(1)}%
+- Matches: ${soloStats.matches} | Avg Placement: ${soloStats.avgPlace.toFixed(1)}
+- Top 1: ${soloStats.top1} | Top 3: ${soloStats.top3} | Top 5: ${soloStats.top5}
+
+`;
+        }
+
+        if (duoStats) {
+          statsAnalysis += `**DUO PERFORMANCE:**
+- K/D: ${duoStats.kd.toFixed(2)} | Win Rate: ${(duoStats.winRate * 100).toFixed(1)}%
+- Matches: ${duoStats.matches} | Avg Placement: ${duoStats.avgPlace.toFixed(1)}
+- Top 1: ${duoStats.top1} | Top 3: ${duoStats.top3} | Top 5: ${duoStats.top5}
+
+`;
+        }
+
+        if (squadStats) {
+          statsAnalysis += `**SQUAD PERFORMANCE:**
+- K/D: ${squadStats.kd.toFixed(2)} | Win Rate: ${(squadStats.winRate * 100).toFixed(1)}%
+- Matches: ${squadStats.matches} | Avg Placement: ${squadStats.avgPlace.toFixed(1)}
+- Top 1: ${squadStats.top1} | Top 3: ${squadStats.top3} | Top 5: ${squadStats.top5}
+
+`;
+        }
+
+        if (arenaStats) {
+          statsAnalysis += `**ARENA PERFORMANCE:**
+- Division: ${arenaStats.division} | Hype: ${arenaStats.hype}
+- K/D: ${arenaStats.kd.toFixed(2)} | Win Rate: ${(arenaStats.winRate * 100).toFixed(1)}%
+- Matches: ${arenaStats.matches} | Avg Placement: ${arenaStats.avgPlace.toFixed(1)}
+
+`;
+        }
+
+        if (tournamentStats) {
+          statsAnalysis += `**TOURNAMENT PERFORMANCE:**
+- Total Tournaments: ${tournamentStats.totalTournaments}
+- Best Placement: ${tournamentStats.bestPlacement}
+- Average Placement: ${tournamentStats.averagePlacement.toFixed(1)}
+- Tournaments Won: ${tournamentStats.tournamentsWon}
+- Top 3 Finishes: ${tournamentStats.top3Finishes} | Top 10 Finishes: ${tournamentStats.top10Finishes}
+- Total Winnings: $${tournamentStats.totalWinnings.toLocaleString()}
+
+`;
+        }
+
+        if (weaponStats) {
+          statsAnalysis += `**WEAPON PERFORMANCE:**
+- Favorite Weapon: ${weaponStats.favoriteWeapon}
+- Total Eliminations: ${weaponStats.totalEliminations}
+- Weapon Accuracy: ${weaponStats.weaponAccuracy.toFixed(1)}%
+- Headshot Percentage: ${weaponStats.headshotPercentage.toFixed(1)}%
+- Critical Hits: ${weaponStats.criticalHits}
+
+`;
+        }
+
+        if (buildingStats) {
+          statsAnalysis += `**BUILDING PERFORMANCE:**
+- Total Structures Built: ${buildingStats.totalStructuresBuilt.toLocaleString()}
+- Structures Destroyed: ${buildingStats.structuresDestroyed.toLocaleString()}
+- Building Efficiency: ${buildingStats.buildingEfficiency.toFixed(1)}%
+- Edit Speed: ${buildingStats.editSpeed.toFixed(1)}ms
+- Building Accuracy: ${buildingStats.buildingAccuracy.toFixed(1)}%
+
+`;
+        }
+
+        if (performanceStats) {
+          statsAnalysis += `**PERFORMANCE METRICS:**
+- Average FPS: ${performanceStats.averageFPS}
+- Ping: ${performanceStats.ping}ms
+- Packet Loss: ${performanceStats.packetLoss}%
+- Server Region: ${performanceStats.serverRegion}
+
+`;
+        }
+
+        if (rawOsirionData?.preferences) {
+          statsAnalysis += `**PLAYER PREFERENCES (from Osirion):**
+- Preferred Drop: ${rawOsirionData.preferences.preferredDrop}
+- Weakest Zone: ${rawOsirionData.preferences.weakestZone}
+- Best Weapon: ${rawOsirionData.preferences.bestWeapon}
+- Avg Survival Time: ${rawOsirionData.preferences.avgSurvivalTime.toFixed(1)} minutes
+
+`;
+        }
+
+        if (metadata) {
+          statsAnalysis += `**METADATA:**
+- Season: ${metadata.season} | Chapter: ${metadata.chapter}
+- Data Source: ${metadata.dataSource} | Quality: ${metadata.dataQuality}
+- Last Updated: ${fortniteStats.lastUpdated.toLocaleDateString()}
+
+`;
+        }
+
+        userStats = statsAnalysis;
       }
       
       // Build comprehensive AI context with all documentation
       const comprehensiveContext = `You are PathGen AI, a helpful Fortnite improvement coach. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.
+
+**ANALYSIS INSTRUCTIONS:**
+- When analyzing user stats, provide comprehensive insights using ALL available data
+- Compare performance across different modes (Solo, Duo, Squad, Arena)
+- Identify strengths and weaknesses based on specific metrics
+- Provide targeted recommendations based on their actual performance data
+- Use their preferred drop locations and weapon preferences in your advice
+- Reference their tournament performance if available
+- Consider their building and weapon accuracy for specific improvement areas
+- Always base recommendations on their actual stats, not generic advice
 
 ${zoneGuides}
 
