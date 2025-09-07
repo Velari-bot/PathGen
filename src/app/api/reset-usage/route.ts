@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     console.error('❌ Error resetting usage:', error);
     return NextResponse.json({ 
       error: 'Failed to reset usage',
-      details: error.message 
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 }
