@@ -468,43 +468,6 @@ export async function POST(request: NextRequest) {
            console.error('⚠️ Warning: Could not increment usage counter:', incrementError);
          }
 
-         // Deduct credits based on lookup type
-         const creditCost = lookupType === 'recent' ? 10 : 50;
-         const actionType = lookupType === 'recent' ? 'stat_lookup' : 'osirion_pull';
-         
-         try {
-           console.log(`💰 Starting credit deduction for ${actionType} (${creditCost} credits)...`);
-           console.log(`🔍 User ID: ${userId}, Epic ID: ${epicId}, Platform: ${platform}`);
-           
-           // Dynamic import to avoid build-time issues
-           const { CreditBackendService } = await import('@/lib/credit-backend-service');
-           console.log('✅ CreditBackendService imported successfully');
-           const creditService = new CreditBackendService();
-           console.log('✅ CreditBackendService instantiated');
-           
-           const creditResult = await creditService.deductCredits(
-             userId,
-             creditCost,
-             actionType,
-             {
-               epicId: epicId,
-               platform: platform,
-               lookupType: lookupType,
-               timestamp: new Date().toISOString(),
-               source: 'osirion_api'
-             }
-           );
-           console.log('💰 Credit deduction result:', creditResult);
-           
-           if (creditResult.success) {
-             console.log(`✅ Credits deducted successfully: ${creditResult.creditsChanged} credits used, ${creditResult.creditsRemaining} remaining`);
-           } else {
-             console.error('❌ Failed to deduct credits:', creditResult.message);
-           }
-         } catch (creditError) {
-           console.error('⚠️ Warning: Could not deduct credits:', creditError);
-         }
-
       } catch (firebaseError) {
         console.error('⚠️ Warning: Could not save to Firebase:', firebaseError);
         // Continue with the response even if Firebase save fails

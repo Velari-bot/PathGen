@@ -13,10 +13,12 @@ import EmailVerificationGuard from '@/components/EmailVerificationGuard';
 import GamifiedProgressTracker from '@/components/GamifiedProgressTracker';
 
 import { FullCreditDisplay } from '@/components/CreditDisplay';
+import { useCreditTracking } from '@/hooks/useCreditTracking';
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const { deductCreditsAfterAction } = useCreditTracking();
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [epicAccount, setEpicAccount] = useState<any>(null);
@@ -857,6 +859,25 @@ export default function DashboardPage() {
             setFortniteStats(firebaseStats);
             console.log('✅ Recent stats updated successfully');
           }
+          
+          // Deduct credits AFTER successful stat lookup
+          console.log('🔍 Deducting 10 credits for Stat Lookup...');
+          try {
+            const success = await deductCreditsAfterAction(10, 'stat_lookup', {
+              epicId: epicId,
+              platform: 'pc',
+              lookupType: 'recent',
+              timestamp: new Date().toISOString()
+            });
+            if (success) {
+              console.log('✅ Credit deducted successfully for Stat Lookup');
+            } else {
+              console.warn('⚠️ Failed to deduct credit, but stats were updated');
+            }
+          } catch (error) {
+            console.error('Failed to deduct credit:', error);
+            // Don't fail the entire operation if credit deduction fails
+          }
         } else {
           console.log('⚠️ Stat lookup response not successful:', data);
         }
@@ -914,6 +935,25 @@ export default function DashboardPage() {
           if (subscriptionTier === 'free') {
             setHasUsedOsirionPull(true);
             console.log('🔒 Free user has used Osirion Pull - feature now locked');
+          }
+          
+          // Deduct credits AFTER successful Osirion pull
+          console.log('🔍 Deducting 50 credits for Osirion Pull...');
+          try {
+            const success = await deductCreditsAfterAction(50, 'osirion_pull', {
+              epicId: epicId,
+              platform: 'pc',
+              lookupType: 'full',
+              timestamp: new Date().toISOString()
+            });
+            if (success) {
+              console.log('✅ Credit deducted successfully for Osirion Pull');
+            } else {
+              console.warn('⚠️ Failed to deduct credit, but stats were updated');
+            }
+          } catch (error) {
+            console.error('Failed to deduct credit:', error);
+            // Don't fail the entire operation if credit deduction fails
           }
         } else {
           console.log('⚠️ Osirion pull response not successful:', data);
