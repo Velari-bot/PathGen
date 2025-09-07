@@ -171,10 +171,6 @@ export const CreditTrackingExample: React.FC = () => {
             <span className="text-white">{CREDIT_COSTS.STATS_LOOKUP} credits</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-300">Replay Upload</span>
-            <span className="text-white">{CREDIT_COSTS.REPLAY_UPLOAD} credits</span>
-          </div>
-          <div className="flex justify-between">
             <span className="text-gray-300">Osirion Pull</span>
             <span className="text-white">{CREDIT_COSTS.OSIRION_PULL} credits</span>
           </div>
