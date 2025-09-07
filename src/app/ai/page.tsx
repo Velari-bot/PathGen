@@ -99,6 +99,52 @@ export default function AIPage() {
     loadFortniteStats();
   };
 
+  const refreshStats = async () => {
+    if (!epicAccount || !user) return;
+    
+    try {
+      setIsLoadingStats(true);
+      // Use epicId if available, otherwise fall back to id
+      const epicId = epicAccount.epicId || epicAccount.id;
+      console.log('🔄 Refreshing stats for Epic account:', epicId);
+      
+      if (!epicId) {
+        console.error('❌ No Epic ID found in account object');
+        return;
+      }
+      
+      const response = await fetch('/api/osirion/stats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          epicId: epicId,
+          userId: user.uid,
+          platform: 'pc'
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 Osirion API response:', data);
+        if (data.success) {
+          // Reload stats from Firebase after successful API call
+          await loadFortniteStats();
+          console.log('✅ Stats refreshed successfully');
+        } else {
+          console.log('⚠️ Osirion API response not successful:', data);
+        }
+      } else {
+        console.error('❌ Failed to fetch stats from Osirion API:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing stats:', error);
+    } finally {
+      setIsLoadingStats(false);
+    }
+  };
+
   const handleEpicAccountError = (error: string) => {
     setEpicError(error);
     console.error('Epic account error:', error);
@@ -1283,9 +1329,34 @@ ${trainingSystems}`;
           </div>
 
           {/* Player Stats Section */}
-          {fortniteStats && (
+          {isLoadingStats ? (
             <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
-              <h2 className="text-2xl font-bold text-white mb-4">📊 Your Performance Stats</h2>
+              <div className="flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+                <span className="text-white">Loading your Fortnite stats...</span>
+              </div>
+            </div>
+          ) : fortniteStats ? (
+            <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-white">📊 Your Performance Stats</h2>
+                <button
+                  onClick={refreshStats}
+                  disabled={isLoadingStats}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+                >
+                  {isLoadingStats ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Refreshing...
+                    </>
+                  ) : (
+                    <>
+                      🔄 Refresh Stats
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -1315,6 +1386,40 @@ ${trainingSystems}`;
                   <p className="text-[#BFBFBF] text-sm mb-1">Top 10 Rate</p>
                   <p className="text-white font-bold text-2xl">{((fortniteStats.overall.top10 / Math.max(fortniteStats.overall.matches, 1)) * 100).toFixed(1)}%</p>
                 </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white font-bold text-2xl">📊</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">No Stats Available</h3>
+                <p className="text-[#BFBFBF] mb-4">
+                  Connect your Epic account to see your Fortnite performance stats and get personalized AI coaching!
+                </p>
+                {epicAccount ? (
+                  <button
+                    onClick={refreshStats}
+                    disabled={isLoadingStats}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 mx-auto"
+                  >
+                    {isLoadingStats ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Pulling Stats...
+                      </>
+                    ) : (
+                      <>
+                        🔄 Pull Stats from Osirion
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Epic account not connected. Please connect your Epic account first.
+                  </p>
+                )}
               </div>
             </div>
           )}

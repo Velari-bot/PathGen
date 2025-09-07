@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('📥 Osirion API received:', body);
     
-    const { epicId, userId, platform = 'pc' } = body;
+    const { epicId, userId, platform = 'pc', lookupType = 'full' } = body;
     
     console.log('🔍 Parsed data:', { epicId, userId, platform });
     
@@ -149,9 +149,13 @@ export async function POST(request: NextRequest) {
     const osirionService = new OsirionService();
     
     try {
-      console.log('🔄 Calling Osirion API for Epic ID:', epicId);
+      console.log(`🔄 Calling Osirion API for Epic ID: ${epicId} (lookup type: ${lookupType})`);
+      
+      // Determine limit based on lookup type
+      const matchLimit = lookupType === 'recent' ? 10 : 25; // Recent: 10 matches, Full: 25 matches
+      
       // Get player stats from Osirion using Epic ID
-      const stats = await osirionService.getPlayerStats(epicId, platform);
+      const stats = await osirionService.getPlayerStats(epicId, platform, matchLimit);
       console.log('📊 Osirion API call completed, stats received:', !!stats);
       
       console.log('📊 Raw Osirion stats received:', JSON.stringify(stats, null, 2));
@@ -161,7 +165,7 @@ export async function POST(request: NextRequest) {
         
         // Try to load stats from Firebase as fallback
         try {
-          const fortniteDataRef = db.collection('fortniteData').doc(userId);
+          const fortniteDataRef = db.collection('fortniteStats').doc(userId);
           const fortniteDoc = await fortniteDataRef.get();
           
           if (fortniteDoc.exists) {
@@ -312,26 +316,30 @@ export async function POST(request: NextRequest) {
       
       console.log('✅ Transformed stats:', JSON.stringify(transformedStats, null, 2));
 
-      // Save stats to Firebase for local storage
+      // Save stats to Firebase in proper FortniteStats format
       try {
-        const fortniteData = {
+        const fortniteStatsData = {
+          id: `${userId}_${epicId}`,
           userId: userId,
           epicId: epicId,
           epicName: transformedStats.account.name,
-          syncedAt: new Date(),
-          stats: {
-            wins: transformedStats.stats.all.wins,
+          platform: platform,
+          lastUpdated: new Date(),
+          updatedAt: new Date(),
+          
+          // Overall stats
+          overall: {
             kd: transformedStats.stats.all.kd,
-            placement: transformedStats.stats.all.avgPlace,
-            earnings: 0, // Not available from Osirion
+            winRate: transformedStats.stats.all.winRate / 100, // Convert percentage to decimal
             matches: transformedStats.stats.all.matches,
+            avgPlace: transformedStats.stats.all.avgPlace,
             top1: transformedStats.stats.all.wins,
             top3: 0, // Calculate from matches if needed
             top5: 0, // Calculate from matches if needed
             top10: transformedStats.stats.all.top10,
             top25: 0, // Calculate from matches if needed
             kills: transformedStats.stats.all.kills,
-            deaths: 0, // Not available from Osirion
+            deaths: Math.max(transformedStats.stats.all.matches - transformedStats.stats.all.wins, 1), // Estimate deaths
             assists: transformedStats.osirionData.assists,
             damageDealt: 0, // Not available from Osirion
             damageTaken: 0, // Not available from Osirion
@@ -340,93 +348,101 @@ export async function POST(request: NextRequest) {
             materialsGathered: 0, // Not available from Osirion
             structuresBuilt: 0 // Not available from Osirion
           },
-          modes: {
-            // For now, use overall stats for all modes
-            solo: {
-              kd: transformedStats.stats.all.kd,
-              winRate: transformedStats.stats.all.winRate,
-              matches: Math.floor(transformedStats.stats.all.matches / 3), // Estimate
-              avgPlace: transformedStats.stats.all.avgPlace,
-              top1: Math.floor(transformedStats.stats.all.wins / 3),
-              top3: Math.floor(transformedStats.stats.all.top10 / 3),
-              top5: Math.floor(transformedStats.stats.all.top10 / 3),
-              top10: Math.floor(transformedStats.stats.all.top10 / 3),
-              top25: Math.floor(transformedStats.stats.all.matches / 4),
-              kills: Math.floor(transformedStats.stats.all.kills / 3),
-              deaths: Math.floor(transformedStats.stats.all.matches / 3),
-              assists: Math.floor(transformedStats.osirionData.assists / 3),
-              damageDealt: 0,
-              damageTaken: 0,
-              timeAlive: transformedStats.preferences.avgSurvivalTime,
-              distanceTraveled: 0,
-              materialsGathered: 0,
-              structuresBuilt: 0
-            },
-            duo: {
-              kd: transformedStats.stats.all.kd,
-              winRate: transformedStats.stats.all.winRate,
-              matches: Math.floor(transformedStats.stats.all.matches / 3),
-              avgPlace: transformedStats.stats.all.avgPlace,
-              top1: Math.floor(transformedStats.stats.all.wins / 3),
-              top3: Math.floor(transformedStats.stats.all.top10 / 3),
-              top5: Math.floor(transformedStats.stats.all.top10 / 3),
-              top10: Math.floor(transformedStats.stats.all.top10 / 3),
-              top25: Math.floor(transformedStats.stats.all.matches / 4),
-              kills: Math.floor(transformedStats.stats.all.kills / 3),
-              deaths: Math.floor(transformedStats.stats.all.matches / 3),
-              assists: Math.floor(transformedStats.osirionData.assists / 3),
-              damageDealt: 0,
-              damageTaken: 0,
-              timeAlive: transformedStats.preferences.avgSurvivalTime,
-              distanceTraveled: 0,
-              materialsGathered: 0,
-              structuresBuilt: 0
-            },
-            squad: {
-              kd: transformedStats.stats.all.kd,
-              winRate: transformedStats.stats.all.winRate,
-              matches: Math.floor(transformedStats.stats.all.matches / 3),
-              avgPlace: transformedStats.stats.all.avgPlace,
-              top1: Math.floor(transformedStats.stats.all.wins / 3),
-              top3: Math.floor(transformedStats.stats.all.top10 / 3),
-              top5: Math.floor(transformedStats.stats.all.top10 / 3),
-              top10: Math.floor(transformedStats.stats.all.top10 / 3),
-              top25: Math.floor(transformedStats.stats.all.matches / 4),
-              kills: Math.floor(transformedStats.stats.all.kills / 3),
-              deaths: Math.floor(transformedStats.stats.all.matches / 3),
-              assists: Math.floor(transformedStats.osirionData.assists / 3),
-              damageDealt: 0,
-              damageTaken: 0,
-              timeAlive: transformedStats.preferences.avgSurvivalTime,
-              distanceTraveled: 0,
-              materialsGathered: 0,
-              structuresBuilt: 0
-            }
+          
+          // Mode-specific stats (estimated from overall)
+          solo: {
+            kd: transformedStats.stats.all.kd,
+            winRate: transformedStats.stats.all.winRate / 100,
+            matches: Math.floor(transformedStats.stats.all.matches / 3),
+            avgPlace: transformedStats.stats.all.avgPlace,
+            top1: Math.floor(transformedStats.stats.all.wins / 3),
+            top3: Math.floor(transformedStats.stats.all.top10 / 3),
+            top5: Math.floor(transformedStats.stats.all.top10 / 3),
+            top10: Math.floor(transformedStats.stats.all.top10 / 3),
+            top25: Math.floor(transformedStats.stats.all.matches / 4),
+            kills: Math.floor(transformedStats.stats.all.kills / 3),
+            deaths: Math.floor((transformedStats.stats.all.matches - transformedStats.stats.all.wins) / 3),
+            assists: Math.floor(transformedStats.osirionData.assists / 3),
+            damageDealt: 0,
+            damageTaken: 0,
+            timeAlive: transformedStats.preferences.avgSurvivalTime,
+            distanceTraveled: 0,
+            materialsGathered: 0,
+            structuresBuilt: 0
           },
-          dataSource: 'osirion',
-          dataQuality: 'high',
-          notes: 'Stats pulled from Osirion API and saved to Firebase'
+          
+          duo: {
+            kd: transformedStats.stats.all.kd,
+            winRate: transformedStats.stats.all.winRate / 100,
+            matches: Math.floor(transformedStats.stats.all.matches / 3),
+            avgPlace: transformedStats.stats.all.avgPlace,
+            top1: Math.floor(transformedStats.stats.all.wins / 3),
+            top3: Math.floor(transformedStats.stats.all.top10 / 3),
+            top5: Math.floor(transformedStats.stats.all.top10 / 3),
+            top10: Math.floor(transformedStats.stats.all.top10 / 3),
+            top25: Math.floor(transformedStats.stats.all.matches / 4),
+            kills: Math.floor(transformedStats.stats.all.kills / 3),
+            deaths: Math.floor((transformedStats.stats.all.matches - transformedStats.stats.all.wins) / 3),
+            assists: Math.floor(transformedStats.osirionData.assists / 3),
+            damageDealt: 0,
+            damageTaken: 0,
+            timeAlive: transformedStats.preferences.avgSurvivalTime,
+            distanceTraveled: 0,
+            materialsGathered: 0,
+            structuresBuilt: 0
+          },
+          
+          squad: {
+            kd: transformedStats.stats.all.kd,
+            winRate: transformedStats.stats.all.winRate / 100,
+            matches: Math.floor(transformedStats.stats.all.matches / 3),
+            avgPlace: transformedStats.stats.all.avgPlace,
+            top1: Math.floor(transformedStats.stats.all.wins / 3),
+            top3: Math.floor(transformedStats.stats.all.top10 / 3),
+            top5: Math.floor(transformedStats.stats.all.top10 / 3),
+            top10: Math.floor(transformedStats.stats.all.top10 / 3),
+            top25: Math.floor(transformedStats.stats.all.matches / 4),
+            kills: Math.floor(transformedStats.stats.all.kills / 3),
+            deaths: Math.floor((transformedStats.stats.all.matches - transformedStats.stats.all.wins) / 3),
+            assists: Math.floor(transformedStats.osirionData.assists / 3),
+            damageDealt: 0,
+            damageTaken: 0,
+            timeAlive: transformedStats.preferences.avgSurvivalTime,
+            distanceTraveled: 0,
+            materialsGathered: 0,
+            structuresBuilt: 0
+          },
+          
+          // Usage tracking
+          usage: {
+            matchesUsed: 0,
+            lastReset: new Date()
+          },
+          
+          // Metadata
+          metadata: {
+            source: 'osirion',
+            version: '1.0',
+            dataQuality: 'high',
+            notes: 'Stats pulled from Osirion API'
+          },
+          
+          // Raw Osirion data - this is crucial for AI analysis
+          rawOsirionData: {
+            matches: stats.matches || [],
+            preferences: {
+              preferredDrop: transformedStats.preferences.preferredDrop,
+              weakestZone: transformedStats.preferences.weakestZone,
+              bestWeapon: transformedStats.preferences.bestWeapon,
+              avgSurvivalTime: transformedStats.preferences.avgSurvivalTime
+            }
+          }
         };
 
-                 // Save to Firebase
-         const fortniteDataRef = db.collection('fortniteData').doc(userId);
-         await fortniteDataRef.set(fortniteData, { merge: true });
-         console.log('✅ Fortnite stats saved to Firebase successfully');
-
-         // Also save to fortniteStats collection for compatibility
-         const fortniteStatsRef = db.collection('fortniteStats').doc(userId);
-         await fortniteStatsRef.set({
-           userId: userId,
-           epicId: epicId,
-           epicName: transformedStats.account.name,
-           syncedAt: new Date(),
-           stats: fortniteData.stats,
-           modes: fortniteData.modes,
-           dataSource: 'osirion',
-           dataQuality: 'high',
-           notes: 'Stats pulled from Osirion API and saved to Firebase'
-         }, { merge: true });
-         console.log('✅ Fortnite stats also saved to fortniteStats collection');
+        // Save to Firebase using the correct collection name
+        const fortniteStatsRef = db.collection('fortniteStats').doc(userId);
+        await fortniteStatsRef.set(fortniteStatsData, { merge: true });
+        console.log('✅ Fortnite stats saved to Firebase successfully');
 
          // Increment usage counter after successful API call
          try {
@@ -440,21 +456,28 @@ export async function POST(request: NextRequest) {
            console.error('⚠️ Warning: Could not increment usage counter:', incrementError);
          }
 
-         // Deduct credits for Osirion pull (50 credits)
+         // Deduct credits based on lookup type
+         const creditCost = lookupType === 'recent' ? 10 : 50;
+         const actionType = lookupType === 'recent' ? 'stat_lookup' : 'osirion_pull';
+         
          try {
-           console.log('💰 Starting credit deduction for Osirion pull...');
+           console.log(`💰 Starting credit deduction for ${actionType} (${creditCost} credits)...`);
+           console.log(`🔍 User ID: ${userId}, Epic ID: ${epicId}, Platform: ${platform}`);
+           
            // Dynamic import to avoid build-time issues
            const { CreditBackendService } = await import('@/lib/credit-backend-service');
            console.log('✅ CreditBackendService imported successfully');
            const creditService = new CreditBackendService();
            console.log('✅ CreditBackendService instantiated');
+           
            const creditResult = await creditService.deductCredits(
              userId,
-             50, // Osirion pull costs 50 credits
-             'osirion_pull',
+             creditCost,
+             actionType,
              {
                epicId: epicId,
                platform: platform,
+               lookupType: lookupType,
                timestamp: new Date().toISOString(),
                source: 'osirion_api'
              }

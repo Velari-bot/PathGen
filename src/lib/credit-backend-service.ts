@@ -80,6 +80,28 @@ export class CreditBackendService {
   }
 
   /**
+   * Remove undefined values from an object to prevent Firestore errors
+   */
+  private cleanObject(obj: any): any {
+    if (obj === null || obj === undefined) {
+      return null;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.cleanObject(item)).filter(item => item !== undefined);
+    }
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          cleaned[key] = this.cleanObject(value);
+        }
+      }
+      return cleaned;
+    }
+    return obj;
+  }
+
+  /**
    * Initialize a new user with appropriate credits based on account type
    * @param userId - Unique user identifier
    * @param name - User's display name
@@ -200,7 +222,7 @@ export class CreditBackendService {
         }
 
         const userData = userDoc.data() as UserDocument;
-        const currentCredits = userData.credits;
+        const currentCredits = userData.credits || 0;
 
         // Check if user has enough credits
         if (currentCredits < amount) {
@@ -221,23 +243,26 @@ export class CreditBackendService {
           creditsChanged: -amount,
           creditsBefore: currentCredits,
           creditsAfter: newCredits,
-          metadata: {
+          metadata: this.cleanObject({
             feature,
             ...metadata
-          }
+          })
         };
 
         // Update user document
+        const existingTransactionHistory = Array.isArray(userData.transactionHistory) 
+          ? userData.transactionHistory 
+          : [];
         const updatedTransactionHistory = [
-          ...userData.transactionHistory,
-          transactionRecord
+          ...existingTransactionHistory,
+          this.cleanObject(transactionRecord)
         ].slice(-CREDIT_LIMITS.MAX_TRANSACTION_HISTORY); // Keep only recent transactions
 
-        transaction.update(userRef, {
+        transaction.update(userRef, this.cleanObject({
           credits: newCredits,
           transactionHistory: updatedTransactionHistory,
           updatedAt: new Date()
-        });
+        }));
 
         console.log(`✅ Deducted ${amount} credits from user ${userId} for ${feature}. Remaining: ${newCredits}`);
 
@@ -295,7 +320,7 @@ export class CreditBackendService {
         }
 
         const userData = userDoc.data() as UserDocument;
-        const currentCredits = userData.credits;
+        const currentCredits = userData.credits || 0;
         const newCredits = currentCredits + amount;
 
         // Create transaction record
@@ -305,20 +330,23 @@ export class CreditBackendService {
           creditsChanged: amount,
           creditsBefore: currentCredits,
           creditsAfter: newCredits,
-          metadata
+          metadata: this.cleanObject(metadata)
         };
 
         // Update user document
+        const existingTransactionHistory = Array.isArray(userData.transactionHistory) 
+          ? userData.transactionHistory 
+          : [];
         const updatedTransactionHistory = [
-          ...userData.transactionHistory,
-          transactionRecord
+          ...existingTransactionHistory,
+          this.cleanObject(transactionRecord)
         ].slice(-CREDIT_LIMITS.MAX_TRANSACTION_HISTORY);
 
-        transaction.update(userRef, {
+        transaction.update(userRef, this.cleanObject({
           credits: newCredits,
           transactionHistory: updatedTransactionHistory,
           updatedAt: new Date()
-        });
+        }));
 
         console.log(`✅ Added ${amount} credits to user ${userId}. New balance: ${newCredits}`);
 
@@ -404,7 +432,10 @@ export class CreditBackendService {
       }
 
       const userData = userDoc.data() as UserDocument;
-      return userData.transactionHistory
+      const transactionHistory = Array.isArray(userData.transactionHistory) 
+        ? userData.transactionHistory 
+        : [];
+      return transactionHistory
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
         .slice(0, limit);
 
@@ -437,7 +468,7 @@ export class CreditBackendService {
         }
 
         const userData = userDoc.data() as UserDocument;
-        const currentCredits = userData.credits;
+        const currentCredits = userData.credits || 0;
         
         // Calculate credits needed to reach 4000
         const creditsToAdd = Math.max(0, CREDIT_LIMITS.PRO_USER_INITIAL - currentCredits);
@@ -449,28 +480,31 @@ export class CreditBackendService {
           creditsChanged: creditsToAdd,
           creditsBefore: currentCredits,
           creditsAfter: currentCredits + creditsToAdd,
-          metadata: {
+          metadata: this.cleanObject({
             subscriptionId,
             stripeCustomerId,
             previousAccountType: userData.accountType,
             newAccountType: 'pro'
-          }
+          })
         };
 
         // Update user document
+        const existingTransactionHistory = Array.isArray(userData.transactionHistory) 
+          ? userData.transactionHistory 
+          : [];
         const updatedTransactionHistory = [
-          ...userData.transactionHistory,
-          upgradeTransaction
+          ...existingTransactionHistory,
+          this.cleanObject(upgradeTransaction)
         ].slice(-CREDIT_LIMITS.MAX_TRANSACTION_HISTORY);
 
-        transaction.update(userRef, {
+        transaction.update(userRef, this.cleanObject({
           accountType: 'pro',
           credits: currentCredits + creditsToAdd,
           subscriptionId,
           stripeCustomerId,
           transactionHistory: updatedTransactionHistory,
           updatedAt: new Date()
-        });
+        }));
 
         console.log(`✅ User ${userId} upgraded to Pro. Credits topped up to ${currentCredits + creditsToAdd}`);
 

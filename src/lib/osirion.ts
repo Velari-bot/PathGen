@@ -16,18 +16,18 @@ export class OsirionService {
     this.apiKey = process.env.OSIRION_API_KEY || '';
   }
 
-  async getPlayerStats(epicId: string, platform: string = 'pc'): Promise<OsirionStats | null> {
+  async getPlayerStats(epicId: string, platform: string = 'pc', limit: number = 25): Promise<OsirionStats | null> {
     try {
       if (!this.apiKey) {
         console.warn('Osirion API key not configured');
         return null;
       }
 
-      console.log('Fetching Osirion stats for Epic ID:', epicId);
+      console.log(`Fetching Osirion stats for Epic ID: ${epicId} (limit: ${limit})`);
 
       // Get player matches from Osirion using the correct endpoint
       const matchesResponse = await fetch(
-        `${this.baseUrl}/matches?epicIds=${epicId}&limit=25&ignoreUploads=false`,
+        `${this.baseUrl}/matches?epicIds=${epicId}&limit=${limit}&ignoreUploads=false`,
         {
           headers: {
             'Authorization': `Bearer ${this.apiKey}`,

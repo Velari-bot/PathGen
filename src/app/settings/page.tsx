@@ -7,7 +7,6 @@ import Navbar from '@/components/Navbar';
 import SmoothScroll from '@/components/SmoothScroll';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { useCreditsDisplay } from '@/hooks/useCreditTracking';
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -17,9 +16,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [epicAccount, setEpicAccount] = useState<any>(null);
-  const { credits: userCredits, isLoading: isLoadingCredits, error: creditsError } = useCreditsDisplay();
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [showCreditCosts, setShowCreditCosts] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -286,124 +283,6 @@ export default function SettingsPage() {
                     className="px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     Go to Dashboard
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Credit System */}
-            <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">💎 Credit System</h2>
-              {isLoadingCredits ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                  <p className="text-white/60 mt-2">Loading credit data...</p>
-                </div>
-              ) : userCredits ? (
-                <div className="space-y-6">
-                  {/* Credit Overview */}
-                  <div className="bg-white/10 border border-white/20 rounded-lg p-4">
-                    <h3 className="text-white font-semibold mb-2">Current Plan: {(userProfile?.subscriptionTier || 'free').toUpperCase()}</h3>
-                    <p className="text-white/80 text-sm">Track your credit balance and usage</p>
-                  </div>
-
-                  {/* Credit Balance */}
-                  <div className="bg-white/10 border border-white/20 rounded-lg p-4">
-                    <div className="mb-3">
-                      <h3 className="text-white font-semibold">💎 Credit Balance</h3>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-white">
-                          {userCredits ? `${(userCredits.credits_remaining / 1000).toFixed(3)}k` : '0'}
-                        </div>
-                        <div className="text-gray-300 text-sm">Available</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-white">
-                          {userCredits ? userCredits.credits_used : '0'}
-                        </div>
-                        <div className="text-gray-300 text-sm">Used</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-white">
-                          {userCredits ? `${(userCredits.credits_total / 1000).toFixed(1)}k` : '0'}
-                        </div>
-                        <div className="text-gray-300 text-sm">Total</div>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between text-sm text-gray-300 mb-2">
-                        <span>Credit Usage</span>
-                        <span>{userCredits ? ((userCredits.credits_used / userCredits.credits_total) * 100).toFixed(1) : '0'}%</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="h-2 rounded-full transition-all duration-300 bg-white"
-                          style={{ width: `${userCredits ? Math.min((userCredits.credits_used / userCredits.credits_total) * 100, 100) : 0}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    {/* Plan Info */}
-                    <div className="bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-white font-medium">Current Plan: {(userProfile?.subscriptionTier || 'free').toUpperCase()}</div>
-                          <div className="text-gray-300 text-sm">
-                            {(userProfile?.subscriptionTier || 'free') === 'free' ? 'One-time allocation' : 'Monthly allocation'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick Credit Costs */}
-                  <div>
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="text-lg font-semibold text-white">Quick Actions (Credit Costs)</h3>
-                      <button
-                        onClick={() => setShowCreditCosts(!showCreditCosts)}
-                        className="px-3 py-1 bg-white/10 border border-white/20 text-white text-xs rounded-lg transition-colors hover:bg-white/20"
-                      >
-                        {showCreditCosts ? 'Hide Costs' : 'Show Costs'}
-                      </button>
-                    </div>
-                    {showCreditCosts && (
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">AI Chat</span>
-                          <span className="text-white">1 credit</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Stats Lookup</span>
-                          <span className="text-white">2 credits</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Replay Upload</span>
-                          <span className="text-white">20 credits</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-300">Osirion Pull (Premium)</span>
-                          <span className="text-white">50 credits</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-white/60">No credit data available</p>
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="mt-2 px-4 py-2 bg-white text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Refresh Page
                   </button>
                 </div>
               )}

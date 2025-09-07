@@ -537,6 +537,8 @@ export class FirebaseService {
       if (!querySnapshot.empty) {
         const doc = querySnapshot.docs[0];
         const data = doc.data();
+        
+        // Return complete FortniteStats object with all fields
         return {
           id: data.id || doc.id,
           userId: data.userId || '',
@@ -545,13 +547,40 @@ export class FirebaseService {
           platform: data.platform || 'unknown',
           lastUpdated: data.lastUpdated?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
+          
+          // Overall stats
           overall: data.overall || {
             kd: 0, winRate: 0, matches: 0, avgPlace: 0, top1: 0, top3: 0, top5: 0, top10: 0, top25: 0,
             kills: 0, deaths: 0, assists: 0, damageDealt: 0, damageTaken: 0, timeAlive: 0, distanceTraveled: 0,
             materialsGathered: 0, structuresBuilt: 0
           },
+          
+          // Mode-specific stats
+          solo: data.solo || undefined,
+          duo: data.duo || undefined,
+          squad: data.squad || undefined,
+          arena: data.arena || undefined,
+          
+          // Tournament stats
+          tournaments: data.tournaments || undefined,
+          
+          // Weapon stats
+          weapons: data.weapons || undefined,
+          
+          // Building stats
+          building: data.building || undefined,
+          
+          // Performance stats
+          performance: data.performance || undefined,
+          
+          // Usage tracking
           usage: data.usage || { matchesUsed: 0, lastReset: new Date() },
-          metadata: data.metadata || { source: 'firebase', version: '1.0' }
+          
+          // Metadata
+          metadata: data.metadata || { source: 'firebase', version: '1.0' },
+          
+          // Raw Osirion data - this is crucial for AI analysis
+          rawOsirionData: data.rawOsirionData || undefined
         } as FortniteStats;
       }
       return null;
