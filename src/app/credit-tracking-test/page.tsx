@@ -48,10 +48,6 @@ export default function CreditTrackingTestPage() {
                   <span className="ml-2">→ Deducts 1 credit for AI chat</span>
                 </div>
                 <div>
-                  <code className="bg-gray-700 px-2 py-1 rounded">useCreditsForReplayUpload()</code>
-                  <span className="ml-2">→ Deducts 20 credits for replay upload</span>
-                </div>
-                <div>
                   <code className="bg-gray-700 px-2 py-1 rounded">useCreditsForOsirionPull()</code>
                   <span className="ml-2">→ Deducts 50 credits for Osirion data</span>
                 </div>

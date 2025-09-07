@@ -11,7 +11,6 @@ export interface CreditTrackingState {
   useCredits: (amount: number, feature: string, metadata?: any) => Promise<boolean>;
   deductCreditsAfterAction: (amount: number, feature: string, metadata?: any) => Promise<boolean>;
   useCreditsForChat: () => Promise<boolean>;
-  useCreditsForReplayUpload: () => Promise<boolean>;
   useCreditsForOsirionPull: () => Promise<boolean>;
   useCreditsForStatsLookup: () => Promise<boolean>;
   useCreditsForTournamentStrategy: () => Promise<boolean>;
@@ -118,9 +117,6 @@ export function useCreditTracking(): CreditTrackingState {
     return useCreditsGeneric(CREDIT_COSTS.AI_CHAT, 'ai_chat');
   }, [useCreditsGeneric]);
 
-  const useCreditsForReplayUpload = useCallback(async (): Promise<boolean> => {
-    return useCreditsGeneric(CREDIT_COSTS.REPLAY_UPLOAD, 'replay_upload');
-  }, [useCreditsGeneric]);
 
   const useCreditsForOsirionPull = useCallback(async (): Promise<boolean> => {
     return useCreditsGeneric(CREDIT_COSTS.OSIRION_PULL, 'osirion_pull');
@@ -155,7 +151,6 @@ export function useCreditTracking(): CreditTrackingState {
     useCredits: useCreditsGeneric,
     deductCreditsAfterAction,
     useCreditsForChat,
-    useCreditsForReplayUpload,
     useCreditsForOsirionPull,
     useCreditsForStatsLookup,
     useCreditsForTournamentStrategy,

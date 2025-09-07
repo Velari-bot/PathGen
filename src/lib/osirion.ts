@@ -1,8 +1,7 @@
-import { 
+import {
   OsirionStats, 
   OsirionMatch, 
   OsirionEvent, 
-  OsirionReplayUpload, 
   OsirionComputeRequest,
   UsageLimits,
   CurrentUsage
@@ -120,28 +119,6 @@ export class OsirionService {
     }
   }
 
-  async uploadReplay(matchId: string, replayFile: File): Promise<OsirionReplayUpload | null> {
-    try {
-      if (!this.apiKey) {
-        console.warn('Osirion API key not configured');
-        return null;
-      }
-
-      // Note: The actual replay upload endpoint isn't documented in the provided API docs
-      // This is a placeholder implementation
-      console.log('Replay upload not yet implemented - endpoint not documented');
-      
-      return {
-        id: `temp-${Date.now()}`,
-        matchId: matchId,
-        status: 'uploading',
-        createdAt: new Date()
-      };
-    } catch (error) {
-      console.error('Error uploading replay:', error);
-      return null;
-    }
-  }
 
   async requestCompute(computeType: string, data: any): Promise<OsirionComputeRequest | null> {
     try {

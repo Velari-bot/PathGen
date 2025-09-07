@@ -23,7 +23,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [epicAccount, setEpicAccount] = useState<any>(null);
   const [fortniteStats, setFortniteStats] = useState<any>(null);
-  const [replayUploads, setReplayUploads] = useState<any[]>([]);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isStatLookupLoading, setIsStatLookupLoading] = useState(false);
@@ -968,32 +967,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleReplayUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const upload = {
-      id: Date.now().toString(),
-      filename: file.name,
-      status: 'uploading',
-      createdAt: new Date()
-    };
-
-    setReplayUploads(prev => [upload, ...prev]);
-
-    // Simulate upload process
-    setTimeout(() => {
-      setReplayUploads(prev => 
-        prev.map(u => u.id === upload.id ? { ...u, status: 'processing' } : u)
-      );
-      
-      setTimeout(() => {
-        setReplayUploads(prev => 
-          prev.map(u => u.id === upload.id ? { ...u, status: 'completed' } : u)
-        );
-      }, 3000);
-    }, 2000);
-  };
 
   if (loading || isLoading) {
     return (
@@ -1068,10 +1041,6 @@ export default function DashboardPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Stats Lookup</span>
                     <span className="text-white font-medium">10 credits</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-300">Replay Upload</span>
-                    <span className="text-white font-medium">20 credits</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">Osirion Pull (Premium)</span>
@@ -1525,46 +1494,6 @@ export default function DashboardPage() {
 
 
 
-          {/* Replay Upload Section */}
-          {epicAccount && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-semibold text-white mb-4">🎬 Replay Analysis</h3>
-              <div className="space-y-4">
-                <p className="text-white/60">Upload your Fortnite replay files for detailed analysis and coaching insights.</p>
-                <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center">
-                  <input
-                    type="file"
-                    accept=".replay"
-                    onChange={handleReplayUpload}
-                    className="hidden"
-                    id="replay-upload"
-                  />
-                  <label htmlFor="replay-upload" className="cursor-pointer">
-                    <div className="text-4xl mb-2">📁</div>
-                    <div className="text-white font-medium">Click to upload replay file</div>
-                    <div className="text-white/60 text-sm mt-1">Supports .replay files</div>
-                  </label>
-                </div>
-                {replayUploads.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="text-white font-medium">Recent Uploads:</h4>
-                    {replayUploads.map((upload, index) => (
-                      <div key={index} className="flex items-center justify-between bg-white/5 p-3 rounded-lg">
-                        <span className="text-white/80">{upload.filename}</span>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          upload.status === 'completed' ? 'bg-white/20 text-white' :
-                          upload.status === 'processing' ? 'bg-white/20 text-white' :
-                          'bg-gray-500/20 text-gray-400'
-                        }`}>
-                          {upload.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
 
 

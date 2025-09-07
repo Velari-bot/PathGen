@@ -222,7 +222,6 @@ export class CreditTracker {
 // Credit costs for different features
 export const CREDIT_COSTS = {
   AI_CHAT: 1,
-  REPLAY_UPLOAD: 20,
   OSIRION_PULL: 50,
   STATS_LOOKUP: 2,
   TOURNAMENT_STRATEGY: 5,
@@ -232,7 +231,6 @@ export const CREDIT_COSTS = {
 // Convenience functions for common actions
 export const useCredits = {
   forChat: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.AI_CHAT, 'ai_chat'),
-  forReplayUpload: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.REPLAY_UPLOAD, 'replay_upload'),
   forOsirionPull: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.OSIRION_PULL, 'osirion_pull'),
   forStatsLookup: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.STATS_LOOKUP, 'stats_lookup'),
   forTournamentStrategy: (userId: string) => CreditTracker.useCredits(userId, CREDIT_COSTS.TOURNAMENT_STRATEGY, 'tournament_strategy'),
@@ -242,7 +240,6 @@ export const useCredits = {
 // Convenience functions for checking if user can afford actions
 export const canAffordCredits = {
   forChat: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.AI_CHAT),
-  forReplayUpload: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.REPLAY_UPLOAD),
   forOsirionPull: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.OSIRION_PULL),
   forStatsLookup: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.STATS_LOOKUP),
   forTournamentStrategy: (userId: string) => CreditTracker.canAffordCredits(userId, CREDIT_COSTS.TOURNAMENT_STRATEGY),

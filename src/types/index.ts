@@ -158,13 +158,6 @@ export interface OsirionStats {
   };
 }
 
-export interface OsirionReplayUpload {
-  id: string;
-  matchId: string;
-  status: 'uploading' | 'processing' | 'completed' | 'failed';
-  analysis?: any;
-  createdAt: Date;
-}
 
 export interface OsirionComputeRequest {
   id: string;

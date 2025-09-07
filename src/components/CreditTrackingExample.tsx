@@ -10,7 +10,6 @@ export const CreditTrackingExample: React.FC = () => {
     isLoading, 
     error, 
     useCreditsForChat, 
-    useCreditsForReplayUpload, 
     useCreditsForOsirionPull,
     useCreditsForStatsLookup,
     useCreditsForTournamentStrategy,
@@ -116,13 +115,6 @@ export const CreditTrackingExample: React.FC = () => {
           Lookup Stats ({CREDIT_COSTS.STATS_LOOKUP} credits)
         </button>
 
-        <button
-          onClick={() => handleAction(useCreditsForReplayUpload, 'Replay Upload', CREDIT_COSTS.REPLAY_UPLOAD)}
-          disabled={!canAfford(CREDIT_COSTS.REPLAY_UPLOAD)}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed"
-        >
-          Upload Replay ({CREDIT_COSTS.REPLAY_UPLOAD} credits)
-        </button>
 
         <button
           onClick={() => handleAction(useCreditsForOsirionPull, 'Osirion Pull', CREDIT_COSTS.OSIRION_PULL)}

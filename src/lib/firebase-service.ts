@@ -259,47 +259,6 @@ export interface FortniteStats {
   };
 }
 
-export interface ReplayUpload {
-  id: string;
-  userId: string;
-  epicId: string;
-  epicName: string;
-  filename: string;
-  fileSize: number;
-  status: 'uploading' | 'processing' | 'completed' | 'failed';
-  createdAt: Date;
-  updatedAt: Date;
-  
-  // Match details
-  matchId?: string;
-  matchDate?: Date;
-  matchMode?: string;
-  matchResult?: 'victory' | 'defeat' | 'draw';
-  placement?: number;
-  playersInMatch?: number;
-  
-  // Analysis results
-  analysisResult?: {
-    keyMoments: string[];
-    mistakes: string[];
-    improvements: string[];
-    highlights: string[];
-    overallScore: number;
-    categoryScores: {
-      building: number;
-      aim: number;
-      positioning: number;
-      gameSense: number;
-      mechanics: number;
-    };
-  };
-  
-  // Processing info
-  processingTime?: number;
-  analysisVersion?: string;
-  aiModel?: string;
-  confidence?: number;
-}
 
 export interface Conversation {
   id: string;
@@ -720,44 +679,6 @@ export class FirebaseService {
     }
   }
 
-  // Replay Upload Management
-  static async saveReplayUpload(upload: ReplayUpload): Promise<void> {
-    try {
-      const docRef = doc(firestoreDb, 'replayUploads', upload.id);
-      await setDoc(docRef, {
-        ...upload,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-      console.log('✅ Replay upload saved to Firebase');
-    } catch (error) {
-      console.error('❌ Error saving replay upload to Firebase:', error);
-      throw error;
-    }
-  }
-
-  static async getReplayUploads(userId: string): Promise<ReplayUpload[]> {
-    try {
-      const q = query(
-        collection(firestoreDb, 'replayUploads'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
-        } as ReplayUpload;
-      });
-    } catch (error) {
-      console.error('❌ Error getting replay uploads from Firebase:', error);
-      throw error;
-    }
-  }
 
   // Conversation Management
   static async saveConversation(conversation: Conversation): Promise<void> {

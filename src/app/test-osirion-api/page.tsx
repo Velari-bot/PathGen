@@ -435,68 +435,6 @@ export default function TestOsirionAPIPage() {
     }
   };
 
-  const testReplayUpload = async () => {
-    if (!userId.trim()) {
-      setTestResults(['Please enter a user ID first']);
-      return;
-    }
-
-    setIsLoading(true);
-    setTestResults(['Testing Replay Upload API...']);
-
-    try {
-      // Create a dummy file for testing
-      const dummyFile = new File(['dummy replay data'], 'test-replay.replay', { type: 'application/octet-stream' });
-      
-      const formData = new FormData();
-      formData.append('matchId', 'test-match-123');
-      formData.append('userId', userId.trim());
-      formData.append('replay', dummyFile);
-
-      const response = await fetch('/api/osirion/replay', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        if (data.success) {
-          setTestResults([
-            '✅ Replay Upload Test Successful!',
-            `Upload ID: ${data.upload?.id || 'N/A'}`,
-            `Status: ${data.upload?.status || 'N/A'}`,
-            `Usage: ${data.usage?.current || 0}/${data.usage?.limit || '∞'} uploads`
-          ]);
-        } else if (data.blocked) {
-          setTestResults([
-            '⚠️ Replay Upload Blocked',
-            `Message: ${data.message || 'Unknown error'}`,
-            data.upgradeRequired ? 'Upgrade Required: Yes' : 'Upgrade Required: No',
-            data.suggestion ? `Suggestion: ${data.suggestion}` : ''
-          ]);
-        } else {
-          setTestResults([
-            '❌ Replay Upload Failed',
-            `Error: ${data.error || 'Unknown error'}`
-          ]);
-        }
-      } else {
-        setTestResults([
-          '❌ HTTP Error',
-          `Status: ${response.status}`,
-          `Error: ${data.error || 'Unknown error'}`
-        ]);
-      }
-    } catch (error) {
-      setTestResults([
-        '❌ Network Error',
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      ]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const testComputeRequest = async () => {
     if (!userId.trim()) {
@@ -634,13 +572,6 @@ export default function TestOsirionAPIPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
               >
                 Test Stats API
-              </button>
-              <button
-                onClick={testReplayUpload}
-                disabled={isLoading}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                Test Replay Upload
               </button>
               <button
                 onClick={testComputeRequest}
