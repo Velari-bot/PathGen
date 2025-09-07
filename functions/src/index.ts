@@ -2,3 +2,4 @@
 export { stripeWebhook } from './stripe-webhooks';
 export { createCheckoutSession, createPortalSession, getSubscriptionInfo } from './create-checkout';
 export { trackUsage, getCurrentUsage, resetUserUsage, monthlyUsageReset } from './track-usage';
+export { osirionStats } from './osirion-stats';

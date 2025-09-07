@@ -21,6 +21,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/osirion/stats",
+        "function": "osirionStats"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

@@ -44,7 +44,8 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "eslint": "^8.0.0",
-    "eslint-config-next": "14.0.0"
+    "eslint-config-next": "14.0.0",
+    "firebase-tools": "^14.15.2"
   },
   "keywords": [
     "fortnite",
