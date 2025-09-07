@@ -449,19 +449,37 @@ async function updateAllCollectionsForUser(userId: string, plan: string, subscri
         startDate: new Date(),
         endDate: null,
         autoRenew: true,
-        paymentMethod: null,
+        paymentMethod: 'stripe',
         stripeCustomerId: subscriptionData.stripeCustomerId,
         stripeSubscriptionId: subscriptionData.stripeSubscriptionId
       },
       subscriptionStatus: 'active',
       subscriptionTier: plan,
+      accountType: plan, // Ensure accountType is also set
       updatedAt: new Date()
     });
 
     // Also update the top-level subscriptionTier field to ensure it's always set
     await db.collection('users').doc(userId).update({
-      subscriptionTier: plan
+      subscriptionTier: plan,
+      accountType: plan
     });
+
+    // Update credits to Pro level if upgrading to Pro
+    if (plan === 'pro') {
+      const userDoc = await db.collection('users').doc(userId).get();
+      const userData = userDoc.data();
+      const currentCredits = userData?.credits || 0;
+      
+      if (currentCredits < 4000) {
+        await db.collection('users').doc(userId).update({
+          credits: 4000,
+          credits_total: 4000,
+          credits_remaining: 4000 - (userData?.credits_used || 0)
+        });
+        console.log(`✅ Updated credits to Pro level (4000) for user ${userId}`);
+      }
+    }
 
     // 2. Update or create subscription document
     const subscriptionsSnapshot = await db.collection('subscriptions')
