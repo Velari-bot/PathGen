@@ -149,8 +149,10 @@ export async function POST(request: NextRequest) {
     const osirionService = new OsirionService();
     
     try {
+      console.log('🔄 Calling Osirion API for Epic ID:', epicId);
       // Get player stats from Osirion using Epic ID
       const stats = await osirionService.getPlayerStats(epicId, platform);
+      console.log('📊 Osirion API call completed, stats received:', !!stats);
       
       console.log('📊 Raw Osirion stats received:', JSON.stringify(stats, null, 2));
       
@@ -440,9 +442,12 @@ export async function POST(request: NextRequest) {
 
          // Deduct credits for Osirion pull (50 credits)
          try {
+           console.log('💰 Starting credit deduction for Osirion pull...');
            // Dynamic import to avoid build-time issues
            const { CreditBackendService } = await import('@/lib/credit-backend-service');
+           console.log('✅ CreditBackendService imported successfully');
            const creditService = new CreditBackendService();
+           console.log('✅ CreditBackendService instantiated');
            const creditResult = await creditService.deductCredits(
              userId,
              50, // Osirion pull costs 50 credits
@@ -454,6 +459,7 @@ export async function POST(request: NextRequest) {
                source: 'osirion_api'
              }
            );
+           console.log('💰 Credit deduction result:', creditResult);
            
            if (creditResult.success) {
              console.log(`✅ Credits deducted successfully: ${creditResult.creditsChanged} credits used, ${creditResult.creditsRemaining} remaining`);
