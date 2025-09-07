@@ -224,24 +224,27 @@ export class CreditBackendService {
         const userData = userDoc.data() as UserDocument;
         const currentCredits = userData.credits || 0;
 
+        // Ensure currentCredits is a valid number
+        const validCurrentCredits = typeof currentCredits === 'number' ? currentCredits : 0;
+
         // Check if user has enough credits
-        if (currentCredits < amount) {
+        if (validCurrentCredits < amount) {
           return {
             success: false,
-            creditsRemaining: currentCredits,
+            creditsRemaining: validCurrentCredits,
             creditsChanged: 0,
-            message: `Insufficient credits. Required: ${amount}, Available: ${currentCredits}`
+            message: `Insufficient credits. Required: ${amount}, Available: ${validCurrentCredits}`
           };
         }
 
-        const newCredits = currentCredits - amount;
+        const newCredits = validCurrentCredits - amount;
 
         // Create transaction record
         const transactionRecord: TransactionRecord = {
           timestamp: new Date(),
           action: 'deduction',
           creditsChanged: -amount,
-          creditsBefore: currentCredits,
+          creditsBefore: validCurrentCredits,
           creditsAfter: newCredits,
           metadata: this.cleanObject({
             feature,
@@ -321,14 +324,17 @@ export class CreditBackendService {
 
         const userData = userDoc.data() as UserDocument;
         const currentCredits = userData.credits || 0;
-        const newCredits = currentCredits + amount;
+
+        // Ensure currentCredits is a valid number
+        const validCurrentCredits = typeof currentCredits === 'number' ? currentCredits : 0;
+        const newCredits = validCurrentCredits + amount;
 
         // Create transaction record
         const transactionRecord: TransactionRecord = {
           timestamp: new Date(),
           action,
           creditsChanged: amount,
-          creditsBefore: currentCredits,
+          creditsBefore: validCurrentCredits,
           creditsAfter: newCredits,
           metadata: this.cleanObject(metadata)
         };
@@ -470,16 +476,19 @@ export class CreditBackendService {
         const userData = userDoc.data() as UserDocument;
         const currentCredits = userData.credits || 0;
         
+        // Ensure currentCredits is a valid number
+        const validCurrentCredits = typeof currentCredits === 'number' ? currentCredits : 0;
+        
         // Calculate credits needed to reach 4000
-        const creditsToAdd = Math.max(0, CREDIT_LIMITS.PRO_USER_INITIAL - currentCredits);
+        const creditsToAdd = Math.max(0, CREDIT_LIMITS.PRO_USER_INITIAL - validCurrentCredits);
         
         // Create upgrade transaction record
         const upgradeTransaction: TransactionRecord = {
           timestamp: new Date(),
           action: 'subscription_upgrade',
           creditsChanged: creditsToAdd,
-          creditsBefore: currentCredits,
-          creditsAfter: currentCredits + creditsToAdd,
+          creditsBefore: validCurrentCredits,
+          creditsAfter: validCurrentCredits + creditsToAdd,
           metadata: this.cleanObject({
             subscriptionId,
             stripeCustomerId,
@@ -499,20 +508,20 @@ export class CreditBackendService {
 
         transaction.update(userRef, this.cleanObject({
           accountType: 'pro',
-          credits: currentCredits + creditsToAdd,
+          credits: validCurrentCredits + creditsToAdd,
           subscriptionId,
           stripeCustomerId,
           transactionHistory: updatedTransactionHistory,
           updatedAt: new Date()
         }));
 
-        console.log(`✅ User ${userId} upgraded to Pro. Credits topped up to ${currentCredits + creditsToAdd}`);
+        console.log(`✅ User ${userId} upgraded to Pro. Credits topped up to ${validCurrentCredits + creditsToAdd}`);
 
         return {
           success: true,
-          creditsRemaining: currentCredits + creditsToAdd,
+          creditsRemaining: validCurrentCredits + creditsToAdd,
           creditsChanged: creditsToAdd,
-          message: `Successfully upgraded to Pro and topped up to ${currentCredits + creditsToAdd} credits`,
+          message: `Successfully upgraded to Pro and topped up to ${validCurrentCredits + creditsToAdd} credits`,
           transactionId: upgradeTransaction.timestamp.toISOString()
         };
       });
