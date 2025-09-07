@@ -14,6 +14,7 @@ import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service'
 import { UsageTracker } from '@/lib/usage-tracker';
 import Footer from '@/components/Footer';
 import { CreditDisplay } from '@/components/CreditDisplay';
+import { zoneGuides, mechanics, strategies, metaAnalysis, tipsAndTricks, tournamentInfo, competitiveLoadouts, advancedMechanics, dataAnalytics, lootSystems, boonCombos, mythicCounters, mobilityStrategy, rankingIntelligence, trainingSystems } from '@/lib/ai-docs';
 
 
 
@@ -250,6 +251,39 @@ export default function AIPage() {
         }
       }
       
+      // Build comprehensive AI context with all documentation
+      const comprehensiveContext = `You are PathGen AI, a helpful Fortnite improvement coach. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.
+
+${zoneGuides}
+
+${mechanics}
+
+${strategies}
+
+${metaAnalysis}
+
+${tipsAndTricks}
+
+${tournamentInfo}
+
+${competitiveLoadouts}
+
+${advancedMechanics}
+
+${dataAnalytics}
+
+${lootSystems}
+
+${boonCombos}
+
+${mythicCounters}
+
+${mobilityStrategy}
+
+${rankingIntelligence}
+
+${trainingSystems}`;
+
       // Call the AI API with comprehensive context
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -258,7 +292,7 @@ export default function AIPage() {
         },
         body: JSON.stringify({
           message: inputMessage,
-          context: 'You are PathGen AI, a helpful Fortnite improvement coach. Provide specific, actionable advice for Fortnite players. Keep responses concise but helpful.',
+          context: comprehensiveContext,
           fortniteUsername: fortniteUsername,
           epicContext: epicContext,
           userStats: userStats
