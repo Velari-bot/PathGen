@@ -506,8 +506,14 @@ export class FirebaseService {
   static async saveFortniteStats(stats: FortniteStats): Promise<void> {
     try {
       const docRef = doc(firestoreDb, 'fortniteStats', stats.id);
+      
+      // Filter out undefined values to prevent Firestore errors
+      const cleanStats = Object.fromEntries(
+        Object.entries(stats).filter(([_, value]) => value !== undefined)
+      );
+      
       await setDoc(docRef, {
-        ...stats,
+        ...cleanStats,
         lastUpdated: serverTimestamp(),
         updatedAt: serverTimestamp()
       });

@@ -404,12 +404,13 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('📊 Osirion API response:', data);
         if (data.success) {
           // Create comprehensive Fortnite stats structure
           const fortniteStatsData: FortniteStats = {
             id: FirebaseService.generateId(),
             userId: user.uid,
-            epicId: account.id,
+            epicId: account.epicId || account.id,
             epicName: account.displayName,
             platform: 'pc',
             lastUpdated: new Date(),
