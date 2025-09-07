@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
         const currentPulls = usageData?.osirionPulls || 0;
         
         // TEMPORARY: Reset usage for specific user (remove this after testing)
+        let updatedPulls = currentPulls;
         if (userId === '0IJZBQg3cDWIeDeWSWhK2IZjQ6u2' && currentPulls >= monthlyLimit) {
           console.log('🔄 TEMPORARY: Resetting usage for testing user');
           await usageRef.set({
@@ -104,10 +105,11 @@ export async function POST(request: NextRequest) {
             osirionPulls: 0,
             lastReset: new Date()
           }, { merge: true });
+          updatedPulls = 0;
         }
         
         // Check if user has reached their monthly limit (skip check for unlimited users)
-        if (monthlyLimit !== -1 && currentPulls >= monthlyLimit) {
+        if (monthlyLimit !== -1 && updatedPulls >= monthlyLimit) {
           console.log(`❌ Monthly limit reached: ${currentPulls}/${monthlyLimit} pulls used (${subscriptionTier} tier)`);
           return NextResponse.json({
             success: false,
