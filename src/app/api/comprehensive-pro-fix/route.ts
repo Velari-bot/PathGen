@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`🎯 Setting user ${userId} to PRO tier`);
 
-    // Step 3: Comprehensive user document update
+    // Step 3: Comprehensive user document update with unified structure
     const userUpdateData = {
       subscriptionTier: 'pro',
       subscriptionStatus: 'active',
@@ -47,16 +47,64 @@ export async function POST(request: NextRequest) {
         stripeSubscriptionId: userData?.stripeSubscriptionId || 'manual_pro_fix'
       },
       accountType: 'pro',
-      // Update credits in the users collection (this is what the frontend reads)
+      
+      // Credits (what the frontend reads)
       credits_total: 4000,
       credits_used: userData?.credits_used || 0,
       credits_remaining: 4000 - (userData?.credits_used || 0),
       last_updated: new Date(),
+      
+      // Usage tracking (consolidated from usage collection)
+      usage: {
+        // AI usage
+        aiMessages: userData?.usage?.aiMessages || 0,
+        aiTokens: userData?.usage?.aiTokens || 0,
+        conversationsCreated: userData?.usage?.conversationsCreated || 0,
+        
+        // Osirion usage
+        osirionPulls: userData?.usage?.osirionPulls || 0,
+        dataPullsUsed: userData?.usage?.dataPullsUsed || 0,
+        matchesUsed: userData?.usage?.matchesUsed || 0,
+        eventTypesUsed: userData?.usage?.eventTypesUsed || 0,
+        computeRequestsUsed: userData?.usage?.computeRequestsUsed || 0,
+        
+        // Tournament usage
+        tournamentStrategies: userData?.usage?.tournamentStrategies || 0,
+        
+        // Epic account usage
+        epicSyncCount: userData?.usage?.epicSyncCount || 0,
+        statsPulled: userData?.usage?.statsPulled || 0,
+        
+        // General usage
+        totalSessions: userData?.usage?.totalSessions || 0,
+        lastActivity: new Date(),
+        lastReset: new Date(),
+        resetDate: new Date()
+      },
+      
+      // Gaming preferences and traits
+      gaming: userData?.gaming || {
+        favoriteGame: 'fortnite',
+        playstyle: 'aggressive',
+        skillLevel: 'intermediate',
+        goals: ['improve_kd', 'increase_wins'],
+        timeZone: 'UTC'
+      },
+      
+      // Epic account info (if exists)
+      epicAccount: userData?.epicAccount || null,
+      
+      // Fortnite stats (if exists - will be populated by Osirion pulls)
+      fortniteStats: userData?.fortniteStats || null,
+      
+      // Transaction history
+      transactionHistory: userData?.transactionHistory || [],
+      
       updatedAt: new Date()
     };
 
     await db.collection('users').doc(userId).update(userUpdateData);
-    console.log(`✅ Updated user document to Pro with 4000 credits`);
+    console.log(`✅ Updated user document to Pro with unified structure`);
 
     // Step 4: Update/Create subscription document
     const subscriptionsSnapshot = await db.collection('subscriptions')

@@ -485,64 +485,66 @@ export class FirebaseService {
 
   static async getFortniteStats(userId: string): Promise<FortniteStats | null> {
     try {
-      const q = query(
-        collection(firestoreDb, 'fortniteStats'),
-        where('userId', '==', userId),
-        orderBy('lastUpdated', 'desc'),
-        limit(1)
-      );
+      // Read from users collection instead of separate fortniteStats collection
+      const userRef = doc(firestoreDb, 'users', userId);
+      const userDoc = await getDoc(userRef);
       
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0];
-        const data = doc.data();
-        
-        // Return complete FortniteStats object with all fields
-        return {
-          id: data.id || doc.id,
-          userId: data.userId || '',
-          epicId: data.epicId || '',
-          epicName: data.epicName || data.displayName || '',
-          platform: data.platform || 'unknown',
-          lastUpdated: data.lastUpdated?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
-          
-          // Overall stats
-          overall: data.overall || {
-            kd: 0, winRate: 0, matches: 0, avgPlace: 0, top1: 0, top3: 0, top5: 0, top10: 0, top25: 0,
-            kills: 0, deaths: 0, assists: 0, damageDealt: 0, damageTaken: 0, timeAlive: 0, distanceTraveled: 0,
-            materialsGathered: 0, structuresBuilt: 0
-          },
-          
-          // Mode-specific stats
-          solo: data.solo || undefined,
-          duo: data.duo || undefined,
-          squad: data.squad || undefined,
-          arena: data.arena || undefined,
-          
-          // Tournament stats
-          tournaments: data.tournaments || undefined,
-          
-          // Weapon stats
-          weapons: data.weapons || undefined,
-          
-          // Building stats
-          building: data.building || undefined,
-          
-          // Performance stats
-          performance: data.performance || undefined,
-          
-          // Usage tracking
-          usage: data.usage || { matchesUsed: 0, lastReset: new Date() },
-          
-          // Metadata
-          metadata: data.metadata || { source: 'firebase', version: '1.0' },
-          
-          // Raw Osirion data - this is crucial for AI analysis
-          rawOsirionData: data.rawOsirionData || undefined
-        } as FortniteStats;
+      if (!userDoc.exists()) {
+        return null;
       }
-      return null;
+      
+      const userData = userDoc.data();
+      const fortniteStatsData = userData?.fortniteStats;
+      
+      if (!fortniteStatsData) {
+        return null;
+      }
+      
+      // Return complete FortniteStats object with all fields
+      return {
+        id: fortniteStatsData.id || userDoc.id,
+        userId: fortniteStatsData.userId || userId,
+        epicId: fortniteStatsData.epicId || '',
+        epicName: fortniteStatsData.epicName || fortniteStatsData.displayName || '',
+        platform: fortniteStatsData.platform || 'unknown',
+        lastUpdated: fortniteStatsData.lastUpdated?.toDate() || new Date(),
+        updatedAt: fortniteStatsData.updatedAt?.toDate() || new Date(),
+        
+        // Overall stats
+        overall: fortniteStatsData.overall || {
+          kd: 0, winRate: 0, matches: 0, avgPlace: 0, top1: 0, top3: 0, top5: 0, top10: 0, top25: 0,
+          kills: 0, deaths: 0, assists: 0, damageDealt: 0, damageTaken: 0, timeAlive: 0, distanceTraveled: 0,
+          materialsGathered: 0, structuresBuilt: 0
+        },
+        
+        // Mode-specific stats
+        solo: fortniteStatsData.solo || undefined,
+        duo: fortniteStatsData.duo || undefined,
+        squad: fortniteStatsData.squad || undefined,
+        arena: fortniteStatsData.arena || undefined,
+        
+        // Tournament stats
+        tournaments: fortniteStatsData.tournaments || undefined,
+        
+        // Weapon stats
+        weapons: fortniteStatsData.weapons || undefined,
+        
+        // Building stats
+        building: fortniteStatsData.building || undefined,
+        
+        // Performance stats
+        performance: fortniteStatsData.performance || undefined,
+        
+        // Usage tracking
+        usage: fortniteStatsData.usage || { matchesUsed: 0, lastReset: new Date() },
+        
+        // Metadata
+        metadata: fortniteStatsData.metadata || { source: 'firebase', version: '1.0' },
+        
+        // Raw Osirion data - this is crucial for AI analysis
+        rawOsirionData: fortniteStatsData.rawOsirionData || undefined
+      } as FortniteStats;
+      
     } catch (error) {
       console.error('❌ Error getting Fortnite stats from Firebase:', error);
       throw error;

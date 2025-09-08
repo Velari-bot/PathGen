@@ -76,37 +76,33 @@ export async function POST(request: NextRequest) {
       const limits = UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro');
       const monthlyLimit = limits.osirion.matchesPerMonth;
       
-      const usageRef = db.collection('usage').doc(userId);
-      const usageDoc = await usageRef.get();
+      // Check usage from users collection
+      const currentMonth = new Date().getFullYear() * 100 + new Date().getMonth() + 1;
+      const lastUsageMonth = userData?.usage?.lastMonth || 0;
       
-      if (usageDoc.exists) {
-        const usageData = usageDoc.data();
-        const currentMonth = new Date().getFullYear() * 100 + new Date().getMonth() + 1;
-        const lastUsageMonth = usageData?.lastMonth || 0;
-        
-        // Reset usage if it's a new month
-        if (currentMonth > lastUsageMonth) {
-          await usageRef.set({
-            lastMonth: currentMonth,
-            osirionPulls: 0,
-            lastReset: new Date()
-          }, { merge: true });
-          console.log('🔄 Reset monthly usage counter for new month');
-        }
-        
-        const currentPulls = usageData?.osirionPulls || 0;
-        
-        // TEMPORARY: Reset usage for specific user (remove this after testing)
-        let updatedPulls = currentPulls;
-        if (userId === '0IJZBQg3cDWIeDeWSWhK2IZjQ6u2' && currentPulls >= monthlyLimit) {
-          console.log('🔄 TEMPORARY: Resetting usage for testing user');
-          await usageRef.set({
-            lastMonth: currentMonth,
-            osirionPulls: 0,
-            lastReset: new Date()
-          }, { merge: true });
-          updatedPulls = 0;
-        }
+      // Reset usage if it's a new month
+      if (currentMonth > lastUsageMonth) {
+        await userRef.update({
+          'usage.lastMonth': currentMonth,
+          'usage.osirionPulls': 0,
+          'usage.lastReset': new Date()
+        });
+        console.log('🔄 Reset monthly usage counter for new month');
+      }
+      
+      const currentPulls = userData?.usage?.osirionPulls || 0;
+      
+      // TEMPORARY: Reset usage for specific user (remove this after testing)
+      let updatedPulls = currentPulls;
+      if (userId === '0IJZBQg3cDWIeDeWSWhK2IZjQ6u2' && currentPulls >= monthlyLimit) {
+        console.log('🔄 TEMPORARY: Resetting usage for testing user');
+        await userRef.update({
+          'usage.lastMonth': currentMonth,
+          'usage.osirionPulls': 0,
+          'usage.lastReset': new Date()
+        });
+        updatedPulls = 0;
+      }
         
         // Check if user has reached their monthly limit (skip check for unlimited users)
         if (monthlyLimit !== -1 && updatedPulls >= monthlyLimit) {
@@ -451,35 +447,31 @@ export async function POST(request: NextRequest) {
           }
         };
 
-        // Save to Firebase using the correct collection name
-        const fortniteStatsRef = db.collection('fortniteStats').doc(userId);
-        await fortniteStatsRef.set(fortniteStatsData, { merge: true });
-        console.log('✅ Fortnite stats saved to Firebase successfully');
-
-         // Increment usage counter after successful API call
-         try {
-           const usageRef = db.collection('usage').doc(userId);
-           await usageRef.update({
-             osirionPulls: admin.firestore.FieldValue.increment(1),
-             lastPull: new Date()
-           });
-           console.log('📊 Usage counter incremented successfully');
-         } catch (incrementError) {
-           console.error('⚠️ Warning: Could not increment usage counter:', incrementError);
-         }
+        // Save to Firebase in the users collection (unified structure)
+        const userRef = db.collection('users').doc(userId);
+        await userRef.update({
+          fortniteStats: fortniteStatsData,
+          // Also update usage in the same document
+          'usage.osirionPulls': admin.firestore.FieldValue.increment(1),
+          'usage.lastPull': new Date(),
+          'usage.lastActivity': new Date(),
+          last_updated: new Date()
+        });
+        console.log('✅ Fortnite stats saved to users collection successfully');
 
       } catch (firebaseError) {
         console.error('⚠️ Warning: Could not save to Firebase:', firebaseError);
         // Continue with the response even if Firebase save fails
       }
 
-      // Get current usage for response
+      // Get current usage for response from users collection
       let currentUsage = 0;
       try {
-        const usageRef = db.collection('usage').doc(userId);
-        const usageDoc = await usageRef.get();
-        if (usageDoc.exists) {
-          currentUsage = usageDoc.data()?.osirionPulls || 0;
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await userRef.get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          currentUsage = userData?.usage?.osirionPulls || 0;
         }
       } catch (error) {
         console.error('⚠️ Could not get current usage for response:', error);
