@@ -34,6 +34,94 @@ export interface AICoachingResponse {
     accuracyChange: number;
     matsEfficiencyChange: number;
   };
+  // Advanced coaching features
+  skillProgression?: {
+    userId: string;
+    skillMetrics: {
+      survivalTime: {
+        current: number;
+        previous: number;
+        trend: 'improving' | 'declining' | 'stable';
+        weeklyChange: number;
+        monthlyChange: number;
+        allTimeHigh: number;
+        allTimeLow: number;
+      };
+      accuracy: {
+        current: number;
+        previous: number;
+        trend: 'improving' | 'declining' | 'stable';
+        weeklyChange: number;
+        monthlyChange: number;
+        allTimeHigh: number;
+        allTimeLow: number;
+      };
+      matsEfficiency: {
+        current: number;
+        previous: number;
+        trend: 'improving' | 'declining' | 'stable';
+        weeklyChange: number;
+        monthlyChange: number;
+        allTimeHigh: number;
+        allTimeLow: number;
+      };
+      placement: {
+        current: number;
+        previous: number;
+        trend: 'improving' | 'declining' | 'stable';
+        weeklyChange: number;
+        monthlyChange: number;
+        allTimeHigh: number;
+        allTimeLow: number;
+      };
+    };
+    lastUpdated: Date;
+    sessionCount: number;
+    totalSessions: number;
+  };
+  focusPriority?: {
+    primaryFocus: {
+      skill: string;
+      impact: 'high' | 'medium' | 'low';
+      confidence: number;
+      reason: string;
+      specificAction: string;
+    };
+    secondaryFocus: {
+      skill: string;
+      impact: 'high' | 'medium' | 'low';
+      confidence: number;
+      reason: string;
+      specificAction: string;
+    };
+    ignoreForNow: string[];
+  };
+  proBenchmarks?: Array<{
+    skill: string;
+    playerValue: number;
+    proAverage: number;
+    proTop10: number;
+    gap: number;
+    achievable: boolean;
+    timeframe: string;
+  }>;
+  sessionSummary?: {
+    sessionId: string;
+    userId: string;
+    date: Date;
+    gamesAnalyzed: number;
+    keyInsights: string[];
+    improvements: string[];
+    regressions: string[];
+    focusForNextSession: string[];
+    practiceDrill: {
+      name: string;
+      description: string;
+      duration: string;
+      creativeCode?: string;
+    };
+    motivation: string;
+  };
 }
 
 export interface AICoachingRequest {

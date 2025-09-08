@@ -3,6 +3,8 @@ import { CreditTracker } from '@/lib/ai-credit-tracker';
 import { OsirionService } from '@/lib/osirion';
 import { MatchAnalysisService } from '@/lib/match-analysis-service';
 import { AggregatedMatchData } from '@/types/match-analysis';
+import { AdvancedCoachingService } from '@/lib/advanced-coaching-service';
+import { SkillProgression, FocusPriority, ProBenchmark, SessionSummary } from '@/types/advanced-coaching';
 
 export class AIPipeline {
   private static readonly OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -464,6 +466,194 @@ Respond ONLY with JSON in this exact structure:
   }
 
   /**
+   * Format advanced coaching prompt with all coaching features
+   */
+  static formatAdvancedCoachingPrompt(
+    request: AICoachingRequest,
+    aggregatedData: AggregatedMatchData | null,
+    skillProgression: SkillProgression | null,
+    focusPriority: FocusPriority | null,
+    proBenchmarks: ProBenchmark[] | null
+  ): string {
+    const { message, userProfile, fortniteStats, recentStats, conversationHistory } = request;
+
+    let prompt = `You are PathGen AI, a professional esports coach that provides personalized, long-term coaching based on comprehensive gameplay analysis.
+
+User Question: "${message}"
+
+Player Profile:`;
+
+    if (userProfile) {
+      prompt += `
+- Epic ID: ${userProfile.epicId || 'Not provided'}
+- Display Name: ${userProfile.displayName || 'Unknown'}
+- Skill Level: ${userProfile.skillLevel || 'Unknown'}
+- Playstyle: ${userProfile.playstyle || 'Unknown'}
+- Subscription Tier: ${userProfile.subscriptionTier || 'free'}`;
+    }
+
+    // Include skill progression tracking
+    if (skillProgression) {
+      prompt += `
+
+📈 SKILL PROGRESSION TRACKING (Long-term Growth):
+
+Survival Time Trends:
+- Current: ${skillProgression.skillMetrics.survivalTime.current.toFixed(1)} minutes
+- Previous: ${skillProgression.skillMetrics.survivalTime.previous.toFixed(1)} minutes
+- Trend: ${skillProgression.skillMetrics.survivalTime.trend} (${skillProgression.skillMetrics.survivalTime.weeklyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.survivalTime.weeklyChange.toFixed(1)}% this week)
+- All-time High: ${skillProgression.skillMetrics.survivalTime.allTimeHigh.toFixed(1)} minutes
+- Monthly Change: ${skillProgression.skillMetrics.survivalTime.monthlyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.survivalTime.monthlyChange.toFixed(1)}%
+
+Accuracy Trends:
+- Current: ${skillProgression.skillMetrics.accuracy.current.toFixed(1)}%
+- Previous: ${skillProgression.skillMetrics.accuracy.previous.toFixed(1)}%
+- Trend: ${skillProgression.skillMetrics.accuracy.trend} (${skillProgression.skillMetrics.accuracy.weeklyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.accuracy.weeklyChange.toFixed(1)}% this week)
+- All-time High: ${skillProgression.skillMetrics.accuracy.allTimeHigh.toFixed(1)}%
+- Monthly Change: ${skillProgression.skillMetrics.accuracy.monthlyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.accuracy.monthlyChange.toFixed(1)}%
+
+Mats Efficiency Trends:
+- Current: ${skillProgression.skillMetrics.matsEfficiency.current.toFixed(0)} mats per fight
+- Previous: ${skillProgression.skillMetrics.matsEfficiency.previous.toFixed(0)} mats per fight
+- Trend: ${skillProgression.skillMetrics.matsEfficiency.trend} (${skillProgression.skillMetrics.matsEfficiency.weeklyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.matsEfficiency.weeklyChange.toFixed(1)}% this week)
+- All-time Best: ${skillProgression.skillMetrics.matsEfficiency.allTimeLow.toFixed(0)} mats per fight
+- Monthly Change: ${skillProgression.skillMetrics.matsEfficiency.monthlyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.matsEfficiency.monthlyChange.toFixed(1)}%
+
+Total Sessions: ${skillProgression.totalSessions}`;
+    }
+
+    // Include focus priority with confidence scores
+    if (focusPriority) {
+      prompt += `
+
+🎯 FOCUS PRIORITY SYSTEM (What to work on next):
+
+Primary Focus (${focusPriority.primaryFocus.confidence}% confidence):
+- Skill: ${focusPriority.primaryFocus.skill}
+- Impact: ${focusPriority.primaryFocus.impact}
+- Reason: ${focusPriority.primaryFocus.reason}
+- Action: ${focusPriority.primaryFocus.specificAction}
+
+Secondary Focus (${focusPriority.secondaryFocus.confidence}% confidence):
+- Skill: ${focusPriority.secondaryFocus.skill}
+- Impact: ${focusPriority.secondaryFocus.impact}
+- Reason: ${focusPriority.secondaryFocus.reason}
+- Action: ${focusPriority.secondaryFocus.specificAction}
+
+Ignore for now: ${focusPriority.ignoreForNow.join(', ')}`;
+    }
+
+    // Include pro benchmark comparisons
+    if (proBenchmarks && proBenchmarks.length > 0) {
+      prompt += `
+
+🏆 PRO BENCHMARK COMPARISONS (vs FNCS players):`;
+
+      proBenchmarks.forEach(benchmark => {
+        prompt += `
+- ${benchmark.skill}:
+  * Your Value: ${benchmark.playerValue.toFixed(1)}
+  * Pro Average: ${benchmark.proAverage.toFixed(1)}
+  * Pro Top 10: ${benchmark.proTop10.toFixed(1)}
+  * Gap: ${benchmark.gap > 0 ? '+' : ''}${benchmark.gap.toFixed(1)}%
+  * Achievable: ${benchmark.achievable ? 'Yes' : 'No'} (${benchmark.timeframe})`;
+      });
+    }
+
+    // Include structured match analysis if available
+    if (aggregatedData) {
+      prompt += `
+
+📊 CURRENT SESSION ANALYSIS (Last ${aggregatedData.gamesAnalyzed} Games):
+
+Performance Trends:
+- Average Survival Time: ${aggregatedData.avgSurvivalTime.toFixed(1)} minutes (${aggregatedData.survivalTimeChange > 0 ? '+' : ''}${aggregatedData.survivalTimeChange.toFixed(1)}% vs previous)
+- Average Placement: ${aggregatedData.avgPlacement.toFixed(1)}
+- Average Kills: ${aggregatedData.avgKills.toFixed(1)}
+- Accuracy: ${aggregatedData.accuracy.current.toFixed(1)}% (${aggregatedData.accuracyChange > 0 ? '+' : ''}${aggregatedData.accuracyChange.toFixed(1)}% change)
+- Mats per Fight: ${aggregatedData.matsUsedPerFight.current.toFixed(0)} (${aggregatedData.matsEfficiencyChange > 0 ? '+' : ''}${aggregatedData.matsEfficiencyChange.toFixed(1)}% change)
+
+Strategic Patterns:
+- Most Common POIs: ${aggregatedData.mostCommonPOIs.join(', ')}
+- Rotation Trend: ${aggregatedData.rotationTrend}
+- Most Common Death Cause: ${aggregatedData.mostCommonDeathCause}`;
+    }
+
+    // Include comprehensive Fortnite stats if available
+    if (fortniteStats) {
+      prompt += `
+
+📈 COMPREHENSIVE FORTNITE STATISTICS:
+- Epic Name: ${fortniteStats.epicName || 'Unknown'}
+- Platform: ${fortniteStats.platform || 'Unknown'}
+- Last Updated: ${fortniteStats.lastUpdated?.toLocaleDateString() || 'Unknown'}
+
+Overall Performance:
+- K/D Ratio: ${fortniteStats.overall.kd?.toFixed(2) || 'N/A'}
+- Win Rate: ${(fortniteStats.overall.winRate * 100)?.toFixed(1) || 'N/A'}%
+- Total Matches: ${fortniteStats.overall.matches || 0}
+- Average Placement: ${fortniteStats.overall.avgPlace?.toFixed(1) || 'N/A'}
+- Total Wins: ${fortniteStats.overall.top1 || 0}
+- Top 10 Finishes: ${fortniteStats.overall.top10 || 0}
+- Total Kills: ${fortniteStats.overall.kills || 0}
+- Total Deaths: ${fortniteStats.overall.deaths || 0}
+- Materials Gathered: ${fortniteStats.overall.materialsGathered || 0}
+- Structures Built: ${fortniteStats.overall.structuresBuilt || 0}`;
+    }
+
+    if (conversationHistory && conversationHistory.length > 0) {
+      prompt += `
+
+Recent Conversation Context:`;
+      conversationHistory.slice(-3).forEach(msg => {
+        prompt += `
+- ${msg.role}: ${msg.content}`;
+      });
+    }
+
+    prompt += `
+
+🎯 ADVANCED COACHING INSTRUCTIONS:
+You are a professional esports coach with long-term player development focus. Always follow this structure:
+
+1. **Long-term Perspective** – Reference skill progression trends and historical performance. Make the player feel like you know their journey.
+
+2. **Focus Priority** – Emphasize the 1-2 most important areas to work on based on confidence scores and impact.
+
+3. **Pro Benchmarks** – Compare their performance to professional standards and set realistic goals.
+
+4. **Motivation Layer** – Provide positive reinforcement even when stats are declining. Highlight what's working well.
+
+5. **Actionable Next Steps** – Give specific drills, Creative codes, or practice routines they can do immediately.
+
+6. **Personalization** – Reference their specific playstyle, preferred POIs, and past improvements.
+
+Tone: Speak like a seasoned esports coach who has been working with this player for weeks. Be encouraging, specific, and focused on long-term growth.
+
+Example style: "Over the last 2 weeks, your storm survival improved 18%. Keep this up and you'll consistently make late game lobbies. However, your mats efficiency dropped 12% this week - focus on controlled builds in mid-game fights. Your accuracy is 5% below pro average, but that's achievable in 2 weeks with daily aim practice."
+
+Respond ONLY with JSON in this exact structure:
+{
+  "quick_fix": "1-sentence insight referencing their long-term trends and current focus priority",
+  "detailed_analysis": [
+    "Point 1 with specific trend analysis and historical context",
+    "Point 2 with pro benchmark comparison and realistic goals", 
+    "Point 3 with focus priority reasoning and confidence level"
+  ],
+  "action_plan": [
+    "Action step 1 - specific drill or practice routine with Creative code",
+    "Action step 2 - tactical improvement based on focus priority",
+    "Action step 3 - long-term goal with measurable timeline"
+  ],
+  "tone": "tactical"
+}`;
+
+    return prompt;
+  }
+
+  /**
+   * Process complete AI coaching request with advanced coaching features
+   */
   static async processCoachingRequest(
     userId: string,
     request: AICoachingRequest
@@ -476,10 +666,14 @@ Respond ONLY with JSON in this exact structure:
       }
 
       let aggregatedMatchData: AggregatedMatchData | null = null;
+      let skillProgression: SkillProgression | null = null;
+      let focusPriority: FocusPriority | null = null;
+      let proBenchmarks: ProBenchmark[] | null = null;
+      let sessionSummary: SessionSummary | null = null;
 
       // Use Fortnite stats from the unified users collection if available
       if (request.fortniteStats) {
-        console.log('📊 Using Fortnite stats from users collection for structured analysis');
+        console.log('📊 Using Fortnite stats from users collection for advanced coaching analysis');
         
         // Process raw Osirion data into structured match data
         const matchData = MatchAnalysisService.processMatchData(
@@ -491,6 +685,19 @@ Respond ONLY with JSON in this exact structure:
           // Aggregate the match data for trend analysis
           aggregatedMatchData = MatchAnalysisService.aggregateMatchData(matchData);
           console.log('📈 Generated aggregated match data:', aggregatedMatchData);
+          
+          // Generate advanced coaching insights
+          skillProgression = await AdvancedCoachingService.trackSkillProgression(userId, aggregatedMatchData);
+          focusPriority = AdvancedCoachingService.generateFocusPriority(aggregatedMatchData, skillProgression);
+          proBenchmarks = AdvancedCoachingService.generateProBenchmarks(aggregatedMatchData);
+          sessionSummary = AdvancedCoachingService.generateSessionSummary(userId, aggregatedMatchData, skillProgression);
+          
+          console.log('🎯 Generated advanced coaching insights:', {
+            skillProgression: skillProgression.skillMetrics,
+            focusPriority: focusPriority.primaryFocus,
+            proBenchmarks: proBenchmarks.length,
+            sessionSummary: sessionSummary.keyInsights
+          });
           
           // Convert to format expected by AI
           request.recentStats = {
@@ -512,15 +719,29 @@ Respond ONLY with JSON in this exact structure:
         }
       }
 
-      // Format prompt with structured match analysis
-      const prompt = this.formatStructuredAIPrompt(request, aggregatedMatchData);
+      // Format prompt with advanced coaching features
+      const prompt = this.formatAdvancedCoachingPrompt(request, aggregatedMatchData, skillProgression, focusPriority, proBenchmarks);
       const aiResponse = await this.callOpenAI(prompt);
 
-      // Enhance response with structured insights if available
+      // Enhance response with advanced coaching data
       if (aggregatedMatchData) {
         const insights = MatchAnalysisService.generateCoachingInsights(aggregatedMatchData);
         aiResponse.insights = insights;
         aiResponse.matchData = aggregatedMatchData;
+        
+        // Add advanced coaching features
+        if (skillProgression) {
+          aiResponse.skillProgression = skillProgression;
+        }
+        if (focusPriority) {
+          aiResponse.focusPriority = focusPriority;
+        }
+        if (proBenchmarks) {
+          aiResponse.proBenchmarks = proBenchmarks;
+        }
+        if (sessionSummary) {
+          aiResponse.sessionSummary = sessionSummary;
+        }
       }
 
       // Deduct credits after successful AI response
