@@ -122,6 +122,111 @@ export interface AICoachingResponse {
     };
     motivation: string;
   };
+  // Personalized coaching features
+  coachingStyle?: {
+    mode: 'strict' | 'mentor' | 'tactical' | 'chill';
+    intensity: 'high' | 'medium' | 'low';
+    focusAreas: string[];
+    preferredLanguage: 'direct' | 'encouraging' | 'analytical' | 'casual';
+    responseLength: 'concise' | 'detailed' | 'comprehensive';
+  };
+  momentumAnalysis?: {
+    userId: string;
+    currentMomentum: 'hot' | 'cold' | 'stable' | 'tilted';
+    performanceStreak: {
+      type: 'positive' | 'negative' | 'mixed';
+      duration: number;
+      trend: 'improving' | 'declining' | 'stable';
+    };
+    tiltIndicators: {
+      recentDeaths: number;
+      performanceDrop: number;
+      timeSinceLastWin: number;
+      consecutiveLosses: number;
+    };
+    recommendations: {
+      action: 'continue' | 'take_break' | 'practice_mode' | 'reset_session';
+      duration?: number;
+      activity?: string;
+      reasoning: string;
+    };
+  };
+  gamifiedProgress?: {
+    userId: string;
+    playerLevel: number;
+    totalXP: number;
+    currentXP: number;
+    xpToNextLevel: number;
+    badges: Array<{
+      id: string;
+      name: string;
+      description: string;
+      category: 'survival' | 'accuracy' | 'efficiency' | 'consistency' | 'teamwork';
+      rarity: 'common' | 'rare' | 'epic' | 'legendary';
+      unlockedAt: Date;
+      progress: number;
+    }>;
+    achievements: Array<{
+      id: string;
+      name: string;
+      description: string;
+      unlockedAt: Date;
+      milestone: string;
+    }>;
+    streaks: {
+      currentStreak: {
+        type: 'improvement' | 'consistency' | 'achievement';
+        duration: number;
+        description: string;
+      };
+      longestStreak: {
+        type: string;
+        duration: number;
+        achievedAt: Date;
+      };
+    };
+    weeklyGoals: {
+      primary: string;
+      secondary: string;
+      progress: number;
+      deadline: Date;
+    };
+    leaderboard: {
+      rank: number;
+      category: string;
+      score: number;
+    };
+  };
+  drillBank?: {
+    drills: Array<{
+      id: string;
+      name: string;
+      category: 'aim' | 'building' | 'rotations' | 'mats_efficiency' | 'teamwork' | 'mental';
+      difficulty: 'beginner' | 'intermediate' | 'advanced' | 'pro';
+      duration: string;
+      creativeCode?: string;
+      description: string;
+      objectives: string[];
+      successCriteria: string[];
+      progressionSteps: string[];
+      relatedSkills: string[];
+    }>;
+    personalizedDrills: Array<{
+      drillId: string;
+      assignedAt: Date;
+      priority: 'high' | 'medium' | 'low';
+      reason: string;
+      expectedOutcome: string;
+      progress: number;
+    }>;
+    drillHistory: Array<{
+      drillId: string;
+      completedAt: Date;
+      performance: number;
+      notes: string;
+      improvement: number;
+    }>;
+  };
 }
 
 export interface AICoachingRequest {

@@ -5,6 +5,8 @@ import { MatchAnalysisService } from '@/lib/match-analysis-service';
 import { AggregatedMatchData } from '@/types/match-analysis';
 import { AdvancedCoachingService } from '@/lib/advanced-coaching-service';
 import { SkillProgression, FocusPriority, ProBenchmark, SessionSummary } from '@/types/advanced-coaching';
+import { PersonalizedCoachingService } from '@/lib/personalized-coaching-service';
+import { PersonalizedCoachingProfile, CoachingStyle, MomentumAnalysis, GamifiedProgress, CoachDrillBank } from '@/types/personalized-coaching';
 
 export class AIPipeline {
   private static readonly OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -652,7 +654,262 @@ Respond ONLY with JSON in this exact structure:
   }
 
   /**
-   * Process complete AI coaching request with advanced coaching features
+   * Format personalized coaching prompt with all advanced features
+   */
+  static formatPersonalizedCoachingPrompt(
+    request: AICoachingRequest,
+    aggregatedData: AggregatedMatchData | null,
+    skillProgression: SkillProgression | null,
+    focusPriority: FocusPriority | null,
+    proBenchmarks: ProBenchmark[] | null,
+    coachingStyle: CoachingStyle | null,
+    momentumAnalysis: MomentumAnalysis | null,
+    gamifiedProgress: GamifiedProgress | null,
+    drillBank: CoachDrillBank | null
+  ): string {
+    const { message, userProfile, fortniteStats, recentStats, conversationHistory } = request;
+
+    let prompt = `You are PathGen AI, a personalized esports coach that adapts to each player's unique needs and preferences.
+
+User Question: "${message}"
+
+Player Profile:`;
+
+    if (userProfile) {
+      prompt += `
+- Epic ID: ${userProfile.epicId || 'Not provided'}
+- Display Name: ${userProfile.displayName || 'Unknown'}
+- Skill Level: ${userProfile.skillLevel || 'Unknown'}
+- Playstyle: ${userProfile.playstyle || 'Unknown'}
+- Subscription Tier: ${userProfile.subscriptionTier || 'free'}`;
+    }
+
+    // Include coaching style preferences
+    if (coachingStyle) {
+      prompt += `
+
+🎭 COACHING STYLE PREFERENCES:
+- Mode: ${coachingStyle.mode} (${coachingStyle.intensity} intensity)
+- Language: ${coachingStyle.preferredLanguage}
+- Response Length: ${coachingStyle.responseLength}
+- Focus Areas: ${coachingStyle.focusAreas.join(', ')}`;
+    }
+
+    // Include momentum and tilt detection
+    if (momentumAnalysis) {
+      prompt += `
+
+⚡ MOMENTUM & TILT ANALYSIS:
+- Current Momentum: ${momentumAnalysis.currentMomentum}
+- Performance Streak: ${momentumAnalysis.performanceStreak.type} (${momentumAnalysis.performanceStreak.duration} games)
+- Trend: ${momentumAnalysis.performanceStreak.trend}
+- Tilt Indicators:
+  * Recent Deaths: ${momentumAnalysis.tiltIndicators.recentDeaths}
+  * Performance Drop: ${momentumAnalysis.tiltIndicators.performanceDrop.toFixed(1)}%
+  * Consecutive Losses: ${momentumAnalysis.tiltIndicators.consecutiveLosses}
+- Recommendation: ${momentumAnalysis.recommendations.action} - ${momentumAnalysis.recommendations.reasoning}`;
+    }
+
+    // Include gamified progress
+    if (gamifiedProgress) {
+      prompt += `
+
+🏆 GAMIFIED PROGRESS SYSTEM:
+- Player Level: ${gamifiedProgress.playerLevel}
+- Total XP: ${gamifiedProgress.totalXP}
+- Current XP: ${gamifiedProgress.currentXP}/${gamifiedProgress.xpToNextLevel}
+- Badges Unlocked: ${gamifiedProgress.badges.length}
+- Current Streak: ${gamifiedProgress.streaks.currentStreak.type} (${gamifiedProgress.streaks.currentStreak.duration} games)
+- Weekly Goals: ${gamifiedProgress.weeklyGoals.primary} (${gamifiedProgress.weeklyGoals.progress}% complete)
+- Leaderboard Rank: #${gamifiedProgress.leaderboard.rank} in ${gamifiedProgress.leaderboard.category}`;
+    }
+
+    // Include drill recommendations
+    if (drillBank && drillBank.personalizedDrills.length > 0) {
+      prompt += `
+
+🎯 PERSONALIZED DRILL RECOMMENDATIONS:`;
+      
+      drillBank.personalizedDrills.forEach(drill => {
+        const drillData = drillBank.drills.find(d => d.id === drill.drillId);
+        if (drillData) {
+          prompt += `
+- ${drillData.name} (${drill.priority} priority):
+  * Duration: ${drillData.duration}
+  * Creative Code: ${drillData.creativeCode || 'N/A'}
+  * Reason: ${drill.reason}
+  * Expected Outcome: ${drill.expectedOutcome}`;
+        }
+      });
+    }
+
+    // Include skill progression tracking
+    if (skillProgression) {
+      prompt += `
+
+📈 SKILL PROGRESSION TRACKING (Long-term Growth):
+
+Survival Time Trends:
+- Current: ${skillProgression.skillMetrics.survivalTime.current.toFixed(1)} minutes
+- Previous: ${skillProgression.skillMetrics.survivalTime.previous.toFixed(1)} minutes
+- Trend: ${skillProgression.skillMetrics.survivalTime.trend} (${skillProgression.skillMetrics.survivalTime.weeklyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.survivalTime.weeklyChange.toFixed(1)}% this week)
+- All-time High: ${skillProgression.skillMetrics.survivalTime.allTimeHigh.toFixed(1)} minutes
+- Monthly Change: ${skillProgression.skillMetrics.survivalTime.monthlyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.survivalTime.monthlyChange.toFixed(1)}%
+
+Accuracy Trends:
+- Current: ${skillProgression.skillMetrics.accuracy.current.toFixed(1)}%
+- Previous: ${skillProgression.skillMetrics.accuracy.previous.toFixed(1)}%
+- Trend: ${skillProgression.skillMetrics.accuracy.trend} (${skillProgression.skillMetrics.accuracy.weeklyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.accuracy.weeklyChange.toFixed(1)}% this week)
+- All-time High: ${skillProgression.skillMetrics.accuracy.allTimeHigh.toFixed(1)}%
+- Monthly Change: ${skillProgression.skillMetrics.accuracy.monthlyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.accuracy.monthlyChange.toFixed(1)}%
+
+Mats Efficiency Trends:
+- Current: ${skillProgression.skillMetrics.matsEfficiency.current.toFixed(0)} mats per fight
+- Previous: ${skillProgression.skillMetrics.matsEfficiency.previous.toFixed(0)} mats per fight
+- Trend: ${skillProgression.skillMetrics.matsEfficiency.trend} (${skillProgression.skillMetrics.matsEfficiency.weeklyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.matsEfficiency.weeklyChange.toFixed(1)}% this week)
+- All-time Best: ${skillProgression.skillMetrics.matsEfficiency.allTimeLow.toFixed(0)} mats per fight
+- Monthly Change: ${skillProgression.skillMetrics.matsEfficiency.monthlyChange > 0 ? '+' : ''}${skillProgression.skillMetrics.matsEfficiency.monthlyChange.toFixed(1)}%
+
+Total Sessions: ${skillProgression.totalSessions}`;
+    }
+
+    // Include focus priority with confidence scores
+    if (focusPriority) {
+      prompt += `
+
+🎯 FOCUS PRIORITY SYSTEM (What to work on next):
+
+Primary Focus (${focusPriority.primaryFocus.confidence}% confidence):
+- Skill: ${focusPriority.primaryFocus.skill}
+- Impact: ${focusPriority.primaryFocus.impact}
+- Reason: ${focusPriority.primaryFocus.reason}
+- Action: ${focusPriority.primaryFocus.specificAction}
+
+Secondary Focus (${focusPriority.secondaryFocus.confidence}% confidence):
+- Skill: ${focusPriority.secondaryFocus.skill}
+- Impact: ${focusPriority.secondaryFocus.impact}
+- Reason: ${focusPriority.secondaryFocus.reason}
+- Action: ${focusPriority.secondaryFocus.specificAction}
+
+Ignore for now: ${focusPriority.ignoreForNow.join(', ')}`;
+    }
+
+    // Include pro benchmark comparisons
+    if (proBenchmarks && proBenchmarks.length > 0) {
+      prompt += `
+
+🏆 PRO BENCHMARK COMPARISONS (vs FNCS players):`;
+
+      proBenchmarks.forEach(benchmark => {
+        prompt += `
+- ${benchmark.skill}:
+  * Your Value: ${benchmark.playerValue.toFixed(1)}
+  * Pro Average: ${benchmark.proAverage.toFixed(1)}
+  * Pro Top 10: ${benchmark.proTop10.toFixed(1)}
+  * Gap: ${benchmark.gap > 0 ? '+' : ''}${benchmark.gap.toFixed(1)}%
+  * Achievable: ${benchmark.achievable ? 'Yes' : 'No'} (${benchmark.timeframe})`;
+      });
+    }
+
+    // Include structured match analysis if available
+    if (aggregatedData) {
+      prompt += `
+
+📊 CURRENT SESSION ANALYSIS (Last ${aggregatedData.gamesAnalyzed} Games):
+
+Performance Trends:
+- Average Survival Time: ${aggregatedData.avgSurvivalTime.toFixed(1)} minutes (${aggregatedData.survivalTimeChange > 0 ? '+' : ''}${aggregatedData.survivalTimeChange.toFixed(1)}% vs previous)
+- Average Placement: ${aggregatedData.avgPlacement.toFixed(1)}
+- Average Kills: ${aggregatedData.avgKills.toFixed(1)}
+- Accuracy: ${aggregatedData.accuracy.current.toFixed(1)}% (${aggregatedData.accuracyChange > 0 ? '+' : ''}${aggregatedData.accuracyChange.toFixed(1)}% change)
+- Mats per Fight: ${aggregatedData.matsUsedPerFight.current.toFixed(0)} (${aggregatedData.matsEfficiencyChange > 0 ? '+' : ''}${aggregatedData.matsEfficiencyChange.toFixed(1)}% change)
+
+Strategic Patterns:
+- Most Common POIs: ${aggregatedData.mostCommonPOIs.join(', ')}
+- Rotation Trend: ${aggregatedData.rotationTrend}
+- Most Common Death Cause: ${aggregatedData.mostCommonDeathCause}`;
+    }
+
+    // Include comprehensive Fortnite stats if available
+    if (fortniteStats) {
+      prompt += `
+
+📈 COMPREHENSIVE FORTNITE STATISTICS:
+- Epic Name: ${fortniteStats.epicName || 'Unknown'}
+- Platform: ${fortniteStats.platform || 'Unknown'}
+- Last Updated: ${fortniteStats.lastUpdated?.toLocaleDateString() || 'Unknown'}
+
+Overall Performance:
+- K/D Ratio: ${fortniteStats.overall.kd?.toFixed(2) || 'N/A'}
+- Win Rate: ${(fortniteStats.overall.winRate * 100)?.toFixed(1) || 'N/A'}%
+- Total Matches: ${fortniteStats.overall.matches || 0}
+- Average Placement: ${fortniteStats.overall.avgPlace?.toFixed(1) || 'N/A'}
+- Total Wins: ${fortniteStats.overall.top1 || 0}
+- Top 10 Finishes: ${fortniteStats.overall.top10 || 0}
+- Total Kills: ${fortniteStats.overall.kills || 0}
+- Total Deaths: ${fortniteStats.overall.deaths || 0}
+- Materials Gathered: ${fortniteStats.overall.materialsGathered || 0}
+- Structures Built: ${fortniteStats.overall.structuresBuilt || 0}`;
+    }
+
+    if (conversationHistory && conversationHistory.length > 0) {
+      prompt += `
+
+Recent Conversation Context:`;
+      conversationHistory.slice(-3).forEach(msg => {
+        prompt += `
+- ${msg.role}: ${msg.content}`;
+      });
+    }
+
+    prompt += `
+
+🎯 PERSONALIZED COACHING INSTRUCTIONS:
+You are a personalized esports coach that adapts to each player's unique needs. Always follow this structure:
+
+1. **Adapt to Coaching Style** – Match the player's preferred tone (strict/mentor/tactical/chill) and intensity level.
+
+2. **Momentum Awareness** – Address current momentum and tilt indicators. If tilted, provide reset strategies.
+
+3. **Gamified Motivation** – Reference their level, badges, XP progress, and achievements to motivate continued improvement.
+
+4. **Personalized Drills** – Recommend specific drills with Creative codes based on their focus areas and skill level.
+
+5. **Long-term Perspective** – Reference skill progression trends and historical performance to show you know their journey.
+
+6. **Focus Priority** – Emphasize the 1-2 most important areas based on confidence scores and impact.
+
+7. **Pro Benchmarks** – Compare performance to professional standards and set realistic goals.
+
+8. **Motivation Layer** – Provide positive reinforcement even when stats are declining. Highlight achievements and progress.
+
+Tone Examples:
+- Strict Mode: "Your midgame mats usage is unacceptable. You're wasting 50-70 mats per fight. Fix this."
+- Mentor Mode: "You're overbuilding midgame — trim it by ~50 mats per fight to be more efficient."
+- Tactical Mode: "Focus on controlled builds in mid-game fights. Your mats efficiency dropped 12% this week."
+- Chill Mode: "Nice work on the accuracy improvement! Let's work on mats conservation next."
+
+Respond ONLY with JSON in this exact structure:
+{
+  "quick_fix": "1-sentence insight adapted to their coaching style and referencing their momentum/level",
+  "detailed_analysis": [
+    "Point 1 with specific trend analysis and momentum awareness",
+    "Point 2 with pro benchmark comparison and personalized goals", 
+    "Point 3 with focus priority reasoning and drill recommendations"
+  ],
+  "action_plan": [
+    "Action step 1 - specific drill with Creative code and duration",
+    "Action step 2 - tactical improvement based on focus priority",
+    "Action step 3 - gamified goal with XP/badge motivation"
+  ],
+  "tone": "tactical"
+}`;
+
+    return prompt;
+  }
+
+  /**
+   * Process complete AI coaching request with personalized coaching features
    */
   static async processCoachingRequest(
     userId: string,
@@ -670,6 +927,11 @@ Respond ONLY with JSON in this exact structure:
       let focusPriority: FocusPriority | null = null;
       let proBenchmarks: ProBenchmark[] | null = null;
       let sessionSummary: SessionSummary | null = null;
+      let personalizedProfile: PersonalizedCoachingProfile | null = null;
+      let coachingStyle: CoachingStyle | null = null;
+      let momentumAnalysis: MomentumAnalysis | null = null;
+      let gamifiedProgress: GamifiedProgress | null = null;
+      let drillBank: CoachDrillBank | null = null;
 
       // Use Fortnite stats from the unified users collection if available
       if (request.fortniteStats) {
@@ -692,11 +954,22 @@ Respond ONLY with JSON in this exact structure:
           proBenchmarks = AdvancedCoachingService.generateProBenchmarks(aggregatedMatchData);
           sessionSummary = AdvancedCoachingService.generateSessionSummary(userId, aggregatedMatchData, skillProgression);
           
-          console.log('🎯 Generated advanced coaching insights:', {
-            skillProgression: skillProgression.skillMetrics,
-            focusPriority: focusPriority.primaryFocus,
-            proBenchmarks: proBenchmarks.length,
-            sessionSummary: sessionSummary.keyInsights
+          // Generate personalized coaching features
+          coachingStyle = PersonalizedCoachingService.generateCoachingStyle(request.userProfile, aggregatedMatchData);
+          momentumAnalysis = PersonalizedCoachingService.analyzeMomentum(userId, [], aggregatedMatchData);
+          gamifiedProgress = PersonalizedCoachingService.generateGamifiedProgress(userId, aggregatedMatchData, []);
+          drillBank = PersonalizedCoachingService.generateDrillRecommendations(
+            focusPriority ? [focusPriority.primaryFocus.skill, focusPriority.secondaryFocus.skill] : ['general'],
+            request.userProfile?.skillLevel || 'intermediate',
+            aggregatedMatchData
+          );
+          
+          console.log('🎯 Generated personalized coaching insights:', {
+            coachingStyle: coachingStyle.mode,
+            momentum: momentumAnalysis.currentMomentum,
+            playerLevel: gamifiedProgress.playerLevel,
+            badges: gamifiedProgress.badges.length,
+            drills: drillBank.personalizedDrills.length
           });
           
           // Convert to format expected by AI
@@ -719,8 +992,18 @@ Respond ONLY with JSON in this exact structure:
         }
       }
 
-      // Format prompt with advanced coaching features
-      const prompt = this.formatAdvancedCoachingPrompt(request, aggregatedMatchData, skillProgression, focusPriority, proBenchmarks);
+      // Format prompt with personalized coaching features
+      const prompt = this.formatPersonalizedCoachingPrompt(
+        request, 
+        aggregatedMatchData, 
+        skillProgression, 
+        focusPriority, 
+        proBenchmarks,
+        coachingStyle,
+        momentumAnalysis,
+        gamifiedProgress,
+        drillBank
+      );
       const aiResponse = await this.callOpenAI(prompt);
 
       // Enhance response with advanced coaching data
@@ -741,6 +1024,20 @@ Respond ONLY with JSON in this exact structure:
         }
         if (sessionSummary) {
           aiResponse.sessionSummary = sessionSummary;
+        }
+        
+        // Add personalized coaching features
+        if (coachingStyle) {
+          aiResponse.coachingStyle = coachingStyle;
+        }
+        if (momentumAnalysis) {
+          aiResponse.momentumAnalysis = momentumAnalysis;
+        }
+        if (gamifiedProgress) {
+          aiResponse.gamifiedProgress = gamifiedProgress;
+        }
+        if (drillBank) {
+          aiResponse.drillBank = drillBank;
         }
       }
 
