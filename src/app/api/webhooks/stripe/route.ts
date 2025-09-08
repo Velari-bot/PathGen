@@ -338,23 +338,14 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
             subscriptionId: invoice.subscription,
             userId,
             plan,
+            status: 'active',
             timestamp: new Date(),
             success: true,
-            message: `Updated user ${userId} to ${plan} tier across all collections`
+            message: `Payment succeeded for ${plan} subscription`
           });
+          
         } else {
           console.error('❌ No userId found in customer metadata for payment success');
-          
-          // Log the issue for debugging
-          await db.collection('webhookLogs').add({
-            eventType: 'invoice.payment_succeeded',
-            invoiceId: invoice.id,
-            subscriptionId: invoice.subscription,
-            error: 'No userId found in customer metadata',
-            customerId: subscription.customer,
-            timestamp: new Date(),
-            success: false
-          });
         }
       } else {
         console.error('❌ Customer was deleted for payment success');
@@ -363,14 +354,18 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
   } catch (error) {
     console.error('❌ Error handling payment success:', error);
     
-    // Log failed payment processing
-    await db.collection('webhookLogs').add({
-      eventType: 'invoice.payment_succeeded',
-      invoiceId: invoice.id,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date(),
-      success: false
-    });
+    // Log the error
+    try {
+      await db.collection('webhookLogs').add({
+        eventType: 'invoice.payment_succeeded',
+        invoiceId: invoice.id,
+        timestamp: new Date(),
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } catch (logError) {
+      console.error('❌ Failed to log payment success error:', logError);
+    }
   }
 }
 
