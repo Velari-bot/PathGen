@@ -470,7 +470,8 @@ async function updateAllCollectionsForUser(userId: string, plan: string, subscri
         await db.collection('users').doc(userId).update({
           credits: 4000,
           credits_total: 4000,
-          credits_remaining: 4000 - (userData?.credits_used || 0)
+          credits_remaining: 4000 - (userData?.credits_used || 0),
+          last_updated: new Date()
         });
         console.log(`✅ Updated credits to Pro level (4000) for user ${userId}`);
       }

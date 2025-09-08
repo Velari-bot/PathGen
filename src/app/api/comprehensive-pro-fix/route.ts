@@ -47,11 +47,16 @@ export async function POST(request: NextRequest) {
         stripeSubscriptionId: userData?.stripeSubscriptionId || 'manual_pro_fix'
       },
       accountType: 'pro',
+      // Update credits in the users collection (this is what the frontend reads)
+      credits_total: 4000,
+      credits_used: userData?.credits_used || 0,
+      credits_remaining: 4000 - (userData?.credits_used || 0),
+      last_updated: new Date(),
       updatedAt: new Date()
     };
 
     await db.collection('users').doc(userId).update(userUpdateData);
-    console.log(`✅ Updated user document to Pro`);
+    console.log(`✅ Updated user document to Pro with 4000 credits`);
 
     // Step 4: Update/Create subscription document
     const subscriptionsSnapshot = await db.collection('subscriptions')
