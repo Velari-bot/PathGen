@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { AIPipeline } from '@/lib/ai-pipeline';
 import { AICoachingRequest } from '@/types/ai-coaching';
 import { db } from '@/lib/firebase-admin';
+import { FirebaseService } from '@/lib/firebase-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +37,16 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Get Fortnite stats from the unified users collection
+    let fortniteStats = null;
+    try {
+      fortniteStats = await FirebaseService.getFortniteStats(userId);
+      console.log('📊 Fortnite stats loaded from users collection:', fortniteStats ? 'Found' : 'Not found');
+    } catch (error) {
+      console.error('⚠️ Error loading Fortnite stats:', error);
+      // Continue without stats - AI can still provide general coaching
+    }
+    
     // Get conversation history if chatId is provided
     let conversationHistory = [];
     if (chatId) {
@@ -48,15 +59,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Prepare AI coaching request
+    // Prepare AI coaching request with comprehensive user data
     const coachingRequest: AICoachingRequest = {
       message,
       userProfile: {
         epicId: userData?.epicId,
         displayName: userData?.displayName,
-        skillLevel: userData?.skillLevel,
-        playstyle: userData?.playstyle
+        skillLevel: userData?.skillLevel || userData?.gaming?.skillLevel,
+        playstyle: userData?.playstyle || userData?.gaming?.playstyle,
+        // Include additional user data from unified collection
+        subscriptionTier: userData?.subscriptionTier || userData?.subscription?.tier,
+        gamingPreferences: userData?.gaming,
+        epicAccount: userData?.epicAccount,
+        usage: userData?.usage
       },
+      fortniteStats: fortniteStats, // Include Fortnite stats from users collection
       conversationHistory: conversationHistory.slice(-10) // Last 10 messages for context
     };
 

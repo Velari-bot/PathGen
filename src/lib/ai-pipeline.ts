@@ -86,7 +86,7 @@ export class AIPipeline {
    * Format AI prompt with comprehensive user data and context
    */
   static formatAIPrompt(request: AICoachingRequest): string {
-    const { message, userProfile, recentStats, replayData, conversationHistory } = request;
+    const { message, userProfile, fortniteStats, recentStats, replayData, conversationHistory } = request;
 
     let prompt = `You are PathGen AI, a Fortnite improvement coach. Analyze the following data and respond in the required JSON format.
 
@@ -100,7 +100,92 @@ Player Data:`;
   * Epic ID: ${userProfile.epicId || 'Not provided'}
   * Display Name: ${userProfile.displayName || 'Unknown'}
   * Skill Level: ${userProfile.skillLevel || 'Unknown'}
-  * Playstyle: ${userProfile.playstyle || 'Unknown'}`;
+  * Playstyle: ${userProfile.playstyle || 'Unknown'}
+  * Subscription Tier: ${userProfile.subscriptionTier || 'free'}`;
+
+      // Include gaming preferences if available
+      if (userProfile.gamingPreferences) {
+        prompt += `
+  * Gaming Preferences:
+    - Favorite Game: ${userProfile.gamingPreferences.favoriteGame || 'Unknown'}
+    - Goals: ${Array.isArray(userProfile.gamingPreferences.goals) ? userProfile.gamingPreferences.goals.join(', ') : 'Not specified'}
+    - Time Zone: ${userProfile.gamingPreferences.timeZone || 'Unknown'}`;
+      }
+
+      // Include usage data if available
+      if (userProfile.usage) {
+        prompt += `
+  * Usage Statistics:
+    - AI Messages Used: ${userProfile.usage.aiMessages || 0}
+    - Osirion Pulls Used: ${userProfile.usage.osirionPulls || 0}
+    - Tournament Strategies Used: ${userProfile.usage.tournamentStrategies || 0}
+    - Total Sessions: ${userProfile.usage.totalSessions || 0}`;
+      }
+    }
+
+    // Include comprehensive Fortnite stats if available
+    if (fortniteStats) {
+      prompt += `
+- Comprehensive Fortnite Statistics (from users collection):
+  * Epic Name: ${fortniteStats.epicName || 'Unknown'}
+  * Platform: ${fortniteStats.platform || 'Unknown'}
+  * Last Updated: ${fortniteStats.lastUpdated?.toLocaleDateString() || 'Unknown'}
+  
+  * Overall Performance:
+    - K/D Ratio: ${fortniteStats.overall.kd?.toFixed(2) || 'N/A'}
+    - Win Rate: ${(fortniteStats.overall.winRate * 100)?.toFixed(1) || 'N/A'}%
+    - Total Matches: ${fortniteStats.overall.matches || 0}
+    - Average Placement: ${fortniteStats.overall.avgPlace?.toFixed(1) || 'N/A'}
+    - Total Wins: ${fortniteStats.overall.top1 || 0}
+    - Top 3 Finishes: ${fortniteStats.overall.top3 || 0}
+    - Top 5 Finishes: ${fortniteStats.overall.top5 || 0}
+    - Top 10 Finishes: ${fortniteStats.overall.top10 || 0}
+    - Top 25 Finishes: ${fortniteStats.overall.top25 || 0}
+    - Total Kills: ${fortniteStats.overall.kills || 0}
+    - Total Deaths: ${fortniteStats.overall.deaths || 0}
+    - Total Assists: ${fortniteStats.overall.assists || 0}
+    - Damage Dealt: ${fortniteStats.overall.damageDealt || 0}
+    - Damage Taken: ${fortniteStats.overall.damageTaken || 0}
+    - Time Alive: ${fortniteStats.overall.timeAlive || 0} minutes
+    - Distance Traveled: ${fortniteStats.overall.distanceTraveled || 0}
+    - Materials Gathered: ${fortniteStats.overall.materialsGathered || 0}
+    - Structures Built: ${fortniteStats.overall.structuresBuilt || 0}`;
+
+      // Include mode-specific stats if available
+      if (fortniteStats.solo) {
+        prompt += `
+  * Solo Performance:
+    - K/D: ${fortniteStats.solo.kd?.toFixed(2) || 'N/A'}
+    - Win Rate: ${(fortniteStats.solo.winRate * 100)?.toFixed(1) || 'N/A'}%
+    - Matches: ${fortniteStats.solo.matches || 0}
+    - Avg Placement: ${fortniteStats.solo.avgPlace?.toFixed(1) || 'N/A'}`;
+      }
+
+      if (fortniteStats.duo) {
+        prompt += `
+  * Duo Performance:
+    - K/D: ${fortniteStats.duo.kd?.toFixed(2) || 'N/A'}
+    - Win Rate: ${(fortniteStats.duo.winRate * 100)?.toFixed(1) || 'N/A'}%
+    - Matches: ${fortniteStats.duo.matches || 0}
+    - Avg Placement: ${fortniteStats.duo.avgPlace?.toFixed(1) || 'N/A'}`;
+      }
+
+      if (fortniteStats.squad) {
+        prompt += `
+  * Squad Performance:
+    - K/D: ${fortniteStats.squad.kd?.toFixed(2) || 'N/A'}
+    - Win Rate: ${(fortniteStats.squad.winRate * 100)?.toFixed(1) || 'N/A'}%
+    - Matches: ${fortniteStats.squad.matches || 0}
+    - Avg Placement: ${fortniteStats.squad.avgPlace?.toFixed(1) || 'N/A'}`;
+      }
+
+      // Include raw Osirion data if available
+      if (fortniteStats.rawOsirionData) {
+        prompt += `
+  * Raw Osirion Data Available: Yes
+    - Recent Matches: ${fortniteStats.rawOsirionData.matches?.length || 0} matches
+    - Preferences: ${fortniteStats.rawOsirionData.preferences ? 'Available' : 'Not available'}`;
+      }
     }
 
     if (recentStats) {
@@ -259,12 +344,24 @@ Respond ONLY with JSON in this exact structure:
         throw new Error('Insufficient credits for AI chat');
       }
 
-      // Fetch Osirion stats if Epic ID is available
-      let osirionStats = null;
-      if (request.userProfile?.epicId) {
-        osirionStats = await this.fetchOsirionStats(request.userProfile.epicId);
+      // Use Fortnite stats from the unified users collection if available
+      if (request.fortniteStats) {
+        console.log('📊 Using Fortnite stats from users collection for AI analysis');
+        // Convert Fortnite stats to the format expected by the AI
+        request.recentStats = {
+          kd: request.fortniteStats.overall.kd,
+          winRate: request.fortniteStats.overall.winRate * 100, // Convert to percentage
+          avgPlacement: request.fortniteStats.overall.avgPlace,
+          accuracy: 0, // Not available in current stats
+          matsUsed: request.fortniteStats.overall.materialsGathered,
+          deaths: request.fortniteStats.overall.deaths,
+          matches: request.fortniteStats.overall.matches
+        };
+      } else if (request.userProfile?.epicId) {
+        // Fallback: Fetch from Osirion API if stats not in users collection
+        console.log('📊 Fortnite stats not found in users collection, fetching from Osirion API');
+        const osirionStats = await this.fetchOsirionStats(request.userProfile.epicId);
         if (osirionStats) {
-          // Use comprehensive stats instead of basic mapping
           request.recentStats = osirionStats;
         }
       }
