@@ -4,6 +4,36 @@ export interface AICoachingResponse {
   detailed_analysis: string[];
   action_plan: string[];
   tone: 'motivator' | 'tactical' | 'strict' | 'chill';
+  insights?: {
+    observation: string;
+    trend: string;
+    advice: string;
+    encouragement: string;
+  };
+  matchData?: {
+    userId: string;
+    gamesAnalyzed: number;
+    avgSurvivalTime: number;
+    prevAvgSurvivalTime: number;
+    avgPlacement: number;
+    avgKills: number;
+    avgDamageDealt: number;
+    avgDamageTaken: number;
+    accuracy: {
+      current: number;
+      previous: number;
+    };
+    matsUsedPerFight: {
+      current: number;
+      previous: number;
+    };
+    mostCommonPOIs: string[];
+    rotationTrend: 'early' | 'mid' | 'late';
+    mostCommonDeathCause: string;
+    survivalTimeChange: number;
+    accuracyChange: number;
+    matsEfficiencyChange: number;
+  };
 }
 
 export interface AICoachingRequest {

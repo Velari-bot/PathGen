@@ -1,6 +1,8 @@
 import { AICoachingRequest, AICoachingResponse } from '@/types/ai-coaching';
 import { CreditTracker } from '@/lib/ai-credit-tracker';
 import { OsirionService } from '@/lib/osirion';
+import { MatchAnalysisService } from '@/lib/match-analysis-service';
+import { AggregatedMatchData } from '@/types/match-analysis';
 
 export class AIPipeline {
   private static readonly OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -331,8 +333,137 @@ Respond ONLY with JSON in this exact structure:
   }
 
   /**
-   * Process complete AI coaching request
+   * Format structured AI prompt with match analysis data
    */
+  static formatStructuredAIPrompt(request: AICoachingRequest, aggregatedData: AggregatedMatchData | null): string {
+    const { message, userProfile, fortniteStats, recentStats, conversationHistory } = request;
+
+    let prompt = `You are PathGen AI, a professional Fortnite coach that gives players personalized insights based on their gameplay data.
+
+User Question: "${message}"
+
+Player Profile:`;
+
+    if (userProfile) {
+      prompt += `
+- Epic ID: ${userProfile.epicId || 'Not provided'}
+- Display Name: ${userProfile.displayName || 'Unknown'}
+- Skill Level: ${userProfile.skillLevel || 'Unknown'}
+- Playstyle: ${userProfile.playstyle || 'Unknown'}
+- Subscription Tier: ${userProfile.subscriptionTier || 'free'}`;
+    }
+
+    // Include structured match analysis if available
+    if (aggregatedData) {
+      prompt += `
+
+📊 STRUCTURED MATCH ANALYSIS (Last ${aggregatedData.gamesAnalyzed} Games):
+
+Performance Trends:
+- Average Survival Time: ${aggregatedData.avgSurvivalTime.toFixed(1)} minutes (${aggregatedData.survivalTimeChange > 0 ? '+' : ''}${aggregatedData.survivalTimeChange.toFixed(1)}% vs previous)
+- Average Placement: ${aggregatedData.avgPlacement.toFixed(1)}
+- Average Kills: ${aggregatedData.avgKills.toFixed(1)}
+- Average Damage Dealt: ${aggregatedData.avgDamageDealt.toFixed(0)}
+- Average Damage Taken: ${aggregatedData.avgDamageTaken.toFixed(0)}
+
+Accuracy Trends:
+- Current Accuracy: ${aggregatedData.accuracy.current.toFixed(1)}%
+- Previous Accuracy: ${aggregatedData.accuracy.previous.toFixed(1)}%
+- Change: ${aggregatedData.accuracyChange > 0 ? '+' : ''}${aggregatedData.accuracyChange.toFixed(1)}%
+
+Materials Usage:
+- Current Mats per Fight: ${aggregatedData.matsUsedPerFight.current.toFixed(0)}
+- Previous Mats per Fight: ${aggregatedData.matsUsedPerFight.previous.toFixed(0)}
+- Change: ${aggregatedData.matsEfficiencyChange > 0 ? '+' : ''}${aggregatedData.matsEfficiencyChange.toFixed(1)}%
+
+Strategic Patterns:
+- Most Common POIs: ${aggregatedData.mostCommonPOIs.join(', ')}
+- Rotation Trend: ${aggregatedData.rotationTrend}
+- Most Common Death Cause: ${aggregatedData.mostCommonDeathCause}`;
+    }
+
+    // Include comprehensive Fortnite stats if available
+    if (fortniteStats) {
+      prompt += `
+
+📈 COMPREHENSIVE FORTNITE STATISTICS:
+- Epic Name: ${fortniteStats.epicName || 'Unknown'}
+- Platform: ${fortniteStats.platform || 'Unknown'}
+- Last Updated: ${fortniteStats.lastUpdated?.toLocaleDateString() || 'Unknown'}
+
+Overall Performance:
+- K/D Ratio: ${fortniteStats.overall.kd?.toFixed(2) || 'N/A'}
+- Win Rate: ${(fortniteStats.overall.winRate * 100)?.toFixed(1) || 'N/A'}%
+- Total Matches: ${fortniteStats.overall.matches || 0}
+- Average Placement: ${fortniteStats.overall.avgPlace?.toFixed(1) || 'N/A'}
+- Total Wins: ${fortniteStats.overall.top1 || 0}
+- Top 10 Finishes: ${fortniteStats.overall.top10 || 0}
+- Total Kills: ${fortniteStats.overall.kills || 0}
+- Total Deaths: ${fortniteStats.overall.deaths || 0}
+- Materials Gathered: ${fortniteStats.overall.materialsGathered || 0}
+- Structures Built: ${fortniteStats.overall.structuresBuilt || 0}`;
+    }
+
+    // Fallback to recentStats if structured data not available
+    if (recentStats && !aggregatedData) {
+      prompt += `
+
+📊 BASIC MATCH STATISTICS:
+- K/D Ratio: ${recentStats.kd?.toFixed(2) || 'N/A'}
+- Win Rate: ${recentStats.winRate?.toFixed(1) || 'N/A'}%
+- Average Placement: ${recentStats.avgPlacement?.toFixed(1) || 'N/A'}
+- Accuracy: ${recentStats.accuracy?.toFixed(1) || 'N/A'}%
+- Materials Used: ${recentStats.matsUsed?.toFixed(0) || 'N/A'}
+- Total Matches: ${recentStats.matches || 0}`;
+    }
+
+    if (conversationHistory && conversationHistory.length > 0) {
+      prompt += `
+
+Recent Conversation Context:`;
+      conversationHistory.slice(-3).forEach(msg => {
+        prompt += `
+- ${msg.role}: ${msg.content}`;
+      });
+    }
+
+    prompt += `
+
+🎯 COACHING INSTRUCTIONS:
+You are a professional esports coach. Always follow this structure:
+
+1. **Direct Observation** – Call out what happened in the player's recent games with specifics (POIs, rotations, survival time, mats, accuracy).
+
+2. **Comparison/Trend** – Compare current performance to their own past averages or highlight changes over the last X games.
+
+3. **Actionable Advice** – Give clear, practical coaching tips they can apply in the next matches. Mention zone rotations, mats usage, aim drills, or positioning.
+
+4. **Encouragement/Next Step** – End with positive reinforcement and a suggested focus for improvement.
+
+Tone: Speak like an esports coach — concise, confident, tactical. Never give vague or generic advice. Never sound like a wiki or tutorial.
+
+Example style: "In your last 5 games, you rotated through Mega City late and lost height to two stacked teams. Try rotating earlier (2nd zone) toward Slappy Shores where mats are more consistent. Also, your builds per fight dropped 12% compared to your average — which means you're burning mats too fast midgame."
+
+Respond ONLY with JSON in this exact structure:
+{
+  "quick_fix": "1-sentence insight that's punchy and memorable, referencing their specific stats",
+  "detailed_analysis": [
+    "Point 1 with specific stat/observation from their data",
+    "Point 2 with mistake/opportunity identified using their metrics", 
+    "Point 3 with trend/weakness pattern from their performance"
+  ],
+  "action_plan": [
+    "Action step 1 - specific and measurable based on their stats",
+    "Action step 2 - tactical improvement they can implement",
+    "Action step 3 - practice routine or drill to work on"
+  ],
+  "tone": "tactical"
+}`;
+
+    return prompt;
+  }
+
+  /**
   static async processCoachingRequest(
     userId: string,
     request: AICoachingRequest
@@ -344,19 +475,34 @@ Respond ONLY with JSON in this exact structure:
         throw new Error('Insufficient credits for AI chat');
       }
 
+      let aggregatedMatchData: AggregatedMatchData | null = null;
+
       // Use Fortnite stats from the unified users collection if available
       if (request.fortniteStats) {
-        console.log('📊 Using Fortnite stats from users collection for AI analysis');
-        // Convert Fortnite stats to the format expected by the AI
-        request.recentStats = {
-          kd: request.fortniteStats.overall.kd,
-          winRate: request.fortniteStats.overall.winRate * 100, // Convert to percentage
-          avgPlacement: request.fortniteStats.overall.avgPlace,
-          accuracy: 0, // Not available in current stats
-          matsUsed: request.fortniteStats.overall.materialsGathered,
-          deaths: request.fortniteStats.overall.deaths,
-          matches: request.fortniteStats.overall.matches
-        };
+        console.log('📊 Using Fortnite stats from users collection for structured analysis');
+        
+        // Process raw Osirion data into structured match data
+        const matchData = MatchAnalysisService.processMatchData(
+          request.fortniteStats.rawOsirionData || request.fortniteStats,
+          userId
+        );
+        
+        if (matchData.length > 0) {
+          // Aggregate the match data for trend analysis
+          aggregatedMatchData = MatchAnalysisService.aggregateMatchData(matchData);
+          console.log('📈 Generated aggregated match data:', aggregatedMatchData);
+          
+          // Convert to format expected by AI
+          request.recentStats = {
+            kd: request.fortniteStats.overall.kd,
+            winRate: request.fortniteStats.overall.winRate * 100,
+            avgPlacement: request.fortniteStats.overall.avgPlace,
+            accuracy: aggregatedMatchData.accuracy.current,
+            matsUsed: aggregatedMatchData.matsUsedPerFight.current,
+            deaths: request.fortniteStats.overall.deaths,
+            matches: request.fortniteStats.overall.matches
+          };
+        }
       } else if (request.userProfile?.epicId) {
         // Fallback: Fetch from Osirion API if stats not in users collection
         console.log('📊 Fortnite stats not found in users collection, fetching from Osirion API');
@@ -366,9 +512,16 @@ Respond ONLY with JSON in this exact structure:
         }
       }
 
-      // Format prompt and call AI
-      const prompt = this.formatAIPrompt(request);
+      // Format prompt with structured match analysis
+      const prompt = this.formatStructuredAIPrompt(request, aggregatedMatchData);
       const aiResponse = await this.callOpenAI(prompt);
+
+      // Enhance response with structured insights if available
+      if (aggregatedMatchData) {
+        const insights = MatchAnalysisService.generateCoachingInsights(aggregatedMatchData);
+        aiResponse.insights = insights;
+        aiResponse.matchData = aggregatedMatchData;
+      }
 
       // Deduct credits after successful AI response
       await CreditTracker.deductCredits(userId, 'chat', {
