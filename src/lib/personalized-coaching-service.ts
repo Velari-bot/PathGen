@@ -38,7 +38,19 @@ export class PersonalizedCoachingService {
   };
 
   // Drill bank with specific Creative codes and objectives
-  private static readonly DRILL_BANK = [
+  private static readonly DRILL_BANK: Array<{
+    id: string;
+    name: string;
+    category: 'aim' | 'building' | 'rotations' | 'mats_efficiency' | 'teamwork' | 'mental';
+    difficulty: 'beginner' | 'intermediate' | 'advanced' | 'pro';
+    duration: string;
+    creativeCode?: string;
+    description: string;
+    objectives: string[];
+    successCriteria: string[];
+    progressionSteps: string[];
+    relatedSkills: string[];
+  }> = [
     {
       id: 'raider464_aim',
       name: 'Raider464 Aim Trainer',
@@ -196,7 +208,7 @@ export class PersonalizedCoachingService {
     region: 'na_east' | 'na_west' | 'eu' | 'oce' | 'asia',
     userPerformance: AggregatedMatchData
   ): MetaAwareness {
-    const regionalData = this.REGIONAL_META[region] || this.REGIONAL_META.na_east;
+    const regionalData = this.REGIONAL_META[region as keyof typeof this.REGIONAL_META] || this.REGIONAL_META.na_east;
     
     return {
       region,

@@ -132,7 +132,7 @@ export class MatchAnalysisService {
     advice: string;
     encouragement: string;
   } {
-    const { avgSurvivalTime, prevAvgSurvivalTime, survivalTimeChange, accuracy, matsUsedPerFight, mostCommonPOIs, rotationTrend, mostCommonDeathCause } = aggregatedData;
+    const { avgSurvivalTime, prevAvgSurvivalTime, survivalTimeChange, accuracy, matsUsedPerFight, mostCommonPOIs, rotationTrend, mostCommonDeathCause, accuracyChange, matsEfficiencyChange } = aggregatedData;
     
     // Observation - what happened in recent games
     const observation = `In your last ${aggregatedData.gamesAnalyzed} games, you averaged ${avgSurvivalTime.toFixed(1)} minutes of survival${survivalTimeChange < 0 ? ` (down from ${prevAvgSurvivalTime.toFixed(1)} minutes)` : ''}. You consistently dropped ${mostCommonPOIs.join(' and ')} and rotated ${rotationTrend}. Most deaths came from ${mostCommonDeathCause}.`;

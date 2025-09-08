@@ -64,46 +64,48 @@ export async function POST(request: NextRequest) {
       // Get user's subscription tier to determine limits
       const userRef = db.collection('users').doc(userId);
       const userDoc = await userRef.get();
-      const userData = userDoc.exists ? userDoc.data() : {};
       
-      // Get the user's subscription tier (default to 'free' if not set)
-      const subscriptionTier = userData?.subscriptionTier || 'free';
-      
-      // Map subscription tier names to match UsageTracker expectations
-      const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
-      
-      // Get proper limits for the subscription tier
-      const limits = UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro');
-      const monthlyLimit = limits.osirion.matchesPerMonth;
-      
-      // Check usage from users collection
-      const currentMonth = new Date().getFullYear() * 100 + new Date().getMonth() + 1;
-      const lastUsageMonth = userData?.usage?.lastMonth || 0;
-      
-      // Reset usage if it's a new month
-      if (currentMonth > lastUsageMonth) {
-        await userRef.update({
-          'usage.lastMonth': currentMonth,
-          'usage.osirionPulls': 0,
-          'usage.lastReset': new Date()
-        });
-        console.log('🔄 Reset monthly usage counter for new month');
-      }
-      
-      const currentPulls = userData?.usage?.osirionPulls || 0;
-      
-      // TEMPORARY: Reset usage for specific user (remove this after testing)
-      let updatedPulls = currentPulls;
-      if (userId === '0IJZBQg3cDWIeDeWSWhK2IZjQ6u2' && currentPulls >= monthlyLimit) {
-        console.log('🔄 TEMPORARY: Resetting usage for testing user');
-        await userRef.update({
-          'usage.lastMonth': currentMonth,
-          'usage.osirionPulls': 0,
-          'usage.lastReset': new Date()
-        });
-        updatedPulls = 0;
-      }
+      if (userDoc.exists) {
+        const userData = userDoc.data();
         
+        // Get the user's subscription tier (default to 'free' if not set)
+        const subscriptionTier = userData?.subscriptionTier || 'free';
+        
+        // Map subscription tier names to match UsageTracker expectations
+        const mappedTier = subscriptionTier === 'standard' ? 'paid' : subscriptionTier;
+        
+        // Get proper limits for the subscription tier
+        const limits = UsageTracker.getLimitsForTier(mappedTier as 'free' | 'paid' | 'pro');
+        const monthlyLimit = limits.osirion.matchesPerMonth;
+        
+        // Check usage from users collection
+        const currentMonth = new Date().getFullYear() * 100 + new Date().getMonth() + 1;
+        const lastUsageMonth = userData?.usage?.lastMonth || 0;
+        
+        // Reset usage if it's a new month
+        if (currentMonth > lastUsageMonth) {
+          await userRef.update({
+            'usage.lastMonth': currentMonth,
+            'usage.osirionPulls': 0,
+            'usage.lastReset': new Date()
+          });
+          console.log('🔄 Reset monthly usage counter for new month');
+        }
+        
+        const currentPulls = userData?.usage?.osirionPulls || 0;
+        
+        // TEMPORARY: Reset usage for specific user (remove this after testing)
+        let updatedPulls = currentPulls;
+        if (userId === '0IJZBQg3cDWIeDeWSWhK2IZjQ6u2' && currentPulls >= monthlyLimit) {
+          console.log('🔄 TEMPORARY: Resetting usage for testing user');
+          await userRef.update({
+            'usage.lastMonth': currentMonth,
+            'usage.osirionPulls': 0,
+            'usage.lastReset': new Date()
+          });
+          updatedPulls = 0;
+        }
+          
         // Check if user has reached their monthly limit (skip check for unlimited users)
         if (monthlyLimit !== -1 && updatedPulls >= monthlyLimit) {
           console.log(`❌ Monthly limit reached: ${currentPulls}/${monthlyLimit} pulls used (${subscriptionTier} tier)`);
@@ -126,16 +128,23 @@ export async function POST(request: NextRequest) {
             }
           });
         }
-        
+          
         console.log(`📊 Current monthly usage: ${currentPulls}/${monthlyLimit} pulls (${subscriptionTier} tier)`);
       } else {
-        // First time user, initialize usage
-        await usageRef.set({
-          lastMonth: new Date().getFullYear() * 100 + new Date().getMonth() + 1,
-          osirionPulls: 0,
-          lastReset: new Date()
+        // User doesn't exist, create basic usage tracking
+        const subscriptionTier = 'free';
+        const limits = UsageTracker.getLimitsForTier('free');
+        const monthlyLimit = limits.osirion.matchesPerMonth;
+        
+        await userRef.set({
+          subscriptionTier: 'free',
+          usage: {
+            lastMonth: new Date().getFullYear() * 100 + new Date().getMonth() + 1,
+            osirionPulls: 0,
+            lastReset: new Date()
+          }
         });
-        console.log(`🆕 Initialized usage tracking for new user (${subscriptionTier} tier, ${monthlyLimit} pulls/month)`);
+        console.log(`🆕 Created new user with usage tracking (${subscriptionTier} tier, ${monthlyLimit} pulls/month)`);
       }
     } catch (usageError) {
       console.error('⚠️ Warning: Could not check usage limits:', usageError);

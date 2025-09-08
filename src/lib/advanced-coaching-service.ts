@@ -35,16 +35,16 @@ export class AdvancedCoachingService {
         survivalTime: {
           current: currentData.avgSurvivalTime,
           previous: previousData?.avgSurvivalTime || currentData.avgSurvivalTime,
-          trend: this.calculateTrend(currentData.avgSurvivalTime, previousData?.avgSurvivalTime),
+          trend: this.calculateTrend(currentData.avgSurvivalTime, previousData?.avgSurvivalTime || currentData.avgSurvivalTime),
           weeklyChange: currentData.survivalTimeChange,
-          monthlyChange: this.calculateMonthlyChange(currentData.avgSurvivalTime, historicalData),
+          monthlyChange: this.calculateMonthlyChange(currentData.avgSurvivalTime, historicalData?.map(d => d.avgSurvivalTime)),
           allTimeHigh: Math.max(currentData.avgSurvivalTime, ...(historicalData?.map(d => d.avgSurvivalTime) || [])),
           allTimeLow: Math.min(currentData.avgSurvivalTime, ...(historicalData?.map(d => d.avgSurvivalTime) || []))
         },
         accuracy: {
           current: currentData.accuracy.current,
           previous: previousData?.accuracy.current || currentData.accuracy.current,
-          trend: this.calculateTrend(currentData.accuracy.current, previousData?.accuracy.current),
+          trend: this.calculateTrend(currentData.accuracy.current, previousData?.accuracy.current || currentData.accuracy.current),
           weeklyChange: currentData.accuracyChange,
           monthlyChange: this.calculateMonthlyChange(currentData.accuracy.current, historicalData?.map(d => d.accuracy.current)),
           allTimeHigh: Math.max(currentData.accuracy.current, ...(historicalData?.map(d => d.accuracy.current) || [])),
@@ -53,7 +53,7 @@ export class AdvancedCoachingService {
         matsEfficiency: {
           current: currentData.matsUsedPerFight.current,
           previous: previousData?.matsUsedPerFight.current || currentData.matsUsedPerFight.current,
-          trend: this.calculateTrend(currentData.matsUsedPerFight.current, previousData?.matsUsedPerFight.current, true), // lower is better
+          trend: this.calculateTrend(currentData.matsUsedPerFight.current, previousData?.matsUsedPerFight.current || currentData.matsUsedPerFight.current, true), // lower is better
           weeklyChange: currentData.matsEfficiencyChange,
           monthlyChange: this.calculateMonthlyChange(currentData.matsUsedPerFight.current, historicalData?.map(d => d.matsUsedPerFight.current)),
           allTimeHigh: Math.max(currentData.matsUsedPerFight.current, ...(historicalData?.map(d => d.matsUsedPerFight.current) || [])),
@@ -62,7 +62,7 @@ export class AdvancedCoachingService {
         placement: {
           current: currentData.avgPlacement,
           previous: previousData?.avgPlacement || currentData.avgPlacement,
-          trend: this.calculateTrend(currentData.avgPlacement, previousData?.avgPlacement, true), // lower is better
+          trend: this.calculateTrend(currentData.avgPlacement, previousData?.avgPlacement || currentData.avgPlacement, true), // lower is better
           weeklyChange: this.calculatePercentageChange(currentData.avgPlacement, previousData?.avgPlacement),
           monthlyChange: this.calculateMonthlyChange(currentData.avgPlacement, historicalData?.map(d => d.avgPlacement)),
           allTimeHigh: Math.max(currentData.avgPlacement, ...(historicalData?.map(d => d.avgPlacement) || [])),
@@ -111,7 +111,13 @@ export class AdvancedCoachingService {
     aggregatedData: AggregatedMatchData,
     skillProgression: SkillProgression
   ): FocusPriority {
-    const issues = [
+    const issues: Array<{
+      skill: string;
+      impact: 'high' | 'medium' | 'low';
+      confidence: number;
+      reason: string;
+      specificAction: string;
+    }> = [
       {
         skill: 'Early Rotations',
         impact: aggregatedData.rotationTrend === 'late' ? 'high' : 'medium',
@@ -389,7 +395,7 @@ export class AdvancedCoachingService {
       }
     };
 
-    return drills[skill] || {
+    return drills[skill as keyof typeof drills] || {
       name: 'General Practice',
       description: 'Focus on overall improvement',
       duration: '20 minutes'

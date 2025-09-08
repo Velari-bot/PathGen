@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         epicAccount: userData?.epicAccount,
         usage: userData?.usage
       },
-      fortniteStats: fortniteStats, // Include Fortnite stats from users collection
+      fortniteStats: fortniteStats || undefined, // Include Fortnite stats from users collection
       conversationHistory: conversationHistory.slice(-10) // Last 10 messages for context
     };
 
