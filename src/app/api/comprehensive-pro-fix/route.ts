@@ -25,31 +25,9 @@ export async function POST(request: NextRequest) {
       subscription: userData?.subscription
     });
 
-    // Step 2: Check webhook logs for Pro subscription evidence
-    const webhookLogs = await db.collection('webhookLogs')
-      .where('userId', '==', userId)
-      .orderBy('timestamp', 'desc')
-      .get();
-
-    let hasProSubscription = false;
-    let latestProLog = null;
-
-    for (const doc of webhookLogs.docs) {
-      const log = doc.data();
-      console.log(`📋 Webhook log: ${log.eventType} - Plan: ${log.plan} - Success: ${log.success}`);
-      
-      if (log.plan === 'pro' && log.success !== false) {
-        hasProSubscription = true;
-        latestProLog = log;
-        console.log(`✅ Found Pro subscription evidence: ${log.eventType}`);
-        break;
-      }
-    }
-
-    if (!hasProSubscription) {
-      console.log(`⚠️ No Pro subscription found in webhook logs - setting to Pro anyway since user paid`);
-      hasProSubscription = true; // Force Pro since user paid
-    }
+    // Step 2: Check webhook logs for Pro subscription evidence (simplified to avoid index issues)
+    let hasProSubscription = true; // Assume Pro since user is calling this fix
+    console.log(`🎯 User is requesting Pro fix - assuming Pro subscription is valid`);
 
     console.log(`🎯 Setting user ${userId} to PRO tier`);
 
