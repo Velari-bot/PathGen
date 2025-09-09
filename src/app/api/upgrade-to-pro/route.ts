@@ -9,28 +9,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    console.log(`🔧 Force fixing Pro subscription for user: ${userId}`);
+    console.log(`🎯 Upgrading user ${userId} to Pro tier after successful payment...`);
     
     const db = getDb();
     if (!db) {
       return NextResponse.json({ error: 'Firebase not initialized' }, { status: 500 });
     }
 
+    // Get current user data to preserve existing information
+    const userDoc = await db.collection('users').doc(userId).get();
+    const currentData = userDoc.exists ? userDoc.data() : {};
+
     // Force update user document with Pro subscription
-    await db.collection('users').doc(userId).update({
+    const updateData = {
       subscriptionTier: 'pro',
       subscriptionStatus: 'active',
       accountType: 'pro',
       subscription: {
+        ...currentData?.subscription,
         status: 'active',
         tier: 'pro',
         plan: 'pro',
         startDate: new Date(),
         endDate: null,
         autoRenew: true,
-        paymentMethod: 'stripe',
-        stripeCustomerId: 'cus_T1ZqaMLLL2uEPh', // From latest console logs
-        stripeSubscriptionId: 'sub_1S5WgoCitWuvPenEYYvoYdqf' // From latest console logs
+        paymentMethod: 'stripe'
       },
       credits: 4000,
       credits_total: 4000,
@@ -38,7 +41,10 @@ export async function POST(request: NextRequest) {
       credits_used: 0,
       last_updated: new Date(),
       updatedAt: new Date()
-    });
+    };
+
+    await db.collection('users').doc(userId).update(updateData);
+    console.log(`✅ Updated user ${userId} to Pro tier`);
 
     // Update or create subscription document
     const subscriptionsSnapshot = await db.collection('subscriptions')
@@ -47,8 +53,6 @@ export async function POST(request: NextRequest) {
     
     const subscriptionData = {
       userId,
-      stripeCustomerId: 'cus_T1ZqaMLLL2uEPh',
-      stripeSubscriptionId: 'sub_1S5WgoCitWuvPenEYYvoYdqf',
       plan: 'pro',
       status: 'active',
       currentPeriodStart: new Date(),
@@ -71,16 +75,19 @@ export async function POST(request: NextRequest) {
         tournamentStrategiesUsed: 0,
         resetDate: new Date()
       },
-      createdAt: new Date(),
+      createdAt: subscriptionsSnapshot.empty ? new Date() : undefined,
       updatedAt: new Date()
     };
     
     if (!subscriptionsSnapshot.empty) {
       await subscriptionsSnapshot.docs[0].ref.update(subscriptionData);
-      console.log(`✅ Updated existing subscription document`);
+      console.log(`✅ Updated existing subscription document for user ${userId}`);
     } else {
-      await db.collection('subscriptions').add(subscriptionData);
-      console.log(`✅ Created new subscription document`);
+      await db.collection('subscriptions').add({
+        ...subscriptionData,
+        createdAt: new Date()
+      });
+      console.log(`✅ Created new subscription document for user ${userId}`);
     }
 
     // Update or create usage document
@@ -100,44 +107,43 @@ export async function POST(request: NextRequest) {
 
     if (!usageSnapshot.empty) {
       await usageSnapshot.docs[0].ref.update(usageData);
-      console.log(`✅ Updated existing usage document`);
+      console.log(`✅ Updated existing usage document for user ${userId}`);
     } else {
       await db.collection('usage').add({
         ...usageData,
         createdAt: new Date()
       });
-      console.log(`✅ Created new usage document`);
+      console.log(`✅ Created new usage document for user ${userId}`);
     }
 
-    // Add webhook log entry for this manual fix
+    // Log the upgrade
     await db.collection('webhookLogs').add({
-      eventType: 'manual.force.pro.fix',
+      eventType: 'browser.upgrade.to.pro',
       userId,
       plan: 'pro',
       status: 'active',
       timestamp: new Date(),
       success: true,
-      manual: true,
-      reason: 'Force fix Pro subscription for paid user',
-      priceId: 'manual_fix',
-      subscriptionId: 'sub_1S5WgoCitWuvPenEYYvoYdqf'
+      source: 'browser_payment_success',
+      reason: 'User payment successful - immediately upgraded to Pro'
     });
 
-    console.log(`✅ Force Pro fix completed for user ${userId}`);
+    console.log(`🎉 Successfully upgraded user ${userId} to Pro tier`);
 
     return NextResponse.json({
       success: true,
-      message: `Successfully forced Pro subscription for user ${userId}`,
+      message: `Successfully upgraded user to Pro tier`,
       plan: 'pro',
       status: 'active',
+      credits: 4000,
       collectionsUpdated: ['users', 'subscriptions', 'usage', 'webhookLogs'],
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('❌ Error forcing Pro subscription:', error);
+    console.error('❌ Error upgrading to Pro:', error);
     return NextResponse.json({ 
-      error: 'Failed to force Pro subscription', 
+      error: 'Failed to upgrade to Pro', 
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }

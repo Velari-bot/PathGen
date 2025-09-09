@@ -331,11 +331,53 @@ export default function DashboardPage() {
         console.log('✅ Payment verification successful:', data);
         
         if (data.success) {
-          // Reload subscription data
-          await checkSubscription();
+          console.log('🎯 Payment successful! Immediately forcing Pro subscription update...');
           
-          // Show success message
-          alert('Payment successful! Your Pro subscription is now active.');
+          // IMMEDIATELY force update to Pro subscription
+          try {
+            const forceProResponse = await fetch('/api/upgrade-to-pro', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId: user?.uid })
+            });
+            
+            const forceProResult = await forceProResponse.json();
+            
+            if (forceProResponse.ok && forceProResult.success) {
+              console.log('✅ Pro subscription forced successfully!', forceProResult);
+              
+              // Wait a moment for changes to propagate
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // Reload subscription data
+              await checkSubscription();
+              
+              // Show success message
+              alert('🎉 Payment successful! Your Pro subscription is now active with 4000 credits!');
+              
+              // Refresh the page to show all Pro features
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+              
+            } else {
+              console.error('❌ Failed to force Pro subscription:', forceProResult.error);
+              
+              // Fallback: still reload subscription data
+              await checkSubscription();
+              alert('Payment successful! Your subscription should be active. If not showing Pro tier, please refresh the page.');
+            }
+            
+          } catch (forceError) {
+            console.error('❌ Error forcing Pro subscription:', forceError);
+            
+            // Fallback: still reload subscription data
+            await checkSubscription();
+            alert('Payment successful! Your subscription should be active. If not showing Pro tier, please refresh the page.');
+          }
+          
         } else {
           console.error('❌ Payment verification failed:', data.error);
           alert('Payment verification failed. Please contact support.');
