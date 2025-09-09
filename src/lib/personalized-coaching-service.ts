@@ -102,6 +102,71 @@ export class PersonalizedCoachingService {
       successCriteria: ['Effective communication', 'Coordinated pushes', 'Team synergy'],
       progressionSteps: ['Basic comms', 'Advanced strategies', 'Tournament prep'],
       relatedSkills: ['communication', 'teamwork', 'strategy']
+    },
+    {
+      id: 'mech_training',
+      name: 'Mech Training',
+      category: 'building',
+      difficulty: 'intermediate',
+      duration: '20 minutes',
+      creativeCode: '2424-4344-7824',
+      description: 'Advanced mechanical training for building and editing',
+      objectives: ['Improve building speed', 'Master edit techniques', 'Build muscle memory'],
+      successCriteria: ['Consistent builds', 'Quick edits', 'Smooth mechanics'],
+      progressionSteps: ['Basic builds', 'Edit plays', 'Advanced techniques'],
+      relatedSkills: ['building', 'editing', 'mechanics']
+    },
+    {
+      id: 'cup_endgame',
+      name: 'Cup Endgame',
+      category: 'rotations',
+      difficulty: 'advanced',
+      duration: '30 minutes',
+      creativeCode: '7910-3591-7319',
+      description: 'Practice endgame scenarios and surge control',
+      objectives: ['Endgame positioning', 'Surge control', 'Late game strategy'],
+      successCriteria: ['Consistent top 10s', 'Smart positioning', 'Surge management'],
+      progressionSteps: ['Basic endgame', 'Surge scenarios', 'Tournament endgames'],
+      relatedSkills: ['positioning', 'surge_control', 'endgame']
+    },
+    {
+      id: 'realistics_2v1',
+      name: '2v1 Realistics',
+      category: 'teamwork',
+      difficulty: 'advanced',
+      duration: '25 minutes',
+      creativeCode: '6809-4712-6549',
+      description: 'Practice 2v1 scenarios and clutch situations',
+      objectives: ['2v1 mechanics', 'Clutch potential', 'Team coordination'],
+      successCriteria: ['Winning 2v1s', 'Smart plays', 'Team synergy'],
+      progressionSteps: ['Basic 2v1s', 'Advanced scenarios', 'Clutch situations'],
+      relatedSkills: ['teamwork', 'clutch', 'mechanics']
+    },
+    {
+      id: 'pro_zw',
+      name: 'Pro ZW',
+      category: 'building',
+      difficulty: 'pro',
+      duration: '35 minutes',
+      creativeCode: '3537-4087-0888',
+      description: 'Professional zone wars for competitive practice',
+      objectives: ['Zone war mechanics', 'Competitive building', 'Tournament prep'],
+      successCriteria: ['Consistent wins', 'Smart builds', 'Tournament ready'],
+      progressionSteps: ['Basic zone wars', 'Advanced scenarios', 'Pro level'],
+      relatedSkills: ['building', 'zone_wars', 'competitive']
+    },
+    {
+      id: 'martoz_turtle_wars',
+      name: 'Martoz Turtle Wars',
+      category: 'building',
+      difficulty: 'advanced',
+      duration: '30 minutes',
+      creativeCode: '1513-6690-9481',
+      description: 'Turtle wars for box fighting and defensive building',
+      objectives: ['Box fighting', 'Defensive building', 'Edit plays'],
+      successCriteria: ['Strong defense', 'Quick edits', 'Box fight wins'],
+      progressionSteps: ['Basic turtling', 'Edit plays', 'Advanced box fights'],
+      relatedSkills: ['box_fighting', 'editing', 'defense']
     }
   ];
 
