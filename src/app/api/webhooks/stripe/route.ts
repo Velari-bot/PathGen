@@ -425,9 +425,23 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
 function getPlanFromPriceId(priceId: string): string {
   const planMap: { [key: string]: string } = {
     'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro', // PathGen Pro (old)
-    'price_1RvsvqCitWuvPenEw9TefOig': 'pro'   // PathGen Pro (new)
+    'price_1RvsvqCitWuvPenEw9TefOig': 'pro', // PathGen Pro (new)
+    'price_1S5WVCCitWuvPenEYZcAxQfO': 'pro'  // PathGen Pro (additional)
   };
-  return planMap[priceId] || 'free';
+  
+  // Log the price ID for debugging
+  console.log(`🔍 Mapping price ID: ${priceId}`);
+  const plan = planMap[priceId];
+  
+  if (!plan) {
+    console.warn(`⚠️ Unknown price ID: ${priceId}, defaulting to 'pro' for paid subscriptions`);
+    // For any unknown price ID in a paid subscription, assume it's Pro
+    // This prevents the subscription from being marked as free when user actually paid
+    return 'pro';
+  }
+  
+  console.log(`✅ Mapped price ID ${priceId} to plan: ${plan}`);
+  return plan;
 }
 
 // Helper function to update ALL collections for a user

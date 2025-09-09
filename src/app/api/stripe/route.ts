@@ -407,9 +407,21 @@ async function handlePaymentMethodAttached(paymentMethod: Stripe.PaymentMethod) 
 function getPlanFromPriceId(priceId: string): string {
   const planMap: { [key: string]: string } = {
     'price_free': 'free',
-    'price_1RvsvqCitWuvPenEw9TefOig': 'pro' // PathGen Pro
+    'price_1RvsyxCitWuvPenEOtFzt5FC': 'pro', // PathGen Pro (old)
+    'price_1RvsvqCitWuvPenEw9TefOig': 'pro', // PathGen Pro (new)
+    'price_1S5WVCCitWuvPenEYZcAxQfO': 'pro'  // PathGen Pro (additional)
   };
-  return planMap[priceId] || 'free';
+  
+  console.log(`🔍 [stripe/route] Mapping price ID: ${priceId}`);
+  const plan = planMap[priceId];
+  
+  if (!plan) {
+    console.warn(`⚠️ [stripe/route] Unknown price ID: ${priceId}, defaulting to 'pro' for paid subscriptions`);
+    return 'pro';
+  }
+  
+  console.log(`✅ [stripe/route] Mapped price ID ${priceId} to plan: ${plan}`);
+  return plan;
 }
 
 // Helper function to get plan limits
