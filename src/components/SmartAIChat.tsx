@@ -22,7 +22,8 @@ interface ModelStats {
 
 export default function SmartAIChat() {
   const { user } = useAuth();
-  const { subscriptionTier } = useSubscription();
+  const { subscription } = useSubscription();
+  const subscriptionTier = subscription?.tier || 'free';
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);

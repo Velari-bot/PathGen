@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getModelRecommendation, modelUsageTracker, MODEL_CONFIGS } from '@/lib/ai-model-selector';
+import { getModelRecommendation, modelUsageTracker, MODEL_CONFIGS, AIModel } from '@/lib/ai-model-selector';
 import { UsageTracker } from '@/lib/usage-tracker';
 
 // This would be replaced with actual AI service calls
@@ -13,7 +13,7 @@ interface AIServiceResponse {
 }
 
 // Mock AI service - replace with actual implementation
-async function callAIService(model: string, prompt: string, context?: any): Promise<AIServiceResponse> {
+async function callAIService(model: AIModel, prompt: string, context?: any): Promise<AIServiceResponse> {
   // This is where you'd integrate with OpenAI, Anthropic, etc.
   // For now, return a mock response
   
@@ -73,7 +73,10 @@ export async function POST(request: NextRequest) {
     );
 
     // Allow manual model override (useful for testing/debugging)
-    const selectedModel = forceModel || recommendation.model;
+    const validModels = Object.keys(MODEL_CONFIGS) as AIModel[];
+    const selectedModel: AIModel = (forceModel && validModels.includes(forceModel as AIModel)) 
+      ? forceModel as AIModel 
+      : recommendation.model;
     const modelConfig = MODEL_CONFIGS[selectedModel];
 
     console.log(`🎯 Model Selection: ${selectedModel}`);
