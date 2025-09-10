@@ -14,6 +14,7 @@ import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service'
 import { UsageTracker } from '@/lib/usage-tracker';
 import Footer from '@/components/Footer';
 import { CreditDisplay } from '@/components/CreditDisplay';
+import { getModelRecommendation } from '@/lib/ai-model-selector';
 import { zoneGuides, mechanics, strategies, metaAnalysis, tipsAndTricks, tournamentInfo, competitiveLoadouts, advancedMechanics, dataAnalytics, lootSystems, boonCombos, mythicCounters, mobilityStrategy, rankingIntelligence, trainingSystems } from '@/lib/ai-docs';
 
 
@@ -27,13 +28,41 @@ export default function AIPage() {
   const router = useRouter();
   const [fortniteStats, setFortniteStats] = useState<FortniteStats | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string; timestamp: Date; model?: string; cost?: number }>>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoadingResponse, setIsLoadingResponse] = useState(false);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [epicAccount, setEpicAccount] = useState<any>(null);
   const [epicError, setEpicError] = useState<string | null>(null);
+  const [modelPreview, setModelPreview] = useState<string>('');
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  // Update model preview when input changes
+  useEffect(() => {
+    if (inputMessage.trim()) {
+      const recommendation = getModelRecommendation(
+        inputMessage,
+        messages.map(m => m.content),
+        {
+          messageCount: messages.length,
+          hasGameData: !!fortniteStats,
+          userTier: 'pro' // You'd get this from subscription context
+        }
+      );
+      setModelPreview(`Will use: ${getModelIcon(recommendation.model)} ${recommendation.model} - ${recommendation.reasoning}`);
+    } else {
+      setModelPreview('');
+    }
+  }, [inputMessage, messages, fortniteStats]);
+
+  const getModelIcon = (model: string) => {
+    switch (model) {
+      case '4o-mini': return '⚡';
+      case '4-turbo-mini': return '🧠';
+      case '5-mini': return '🚀';
+      default: return '🤖';
+    }
+  };
 
   // Function to parse markdown-style bold text
   const parseBoldText = (text: string) => {
