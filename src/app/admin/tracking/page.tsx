@@ -90,6 +90,32 @@ export default function TrackingDashboard() {
     }
   };
 
+  const deleteLink = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?\n\nThis will permanently delete:\n- The tracking link\n- All click/signup/payment data\n- All associated events\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/tracking-links', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(`✅ ${result.message}`);
+        await loadLinks(); // Refresh the list
+      } else {
+        alert(`❌ Error: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete link:', error);
+      alert('Failed to delete link');
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert('Copied to clipboard!');
@@ -263,16 +289,25 @@ export default function TrackingDashboard() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => toggleLinkStatus(link.id, link.isActive)}
-                        className={`text-sm px-3 py-1 rounded ${
-                          link.isActive 
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                      >
-                        {link.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => toggleLinkStatus(link.id, link.isActive)}
+                          className={`text-sm px-3 py-1 rounded ${
+                            link.isActive 
+                              ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                              : 'bg-green-100 text-green-700 hover:bg-green-200'
+                          }`}
+                        >
+                          {link.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => deleteLink(link.id, link.name)}
+                          className="text-sm px-3 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          title="Delete link and all data"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

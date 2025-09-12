@@ -192,3 +192,50 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to update tracking link' }, { status: 500 });
   }
 }
+
+// DELETE - Delete a tracking link and its associated events
+export async function DELETE(request: NextRequest) {
+  try {
+    const { id } = await request.json();
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing link ID' }, { status: 400 });
+    }
+
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    }
+
+    console.log(`🗑️ Deleting tracking link: ${id}`);
+
+    // Delete all tracking events for this link
+    const eventsSnapshot = await db.collection('tracking_events')
+      .where('linkId', '==', id)
+      .get();
+
+    const batch = db.batch();
+    
+    // Add all tracking events to the batch delete
+    eventsSnapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    // Add the tracking link to the batch delete
+    batch.delete(db.collection('tracking_links').doc(id));
+
+    // Execute the batch delete
+    await batch.commit();
+
+    console.log(`✅ Deleted tracking link and ${eventsSnapshot.docs.length} associated events: ${id}`);
+
+    return NextResponse.json({
+      success: true,
+      message: `Link deleted successfully (removed ${eventsSnapshot.docs.length} events)`
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting tracking link:', error);
+    return NextResponse.json({ error: 'Failed to delete tracking link' }, { status: 500 });
+  }
+}
