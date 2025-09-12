@@ -3,6 +3,8 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
+import ReferralTracker from '@/components/ReferralTracker'
+import SimpleTracker from '@/components/SimpleTracker'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -63,6 +65,8 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <SubscriptionProvider>
+        <ReferralTracker />
+        <SimpleTracker />
         {children}
       </SubscriptionProvider>
     </AuthProvider>

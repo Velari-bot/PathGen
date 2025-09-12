@@ -74,12 +74,16 @@ export default function HeroSection() {
     }
 
     try {
+      // Get stored tracking code if available
+      const trackingCode = localStorage.getItem('pathgen_tracking_code');
+      
       // Create Stripe checkout session directly
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'user-email': user.email || 'customer@example.com',
+          'tracking-code': trackingCode || '',
         },
         body: JSON.stringify({
           priceId: 'price_1RvsvqCitWuvPenEw9TefOig', // Pro tier price ID

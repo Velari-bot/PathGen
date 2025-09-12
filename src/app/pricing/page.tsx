@@ -26,12 +26,16 @@ export default function PricingPage() {
     setLoading(true);
     
     try {
+      // Get stored tracking code if available
+      const trackingCode = localStorage.getItem('pathgen_tracking_code');
+      
       // Redirect to Stripe checkout
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'user-email': user.email || 'customer@example.com',
+          'tracking-code': trackingCode || '',
         },
         body: JSON.stringify({
           priceId: 'price_1RvsvqCitWuvPenEw9TefOig', // Pro tier price ID

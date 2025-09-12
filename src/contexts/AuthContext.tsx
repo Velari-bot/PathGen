@@ -261,6 +261,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await setDoc(doc(db, 'users', user.uid), newUser);
       console.log('✅ New comprehensive user document created in Firestore during signup');
       
+      // Track signup event for link tracking
+      try {
+        const { trackSignup } = await import('@/components/SimpleTracker');
+        await trackSignup(user.uid);
+        console.log('✅ Signup tracked for link tracking system');
+      } catch (error) {
+        console.warn('⚠️ Could not track signup event:', error);
+      }
+      
       // Send email verification
       try {
         await sendEmailVerification(user);
@@ -422,6 +431,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         await setDoc(userDocRef, newUser);
         console.log('✅ New comprehensive user document created in Firestore during Google signin');
+        
+        // Track signup event for link tracking
+        try {
+          const { trackSignup } = await import('@/components/SimpleTracker');
+          await trackSignup(user.uid);
+          console.log('✅ Google signup tracked for link tracking system');
+        } catch (error) {
+          console.warn('⚠️ Could not track Google signup event:', error);
+        }
         
         // Also create initial usage document
         try {

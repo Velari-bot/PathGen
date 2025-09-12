@@ -112,6 +112,30 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       }
     }
     
+    // Track paid subscription if tracking code is present
+    if (session.metadata?.tracking_code && session.metadata?.userId) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/track-event`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            trackingCode: session.metadata.tracking_code,
+            eventType: 'paid_subscription',
+            userId: session.metadata.userId,
+            amount: session.amount_total || 0,
+            metadata: {
+              subscriptionId: session.subscription,
+              customerId: session.customer,
+              sessionId: session.id
+            }
+          })
+        });
+        console.log(`✅ Tracked paid subscription for code: ${session.metadata.tracking_code}`);
+      } catch (error) {
+        console.warn('⚠️ Failed to track paid subscription:', error);
+      }
+    }
+    
     // Log the checkout completion
     await db.collection('webhookLogs').add({
       eventType: 'checkout.session.completed',

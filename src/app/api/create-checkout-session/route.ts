@@ -70,12 +70,14 @@ export async function POST(request: NextRequest) {
         userId: userId,
         promoCode: promoCode || null,
         tier: tier || null,
+        tracking_code: request.headers.get('tracking-code') || null,
       },
       subscription_data: {
         metadata: {
           userId: userId,
           promoCode: promoCode || null,
           tier: tier || null,
+          tracking_code: request.headers.get('tracking-code') || null,
         },
         // Apply discount if promo code is valid
         ...(discountId && { discount: discountId }),
