@@ -178,7 +178,7 @@ async function handleSubscriptionCancelled(subscription: Stripe.Subscription) {
 
   const batch = db.batch();
   
-  earningsSnapshot.docs.forEach(doc => {
+  earningsSnapshot.docs.forEach((doc: any) => {
     const earning = doc.data();
     const createdAt = earning.createdAt instanceof Date 
       ? earning.createdAt.getTime()

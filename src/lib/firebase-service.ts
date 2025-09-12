@@ -707,7 +707,7 @@ export class FirebaseService {
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
+      return querySnapshot.docs.map((doc: any) => {
         const data = doc.data();
         return {
           ...data,
@@ -743,7 +743,7 @@ export class FirebaseService {
       );
       
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map(doc => {
+      return querySnapshot.docs.map((doc: any) => {
         const data = doc.data();
         return {
           ...data,

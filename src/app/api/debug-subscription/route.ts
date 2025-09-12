@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       const userData = userDoc.exists ? userDoc.data() : null;
       const subscriptionData = !subscriptionsSnapshot.empty ? subscriptionsSnapshot.docs[0].data() : null;
       const usageData = !usageSnapshot.empty ? usageSnapshot.docs[0].data() : null;
-      const webhookLogs = webhookLogsSnapshot.docs.map(doc => doc.data());
+      const webhookLogs = webhookLogsSnapshot.docs.map((doc: any) => doc.data());
 
       return NextResponse.json({
         userId,

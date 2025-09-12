@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       .limit(10)
       .get();
 
-    const recentEarnings = earningsSnapshot.docs.map(doc => ({
+    const recentEarnings = earningsSnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       conversionRate: 0
     };
 
-    statsSnapshot.docs.forEach(doc => {
+    statsSnapshot.docs.forEach((doc: any) => {
       const stat = doc.data();
       monthlyStats.conversions += stat.conversions || 0;
       monthlyStats.earnings += stat.totalEarnings || 0;
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       .limit(20)
       .get();
 
-    const recentClicks = clicksSnapshot.docs.map(doc => ({
+    const recentClicks = clicksSnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data(),
       timestamp: doc.data().timestamp?.toDate?.() || doc.data().timestamp
