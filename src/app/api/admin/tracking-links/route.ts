@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     // Get stats for each link
     const linksWithStats = await Promise.all(
-      links.map(async (link) => {
+      links.map(async (link: any) => {
         const statsSnapshot = await db.collection('tracking_events')
           .where('linkId', '==', link.id)
           .get();
