@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Get all tracking links
     const linksSnapshot = await db.collection('tracking_links').get();
-    const links = linksSnapshot.docs.map(doc => ({
+    const links = linksSnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data(),
       createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
           .where('linkId', '==', link.id)
           .get();
 
-        const events = statsSnapshot.docs.map(doc => doc.data());
+        const events = statsSnapshot.docs.map((doc: any) => doc.data());
         
         const clicks = events.filter(e => e.eventType === 'click').length;
         const signups = events.filter(e => e.eventType === 'signup').length;
@@ -217,7 +217,7 @@ export async function DELETE(request: NextRequest) {
     const batch = db.batch();
     
     // Add all tracking events to the batch delete
-    eventsSnapshot.docs.forEach(doc => {
+    eventsSnapshot.docs.forEach((doc: any) => {
       batch.delete(doc.ref);
     });
 
