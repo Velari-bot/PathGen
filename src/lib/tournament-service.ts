@@ -151,7 +151,7 @@ export class TournamentService {
           'Hide whenever possible',
           'Avoid unnecessary fights',
           'Focus on reaching Top 10 consistently',
-          'Only take fights you're confident you can win'
+          'Only take fights you are confident you can win'
         ],
         applicableRegions: ['NAC', 'EU', 'OCE', 'ASIA', 'BR', 'ME'],
         lastUpdated: new Date(),
@@ -372,7 +372,7 @@ export class TournamentService {
         .orderBy('createdAt', 'desc')
         .get();
 
-      return snapshot.docs.map(doc => doc.data() as UserTournamentPerformance);
+      return snapshot.docs.map((doc: any) => doc.data() as UserTournamentPerformance);
     } catch (error) {
       console.error('❌ Error fetching user tournament history:', error);
       return [];
