@@ -282,6 +282,67 @@ export default function TrackingDashboard() {
         )}
       </div>
 
+      {/* Manual Tracking */}
+      <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900">🔧 Manual Purchase Tracking</h3>
+        <p className="text-sm text-gray-800 mb-4">If a purchase wasn't automatically tracked, you can manually add it here:</p>
+        
+        <div className="flex space-x-4 items-end">
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Tracking Code</label>
+            <input
+              type="text"
+              placeholder="e.g., VOID"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+              id="manual-tracking-code"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">Amount (cents)</label>
+            <input
+              type="number"
+              placeholder="2900"
+              defaultValue="2900"
+              className="px-3 py-2 border border-gray-300 rounded-lg text-gray-900 bg-white"
+              id="manual-amount"
+            />
+          </div>
+          <button
+            onClick={async () => {
+              const code = (document.getElementById('manual-tracking-code') as HTMLInputElement)?.value;
+              const amount = parseInt((document.getElementById('manual-amount') as HTMLInputElement)?.value || '2900');
+              
+              if (!code) {
+                alert('Please enter a tracking code');
+                return;
+              }
+              
+              try {
+                const response = await fetch('/api/manual-track-purchase', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ trackingCode: code, amount })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                  alert(`✅ Purchase tracked! ${code} now has ${result.stats.totalPaidSubscriptions} paid subscriptions`);
+                  await loadLinks(); // Refresh the dashboard
+                } else {
+                  alert(`❌ Error: ${result.error}`);
+                }
+              } catch (error) {
+                alert('Failed to track purchase');
+              }
+            }}
+            className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+          >
+            Track Purchase
+          </button>
+        </div>
+      </div>
+
       {/* Instructions */}
       <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold mb-3 text-gray-900">📋 How to Use Your Tracking Links</h3>

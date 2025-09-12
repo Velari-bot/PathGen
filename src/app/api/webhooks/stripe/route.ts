@@ -115,24 +115,56 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Track paid subscription if tracking code is present
     if (session.metadata?.tracking_code && session.metadata?.userId) {
       try {
-        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/track-event`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            trackingCode: session.metadata.tracking_code,
+        const trackingCode = session.metadata.tracking_code.toUpperCase();
+        console.log(`📊 Tracking paid subscription for code: ${trackingCode}`);
+        
+        // Find the tracking link
+        const linkSnapshot = await db.collection('tracking_links')
+          .where('code', '==', trackingCode)
+          .where('isActive', '==', true)
+          .limit(1)
+          .get();
+
+        if (!linkSnapshot.empty) {
+          const linkDoc = linkSnapshot.docs[0];
+          const linkData = linkDoc.data();
+          
+          // Create tracking event
+          await db.collection('tracking_events').add({
+            linkId: linkDoc.id,
+            linkCode: trackingCode,
             eventType: 'paid_subscription',
             userId: session.metadata.userId,
+            sessionId: session.id,
             amount: session.amount_total || 0,
             metadata: {
               subscriptionId: session.subscription,
               customerId: session.customer,
               sessionId: session.id
-            }
-          })
-        });
-        console.log(`✅ Tracked paid subscription for code: ${session.metadata.tracking_code}`);
+            },
+            timestamp: new Date()
+          });
+
+          // Update link stats
+          const newPaidSubs = (linkData.totalPaidSubscriptions || 0) + 1;
+          const newRevenue = (linkData.totalRevenue || 0) + (session.amount_total || 0);
+          const totalClicks = linkData.totalClicks || 0;
+          
+          const updates = {
+            totalPaidSubscriptions: newPaidSubs,
+            totalRevenue: newRevenue,
+            paidConversionRate: totalClicks > 0 ? (newPaidSubs / totalClicks) * 100 : 0,
+            updatedAt: new Date()
+          };
+
+          await linkDoc.ref.update(updates);
+          
+          console.log(`✅ Tracked paid subscription: ${trackingCode} - $${(session.amount_total || 0)/100} - Total: ${newPaidSubs} subs`);
+        } else {
+          console.warn(`⚠️ Tracking link not found for code: ${trackingCode}`);
+        }
       } catch (error) {
-        console.warn('⚠️ Failed to track paid subscription:', error);
+        console.error('❌ Failed to track paid subscription:', error);
       }
     }
     
