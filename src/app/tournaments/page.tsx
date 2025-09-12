@@ -1,284 +1,500 @@
 'use client';
 
-import { useState } from 'react';
-import SmoothScroll from '@/components/SmoothScroll';
-import TournamentCalculator from '@/components/TournamentCalculator';
-import LiveTournamentUpdates from '@/components/LiveTournamentUpdates';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+
+interface TournamentWeek {
+  id: string;
+  name: string;
+  region: string;
+  mode: string;
+  date: string;
+  isActive: boolean;
+  pointThresholds: {
+    top100: number;
+    top500: number;
+    top1000: number;
+    top2500: number;
+    top7500: number;
+  };
+  estimates: {
+    top100: number;
+    top500: number;
+    top1000: number;
+    top2500: number;
+    top7500: number;
+  };
+  finalResults?: {
+    top100: number;
+    top500: number;
+    top1000: number;
+    top2500: number;
+    top7500: number;
+  };
+}
+
+interface UserPerformance {
+  weekId: string;
+  totalPoints: number;
+  finalPlacement: number;
+  totalGames: number;
+  targetPoints: number;
+  achievedGoal: boolean;
+}
 
 export default function TournamentsPage() {
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [showLiveUpdates, setShowLiveUpdates] = useState(false);
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'overview' | 'tracker' | 'calculator'>('overview');
+  const [selectedRegion, setSelectedRegion] = useState<'NAC' | 'EU'>('NAC');
+  const [selectedMode, setSelectedMode] = useState<'solo' | 'duos'>('solo');
+  
+  // Calculator state
+  const [currentPoints, setCurrentPoints] = useState<number>(0);
+  const [gamesRemaining, setGamesRemaining] = useState<number>(10);
+  const [targetPoints, setTargetPoints] = useState<number>(300);
+  
+  // Tracker state
+  const [userPerformances, setUserPerformances] = useState<UserPerformance[]>([]);
+
+  // Mock tournament data (in real app, this would come from your tournament service)
+  const tournaments: TournamentWeek[] = [
+    {
+      id: 'c6s4-solo-nac-week1',
+      name: 'C6S4 SOLO SERIES #1',
+      region: 'NAC',
+      mode: 'solo',
+      date: '2024-01-01',
+      isActive: false,
+      pointThresholds: {
+        top100: 309,
+        top500: 273,
+        top1000: 256,
+        top2500: 226,
+        top7500: 159
+      },
+      estimates: {
+        top100: 305,
+        top500: 275,
+        top1000: 260,
+        top2500: 235,
+        top7500: 170
+      },
+      finalResults: {
+        top100: 309,
+        top500: 273,
+        top1000: 256,
+        top2500: 226,
+        top7500: 159
+      }
+    },
+    {
+      id: 'c6s4-solo-eu-week1',
+      name: 'C6S4 SOLO SERIES #1',
+      region: 'EU',
+      mode: 'solo',
+      date: '2024-01-01',
+      isActive: false,
+      pointThresholds: {
+        top100: 329,
+        top500: 298,
+        top1000: 285,
+        top2500: 265,
+        top7500: 232
+      },
+      estimates: {
+        top100: 315,
+        top500: 290,
+        top1000: 275,
+        top2500: 255,
+        top7500: 220
+      },
+      finalResults: {
+        top100: 329,
+        top500: 298,
+        top1000: 285,
+        top2500: 265,
+        top7500: 232
+      }
+    },
+    {
+      id: 'c6s4-duos-trials',
+      name: 'C6S4 DUOS TRIALS',
+      region: 'NAC',
+      mode: 'duos',
+      date: '2024-01-08',
+      isActive: true,
+      pointThresholds: {
+        top100: 0, // Live updates during tournament
+        top500: 0,
+        top1000: 0,
+        top2500: 0,
+        top7500: 0
+      },
+      estimates: {
+        top100: 350,
+        top500: 320,
+        top1000: 290,
+        top2500: 260,
+        top7500: 200
+      }
+    }
+  ];
+
+  const filteredTournaments = tournaments.filter(t => 
+    t.region === selectedRegion && t.mode === selectedMode
+  );
+
+  // Tournament Calculator
+  const calculateScenarios = () => {
+    const pointsNeeded = targetPoints - currentPoints;
+    const averageNeeded = gamesRemaining > 0 ? pointsNeeded / gamesRemaining : 0;
+
+    const scenarios = [];
+
+    if (selectedMode === 'solo') {
+      // Conservative scenario
+      scenarios.push({
+        name: 'Placement Strategy',
+        description: 'Focus on consistent placements',
+        games: [
+          { placement: 'Top 5', eliminations: 2, points: 52 },
+          { placement: 'Top 10', eliminations: 1, points: 42 },
+          { placement: 'Top 25', eliminations: 0, points: 30 }
+        ],
+        totalPoints: currentPoints + 124,
+        difficulty: 'Medium',
+        success: '70%'
+      });
+
+      // Aggressive scenario
+      scenarios.push({
+        name: 'Win Strategy',
+        description: 'Go for wins with eliminations',
+        games: [
+          { placement: 'Win', eliminations: 12, points: 84 },
+          { placement: 'Top 10', eliminations: 2, points: 44 }
+        ],
+        totalPoints: currentPoints + 128,
+        difficulty: 'Hard',
+        success: '30%'
+      });
+    } else {
+      // Duos scenarios
+      scenarios.push({
+        name: 'Duos Placement',
+        description: 'Max placement every game',
+        games: [
+          { placement: 'Top 5', eliminations: 3, points: 63 },
+          { placement: 'Top 10', eliminations: 2, points: 57 },
+          { placement: 'Top 15', eliminations: 1, points: 51 }
+        ],
+        totalPoints: currentPoints + 171,
+        difficulty: 'Medium',
+        success: '65%'
+      });
+    }
+
+    return { averageNeeded, scenarios };
+  };
+
+  const { averageNeeded, scenarios } = calculateScenarios();
 
   return (
-    <SmoothScroll>
-      <div className="min-h-screen bg-gradient-dark">
-        {/* Global Navigation */}
-        <Navbar />
-        
+    <div className="min-h-screen bg-gradient-dark flex flex-col">
+      <Navbar />
+      
+      <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
-        <div className="pt-20 pb-12 px-4">
-          <div className="max-w-6xl mx-auto text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-              🏆 Tournament Hub
-            </h1>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Calculate your tournament strategy, track your progress, and optimize your gameplay to reach your goals
-            </p>
-          </div>
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gradient">
+            🏆 Tournament Hub
+          </h1>
+          <p className="text-xl text-secondary-text max-w-3xl mx-auto">
+            Track tournaments, analyze performance, and get AI-powered strategies for competitive Fortnite
+          </p>
         </div>
 
-        {/* Main Content */}
-        <div className="max-w-6xl mx-auto px-4 pb-20">
-          {/* Tournament Calculator Section */}
-          <div className="glass-card p-8 mb-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-4">Tournament Calculator PRO</h2>
-              <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                Get your tournament schedule and know exactly what to aim for in each game to reach your target points. 
-                Plan your strategy like a pro!
-              </p>
-            </div>
-            
-            <div className="text-center space-y-4">
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="glass-card p-2 flex space-x-2">
+            {[
+              { key: 'overview', label: '📊 Overview', icon: '📊' },
+              { key: 'tracker', label: '📈 Performance', icon: '📈' },
+              { key: 'calculator', label: '🧮 Calculator', icon: '🧮' }
+            ].map((tab) => (
               <button
-                onClick={() => setShowCalculator(true)}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  activeTab === tab.key
+                    ? 'bg-accent text-white shadow-lg'
+                    : 'text-secondary-text hover:text-primary-text hover:bg-white/5'
+                }`}
               >
-                🧮 Open Tournament Calculator
+                {tab.label}
               </button>
-              <div>
-                <button
-                  onClick={() => setShowLiveUpdates(true)}
-                  className="px-8 py-4 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-semibold rounded-xl text-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
-                >
-                  📊 View Live Tournament Updates
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Tournament Types Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* FNCS */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🏆</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">FNCS Tournaments</h3>
-                <p className="text-gray-300 mb-4">
-                  The most competitive Fortnite tournaments with high stakes and elite competition
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• Division 1: 15 points per game</p>
-                  <p>• Division 2/3: 12 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 3 hour time limit</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Eval */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📊</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Eval Cups</h3>
-                <p className="text-gray-300 mb-4">
-                  Evaluation tournaments for skill assessment and practice
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 10 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 2 hour time limit</p>
-                  <p>• Great for practice</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Console Victory Cash Cup */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🎮</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Console Victory Cash Cup</h3>
-                <p className="text-gray-300 mb-4">
-                  High-stakes console tournament with detailed breakdowns
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 25 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 3 hour time limit</p>
-                  <p>• Live point estimates</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Blade of Champions Cup */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">⚔️</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Blade of Champions Cup</h3>
-                <p className="text-gray-300 mb-4">
-                  Pickaxe reward tournament with ELO system
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 3 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 3 hour time limit</p>
-                  <p>• Top 750 for pickaxe</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Icon Reload */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🔄</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Icon Reload Cups</h3>
-                <p className="text-gray-300 mb-4">
-                  Quick tournaments with fast-paced action
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 15 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 2.5 hour time limit</p>
-                  <p>• Points based matchmaking</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Clix Reload Icon Cup */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🎯</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Clix Reload Icon Cup</h3>
-                <p className="text-gray-300 mb-4">
-                  High-stakes duos tournament with live updates
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 15 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 2.5 hour time limit</p>
-                  <p>• Live point tracking</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bugha Reload Icon Cup */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🏆</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Bugha Reload Icon Cup</h3>
-                <p className="text-gray-300 mb-4">
-                  Competitive duos with real-time estimates
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 15 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 2.5 hour time limit</p>
-                  <p>• Queue optimization tips</p>
-                </div>
-              </div>
-            </div>
-
-            {/* OG Cup */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">👑</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">OG Cup</h3>
-                <p className="text-gray-300 mb-4">
-                  Classic tournament format for all skill levels
-                </p>
-                <div className="text-sm text-gray-400 space-y-1">
-                  <p>• 4 points per game</p>
-                  <p>• 10 games maximum</p>
-                  <p>• 1 hour time limit</p>
-                  <p>• Beginner friendly</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Strategy Tips */}
-            <div className="glass-card p-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">💡</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">Strategy Tips</h3>
-                <p className="text-gray-300 mb-4">
-                  Key strategies for tournament success
-                </p>
-                <div className="text-sm text-gray-400 space-y-1 text-left">
-                  <p>• Plan your drop spots</p>
-                  <p>• Manage your time wisely</p>
-                  <p>• Focus on consistency</p>
-                  <p>• Stay calm under pressure</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* How to Use */}
-          <div className="glass-card p-8 mt-8">
-            <h2 className="text-2xl font-bold text-white text-center mb-6">How to Use the Calculator</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold">1</span>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Select Tournament</h3>
-                <p className="text-gray-300 text-sm">
-                  Choose your tournament type from the available options
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold">2</span>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Enter Your Data</h3>
-                <p className="text-gray-300 text-sm">
-                  Input your current points, target, games left, and time remaining
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold">3</span>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Get Strategy</h3>
-                <p className="text-gray-300 text-sm">
-                  Receive personalized strategy and time management advice
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Tournament Calculator Modal */}
-        <TournamentCalculator 
-          isOpen={showCalculator} 
-          onClose={() => setShowCalculator(false)} 
-        />
+        {/* Region and Mode Selectors */}
+        <div className="flex justify-center space-x-4 mb-8">
+          <div className="glass-card p-2 flex space-x-2">
+            {['NAC', 'EU'].map((region) => (
+              <button
+                key={region}
+                onClick={() => setSelectedRegion(region as any)}
+                className={`px-4 py-2 rounded font-medium transition-all ${
+                  selectedRegion === region
+                    ? 'bg-blue-600 text-white'
+                    : 'text-secondary-text hover:text-primary-text'
+                }`}
+              >
+                {region}
+              </button>
+            ))}
+          </div>
+          
+          <div className="glass-card p-2 flex space-x-2">
+            {['solo', 'duos'].map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setSelectedMode(mode as any)}
+                className={`px-4 py-2 rounded font-medium capitalize transition-all ${
+                  selectedMode === mode
+                    ? 'bg-purple-600 text-white'
+                    : 'text-secondary-text hover:text-primary-text'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </div>
 
-        {/* Live Tournament Updates Modal */}
-        <LiveTournamentUpdates 
-          isOpen={showLiveUpdates} 
-          onClose={() => setShowLiveUpdates(false)} 
-        />
+        {/* Content based on active tab */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            {/* Current Tournaments */}
+            <div className="glass-card p-6">
+              <h2 className="text-2xl font-bold text-primary-text mb-6">
+                📅 {selectedRegion} {selectedMode.charAt(0).toUpperCase() + selectedMode.slice(1)} Tournaments
+              </h2>
+              
+              <div className="space-y-4">
+                {filteredTournaments.map((tournament) => (
+                  <div key={tournament.id} className="border border-white/10 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-semibold text-primary-text">
+                          {tournament.name}
+                        </h3>
+                        <p className="text-secondary-text">
+                          {tournament.region} • {new Date(tournament.date).toLocaleDateString()}
+                          {tournament.isActive && (
+                            <span className="ml-2 px-2 py-1 bg-green-500 text-white text-xs rounded">
+                              LIVE
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Point Thresholds */}
+                    <div className="grid grid-cols-5 gap-4 text-center">
+                      {Object.entries(tournament.finalResults || tournament.pointThresholds).map(([rank, points]) => (
+                        <div key={rank} className="bg-white/5 rounded p-3">
+                          <div className="text-sm text-secondary-text capitalize">
+                            {rank.replace(/(\d+)/, ' $1')}
+                          </div>
+                          <div className="text-lg font-bold text-primary-text">
+                            {points || 'TBD'}
+                          </div>
+                          {tournament.estimates && (
+                            <div className="text-xs text-accent">
+                              Est: {tournament.estimates[rank as keyof typeof tournament.estimates]}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {tournament.finalResults && (
+                      <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded">
+                        <p className="text-green-400 text-sm">
+                          ✅ Tournament completed • Final qualification estimate: {selectedRegion === 'NAC' ? '1,200' : '1,300'} points for Series Final
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'calculator' && (
+          <div className="space-y-8">
+            <div className="glass-card p-6">
+              <h2 className="text-2xl font-bold text-primary-text mb-6">
+                🧮 Tournament Points Calculator
+              </h2>
+              
+              {/* Calculator Inputs */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-medium text-secondary-text mb-2">
+                    Current Points
+                  </label>
+                  <input
+                    type="number"
+                    value={currentPoints}
+                    onChange={(e) => setCurrentPoints(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-primary-text"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-text mb-2">
+                    Games Remaining
+                  </label>
+                  <input
+                    type="number"
+                    value={gamesRemaining}
+                    onChange={(e) => setGamesRemaining(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-primary-text"
+                    placeholder="10"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-secondary-text mb-2">
+                    Target Points
+                  </label>
+                  <input
+                    type="number"
+                    value={targetPoints}
+                    onChange={(e) => setTargetPoints(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-primary-text"
+                    placeholder="300"
+                  />
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="bg-white/5 rounded-lg p-4 mb-6">
+                <h3 className="text-lg font-semibold text-primary-text mb-2">📊 Analysis</h3>
+                <p className="text-secondary-text">
+                  You need <span className="text-accent font-bold">{targetPoints - currentPoints} more points</span> in{' '}
+                  <span className="text-accent font-bold">{gamesRemaining} games</span>
+                </p>
+                <p className="text-secondary-text">
+                  Average needed per game: <span className="text-accent font-bold">{averageNeeded.toFixed(1)} points</span>
+                </p>
+                
+                {averageNeeded > 50 && (
+                  <div className="mt-3 p-3 bg-red-500/10 border border-red-500/20 rounded">
+                    <p className="text-red-400 text-sm">
+                      ⚠️ High average needed - consider going for wins and eliminations
+                    </p>
+                  </div>
+                )}
+                {averageNeeded <= 30 && (
+                  <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded">
+                    <p className="text-green-400 text-sm">
+                      ✅ Achievable with consistent placement strategy
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Scenarios */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-primary-text">🎯 Recommended Scenarios</h3>
+                {scenarios.map((scenario, index) => (
+                  <div key={index} className="border border-white/10 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-semibold text-primary-text">{scenario.name}</h4>
+                        <p className="text-sm text-secondary-text">{scenario.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-accent">
+                          {scenario.totalPoints} pts
+                        </div>
+                        <div className="text-xs text-secondary-text">
+                          {scenario.difficulty} • {scenario.success} success
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-2 text-sm">
+                      {scenario.games.map((game, gameIndex) => (
+                        <div key={gameIndex} className="bg-white/5 rounded p-2 text-center">
+                          <div className="font-medium text-primary-text">{game.placement}</div>
+                          <div className="text-secondary-text">{game.eliminations} elims</div>
+                          <div className="text-accent">{game.points} pts</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tracker' && (
+          <div className="space-y-8">
+            <div className="glass-card p-6">
+              <h2 className="text-2xl font-bold text-primary-text mb-6">
+                📈 Performance Tracker
+              </h2>
+              
+              {!user ? (
+                <div className="text-center py-8">
+                  <p className="text-secondary-text mb-4">
+                    Sign in to track your tournament performance and get personalized insights
+                  </p>
+                  <button className="bg-accent hover:bg-accent/80 text-white px-6 py-3 rounded-lg font-medium">
+                    Sign In
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {/* Add Performance Entry */}
+                  <div className="bg-white/5 rounded-lg p-4 mb-6">
+                    <h3 className="text-lg font-semibold text-primary-text mb-4">
+                      ➕ Add Tournament Result
+                    </h3>
+                    {/* Add form for entering tournament results */}
+                    <p className="text-secondary-text">
+                      Performance tracking form will be implemented here
+                    </p>
+                  </div>
+
+                  {/* Performance History */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-primary-text">
+                      📊 Your Tournament History
+                    </h3>
+                    {userPerformances.length === 0 ? (
+                      <p className="text-secondary-text">
+                        No tournament results yet. Add your first result above!
+                      </p>
+                    ) : (
+                      <div>Performance history will be displayed here</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </SmoothScroll>
+
+      <Footer />
+    </div>
   );
 }

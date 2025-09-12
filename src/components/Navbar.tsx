@@ -75,6 +75,12 @@ export default function Navbar() {
                 <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
                   AI Coach
                 </Link>
+                <Link href="/tournaments" className="text-secondary-text hover:text-white transition-colors duration-300">
+                  Tournaments
+                </Link>
+                <Link href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
+                  Strategies
+                </Link>
                 <Link href="/pricing" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Pricing
                 </Link>
@@ -137,6 +143,12 @@ export default function Navbar() {
                   </Link>
                   <Link href="/ai" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     AI Coach
+                  </Link>
+                  <Link href="/tournaments" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    Tournaments
+                  </Link>
+                  <Link href="/tournament-strategy" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    Strategies
                   </Link>
                   <Link href="/pricing" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Pricing
