@@ -34,12 +34,12 @@ export async function GET(request: NextRequest) {
 
         const events = statsSnapshot.docs.map((doc: any) => doc.data());
         
-        const clicks = events.filter(e => e.eventType === 'click').length;
-        const signups = events.filter(e => e.eventType === 'signup').length;
-        const paidSubs = events.filter(e => e.eventType === 'paid_subscription').length;
+        const clicks = events.filter((e: any) => e.eventType === 'click').length;
+        const signups = events.filter((e: any) => e.eventType === 'signup').length;
+        const paidSubs = events.filter((e: any) => e.eventType === 'paid_subscription').length;
         const revenue = events
-          .filter(e => e.eventType === 'paid_subscription')
-          .reduce((sum, e) => sum + (e.amount || 0), 0);
+          .filter((e: any) => e.eventType === 'paid_subscription')
+          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
         return {
           ...link,
