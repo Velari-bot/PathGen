@@ -40,13 +40,20 @@ export const metadata: Metadata = {
     title: 'PathGen AI - Your AI Fortnite Coach | Improve Building, Strategy & Win Rate',
     description: 'Get personalized Fortnite coaching with AI analysis. Improve your building, strategy, K/D ratio, and win rate.',
     type: 'website',
-    images: ['/Black PathGen logo.png'],
+    images: [
+      {
+        url: '/pathgen-social-thumbnail.png',
+        width: 1200,
+        height: 630,
+        alt: 'PathGen AI - Your AI Fortnite Coach',
+      }
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'PathGen AI - Your AI Fortnite Coach | Improve Building, Strategy & Win Rate',
     description: 'Get personalized Fortnite coaching with AI analysis. Improve your building, strategy, K/D ratio, and win rate.',
-    images: ['/Black PathGen logo.png'],
+    images: ['/pathgen-social-thumbnail.png'],
   },
 }
 
