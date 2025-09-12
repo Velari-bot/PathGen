@@ -214,7 +214,7 @@ export class CreditBackendService {
 
       const userRef = this.db.collection('users').doc(userId);
       
-      return await this.db.runTransaction(async (transaction) => {
+      return await this.db.runTransaction(async (transaction: any) => {
         const userDoc = await transaction.get(userRef);
         
         if (!userDoc.exists) {
@@ -315,7 +315,7 @@ export class CreditBackendService {
 
       const userRef = this.db.collection('users').doc(userId);
       
-      return await this.db.runTransaction(async (transaction) => {
+      return await this.db.runTransaction(async (transaction: any) => {
         const userDoc = await transaction.get(userRef);
         
         if (!userDoc.exists) {
@@ -466,7 +466,7 @@ export class CreditBackendService {
     try {
       const userRef = this.db.collection('users').doc(userId);
       
-      return await this.db.runTransaction(async (transaction) => {
+      return await this.db.runTransaction(async (transaction: any) => {
         const userDoc = await transaction.get(userRef);
         
         if (!userDoc.exists) {

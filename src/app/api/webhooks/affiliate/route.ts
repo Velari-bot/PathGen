@@ -264,7 +264,7 @@ async function processAffiliateCommission(params: {
     };
 
     // Use transaction to ensure data consistency
-    await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (transaction: any) => {
       // Create earning record
       const earningRef = db.collection('affiliate_earnings').doc();
       transaction.set(earningRef, earning);
