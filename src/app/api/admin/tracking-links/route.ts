@@ -165,7 +165,7 @@ export async function PUT(request: NextRequest) {
         .where('code', '==', code.toUpperCase())
         .get();
       
-      const conflictingLink = existingLink.docs.find(doc => doc.id !== id);
+      const conflictingLink = existingLink.docs.find((doc: any) => doc.id !== id);
       if (conflictingLink) {
         return NextResponse.json(
           { error: 'Code already exists' },
