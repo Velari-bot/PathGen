@@ -129,7 +129,7 @@ export default function TrackingDashboard() {
     );
   }
 
-  const totalStats = links.reduce((acc, link) => ({
+  const totalStats = links.reduce((acc: any, link: any) => ({
     clicks: acc.clicks + link.totalClicks,
     signups: acc.signups + link.totalSignups,
     paidSubs: acc.paidSubs + link.totalPaidSubscriptions,

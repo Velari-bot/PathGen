@@ -104,15 +104,15 @@ export async function GET(request: NextRequest) {
     const earningsBreakdown = {
       pending: {
         count: pendingEarnings.size,
-        amount: pendingEarnings.docs.reduce((sum, doc) => sum + (doc.data().amountEarned || 0), 0)
+        amount: pendingEarnings.docs.reduce((sum: number, doc: any) => sum + (doc.data().amountEarned || 0), 0)
       },
       approved: {
         count: approvedEarnings.size,
-        amount: approvedEarnings.docs.reduce((sum, doc) => sum + (doc.data().amountEarned || 0), 0)
+        amount: approvedEarnings.docs.reduce((sum: number, doc: any) => sum + (doc.data().amountEarned || 0), 0)
       },
       paid: {
         count: paidEarnings.size,
-        amount: paidEarnings.docs.reduce((sum, doc) => sum + (doc.data().amountEarned || 0), 0)
+        amount: paidEarnings.docs.reduce((sum: number, doc: any) => sum + (doc.data().amountEarned || 0), 0)
       }
     };
 

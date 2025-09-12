@@ -59,10 +59,10 @@ export async function GET(request: NextRequest) {
       links: linksWithStats,
       summary: {
         totalLinks: linksWithStats.length,
-        totalClicks: linksWithStats.reduce((sum, l) => sum + l.totalClicks, 0),
-        totalSignups: linksWithStats.reduce((sum, l) => sum + l.totalSignups, 0),
-        totalPaidSubs: linksWithStats.reduce((sum, l) => sum + l.totalPaidSubscriptions, 0),
-        totalRevenue: linksWithStats.reduce((sum, l) => sum + l.totalRevenue, 0)
+        totalClicks: linksWithStats.reduce((sum: number, l: any) => sum + l.totalClicks, 0),
+        totalSignups: linksWithStats.reduce((sum: number, l: any) => sum + l.totalSignups, 0),
+        totalPaidSubs: linksWithStats.reduce((sum: number, l: any) => sum + l.totalPaidSubscriptions, 0),
+        totalRevenue: linksWithStats.reduce((sum: number, l: any) => sum + l.totalRevenue, 0)
       }
     });
 
