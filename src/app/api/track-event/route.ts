@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       amount: amount || null,
       metadata: {
         userAgent: request.headers.get('user-agent') || 'unknown',
-        ipAddress: request.ip || 'unknown',
+        ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         referrer: request.headers.get('referer') || 'unknown',
         ...metadata
       },

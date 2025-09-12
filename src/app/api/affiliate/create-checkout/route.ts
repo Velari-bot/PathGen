@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
             referralCode: referralCode.toUpperCase(),
             timestamp: new Date(),
             userAgent: request.headers.get('user-agent') || 'unknown',
-            ipAddress: request.ip || 'unknown',
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
             source: 'checkout_creation'
           });
         }

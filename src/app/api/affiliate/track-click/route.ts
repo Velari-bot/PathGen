@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       referralCode: referralCode.toUpperCase(),
       timestamp: new Date(timestamp),
       userAgent: userAgent || 'unknown',
-      ipAddress: request.ip || 'unknown',
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
       page: page || '/',
       source: 'referral_link'
     });
