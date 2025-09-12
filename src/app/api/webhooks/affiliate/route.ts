@@ -83,7 +83,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         amountTotal: invoice.amount_paid, // Amount in cents
         currency: invoice.currency,
         customerEmail: session.customer_details?.email,
-        metadata: session.metadata
+        metadata: session.metadata || undefined
       });
     }
   } catch (error) {
