@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { POIService } from '@/lib/poi-data';
 import { POILocation, DropLocationStrategy } from '@/types';
+import PremiumOnly from '@/components/PremiumOnly';
 
 export default function POIAnalysisPage() {
   const [selectedStyle, setSelectedStyle] = useState<'aggressive' | 'passive' | 'balanced'>('balanced');
@@ -51,8 +52,14 @@ export default function POIAnalysisPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-dark">
-      <Navbar />
+    <PremiumOnly 
+      pageName="POI Analysis" 
+      description="Master drop locations with data-driven POI analysis, seasonal hotspots, loot tier rankings, and strategic landing zone recommendations."
+      showNavbar={false}
+      showFooter={false}
+    >
+      <div className="min-h-screen bg-gradient-dark">
+        <Navbar />
       
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-7xl mx-auto">
@@ -266,5 +273,6 @@ export default function POIAnalysisPage() {
         </div>
       </div>
     </div>
+    </PremiumOnly>
   );
 }

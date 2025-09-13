@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Image from 'next/image';
+import PremiumOnly from '@/components/PremiumOnly';
 
 interface POILocation {
   id: string;
@@ -695,8 +696,14 @@ export default function MapPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black">
-      <Navbar />
+    <PremiumOnly 
+      pageName="Interactive Map" 
+      description="Explore an interactive Fortnite map with POI analysis, competitive overlays, zone predictions, and strategic tools for optimal rotations."
+      showNavbar={false}
+      showFooter={false}
+    >
+      <div className="min-h-screen bg-black">
+        <Navbar />
       
       <div className="pt-24 container mx-auto px-4 py-8">
         {/* Header */}
@@ -1407,5 +1414,6 @@ export default function MapPage() {
 
       <Footer />
     </div>
+    </PremiumOnly>
   );
 }

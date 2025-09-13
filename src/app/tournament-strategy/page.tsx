@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PremiumOnly from '@/components/PremiumOnly';
 
 export default function TournamentStrategyPage() {
   const [selectedMode, setSelectedMode] = useState<'solo' | 'duos' | 'both'>('both');
@@ -75,8 +76,14 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
   });
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex flex-col">
-      <Navbar />
+    <PremiumOnly 
+      pageName="Tournament Strategies" 
+      description="Master competitive Fortnite with proven C6S4 strategies, loadout guides, and pro-level tactics for Solo Series and Duos Trials."
+      showNavbar={false}
+      showFooter={false}
+    >
+      <div className="min-h-screen bg-gradient-dark flex flex-col">
+        <Navbar />
       
       <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
@@ -205,5 +212,6 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
 
       <Footer />
     </div>
+    </PremiumOnly>
   );
 }

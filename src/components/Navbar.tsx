@@ -4,11 +4,44 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 
 export default function Navbar() {
   const { user, logout, loading } = useAuth();
+  const { subscription } = useSubscription();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Check if user has pro subscription
+  const hasPro = subscription?.tier === 'pro' || subscription?.status === 'pro';
+  
+  // Premium navigation link component
+  const PremiumLink = ({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) => (
+    <div className="relative group">
+      <Link href={href} className={`${className} ${!hasPro ? 'opacity-60' : ''}`}>
+        {children}
+      </Link>
+      {!hasPro && (
+        <span className="absolute -top-1 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+          PRO
+        </span>
+      )}
+    </div>
+  );
+  
+  // Mobile premium navigation link component
+  const MobilePremiumLink = ({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) => (
+    <div className="relative">
+      <Link href={href} className={`${className} ${!hasPro ? 'opacity-60' : ''} flex items-center justify-between`}>
+        <span>{children}</span>
+        {!hasPro && (
+          <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full">
+            PRO
+          </span>
+        )}
+      </Link>
+    </div>
+  );
 
   const handleLogout = async () => {
     try {
@@ -69,24 +102,29 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-8">
             {user ? (
               <>
-                <Link href="/dashboard" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <PremiumLink href="/dashboard" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Dashboard
-                </Link>
+                </PremiumLink>
                 <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
-                  AI Coach
+                  <span className="flex items-center">
+                    AI Coach
+                    <span className="ml-1.5 bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                      FREE
+                    </span>
+                  </span>
                 </Link>
-                <Link href="/tournaments" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <PremiumLink href="/tournaments" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Tournaments
-                </Link>
-                <Link href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
+                </PremiumLink>
+                <PremiumLink href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Strategies
-                </Link>
+                </PremiumLink>
                 <Link href="/pricing" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Pricing
                 </Link>
-                <Link href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
+                <PremiumLink href="/settings" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Settings
-                </Link>
+                </PremiumLink>
                 
                 <button
                   onClick={handleLogout}
@@ -138,24 +176,27 @@ export default function Navbar() {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-dark-gray/90 backdrop-blur-md border-t border-white/10">
               {user ? (
                 <>
-                  <Link href="/dashboard" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                  <MobilePremiumLink href="/dashboard" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Dashboard
+                  </MobilePremiumLink>
+                  <Link href="/ai" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base flex items-center justify-between">
+                    <span>AI Coach</span>
+                    <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      FREE
+                    </span>
                   </Link>
-                  <Link href="/ai" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
-                    AI Coach
-                  </Link>
-                  <Link href="/tournaments" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                  <MobilePremiumLink href="/tournaments" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Tournaments
-                  </Link>
-                  <Link href="/tournament-strategy" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                  </MobilePremiumLink>
+                  <MobilePremiumLink href="/tournament-strategy" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Strategies
-                  </Link>
+                  </MobilePremiumLink>
                   <Link href="/pricing" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Pricing
                   </Link>
-                  <Link href="/settings" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                  <MobilePremiumLink href="/settings" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Settings
-                  </Link>
+                  </MobilePremiumLink>
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base"

@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import SmoothScroll from '@/components/SmoothScroll';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import PremiumOnly from '@/components/PremiumOnly';
 
 export default function SettingsPage() {
   const { user, loading } = useAuth();
@@ -139,9 +140,15 @@ export default function SettingsPage() {
   }
 
   return (
-    <SmoothScroll>
-      <div className="min-h-screen bg-gradient-dark">
-        <Navbar />
+    <PremiumOnly 
+      pageName="Settings" 
+      description="Manage your account preferences, Epic Games integration, notification settings, and personalize your PathGen AI experience."
+      showNavbar={false}
+      showFooter={false}
+    >
+      <SmoothScroll>
+        <div className="min-h-screen bg-gradient-dark">
+          <Navbar />
         
         {/* Main Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-20">
@@ -324,5 +331,6 @@ export default function SettingsPage() {
         </div>
       </div>
     </SmoothScroll>
+    </PremiumOnly>
   );
 }

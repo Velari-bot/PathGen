@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PremiumOnly from '@/components/PremiumOnly';
 
 interface TournamentWeek {
   id: string;
@@ -202,8 +203,14 @@ export default function TournamentsPage() {
   const { averageNeeded, scenarios } = calculateScenarios();
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex flex-col">
-      <Navbar />
+    <PremiumOnly 
+      pageName="Tournament Hub" 
+      description="Track your competitive performance, calculate optimal strategies, and master tournament gameplay with real C6S4 data and AI-powered insights."
+      showNavbar={false}
+      showFooter={false}
+    >
+      <div className="min-h-screen bg-gradient-dark flex flex-col">
+        <Navbar />
       
       <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {/* Header */}
@@ -496,5 +503,6 @@ export default function TournamentsPage() {
 
       <Footer />
     </div>
+    </PremiumOnly>
   );
 }

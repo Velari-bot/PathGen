@@ -14,6 +14,7 @@ import GamifiedProgressTracker from '@/components/GamifiedProgressTracker';
 
 import { FullCreditDisplay } from '@/components/CreditDisplay';
 import { useCreditTracking } from '@/hooks/useCreditTracking';
+import PremiumOnly from '@/components/PremiumOnly';
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
@@ -1036,9 +1037,15 @@ export default function DashboardPage() {
   }
 
   return (
-    <EmailVerificationGuard>
-      <div className="min-h-screen bg-gradient-dark mobile-container">
-        <Navbar />
+    <PremiumOnly 
+      pageName="Dashboard" 
+      description="Access your personal Fortnite improvement center with stats tracking, Epic account linking, performance analytics, and detailed progress insights."
+      showNavbar={false}
+      showFooter={false}
+    >
+      <EmailVerificationGuard>
+        <div className="min-h-screen bg-gradient-dark mobile-container">
+          <Navbar />
       
 
       
@@ -1621,5 +1628,6 @@ export default function DashboardPage() {
        />
      </div>
    </EmailVerificationGuard>
+   </PremiumOnly>
  );
  }
