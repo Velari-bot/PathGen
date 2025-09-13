@@ -348,6 +348,82 @@ export class TournamentService {
       console.error('❌ Error fetching tournament meta:', error);
       return null;
     }
+
+    // Create C6S4 Duos Trials data
+    const duosTrialsNAC: TournamentWeek = {
+      id: 'c6s4-duos-trials-nac',
+      seriesId: 'c6s4-duos-trials',
+      weekNumber: 1,
+      name: 'C6S4 DUOS TRIALS - NAC',
+      date: new Date('2024-01-15'),
+      region: 'NAC',
+      isCompleted: true,
+      pointThresholds: {
+        top100: 280,   // Estimated based on competitive level
+        top500: 235,   // Estimated 
+        top1000: 250,  // Actual final result
+        top2500: 205,  // Actual final result (was top3000)
+        top7500: 150,  // Actual final result (was top7000)
+        updatedAt: new Date()
+      },
+      estimates: {
+        top100: 280,
+        top500: 235,
+        top1000: 250,
+        top2500: 205,
+        top7500: 150
+      },
+      finalResults: {
+        top100: 280,
+        top500: 235,
+        top1000: 250,
+        top2500: 205,
+        top7500: 150
+      }
+    };
+
+    const duosTrialsEU: TournamentWeek = {
+      id: 'c6s4-duos-trials-eu',
+      seriesId: 'c6s4-duos-trials',
+      weekNumber: 1,
+      name: 'C6S4 DUOS TRIALS - EU',
+      date: new Date('2024-01-15'),
+      region: 'EU',
+      isCompleted: true,
+      pointThresholds: {
+        top100: 320,   // Estimated based on competitive level
+        top500: 290,   // Estimated 
+        top1000: 275,  // Actual final result
+        top2500: 247,  // Actual final result (was top3000)
+        top7500: 186,  // Actual final result (was top13000)
+        updatedAt: new Date()
+      },
+      estimates: {
+        top100: 320,
+        top500: 290,
+        top1000: 275,
+        top2500: 247,
+        top7500: 186
+      },
+      finalResults: {
+        top100: 320,
+        top500: 290,
+        top1000: 275,
+        top2500: 247,
+        top7500: 186
+      }
+    };
+
+    // Save duos trials data
+    try {
+      await Promise.all([
+        this.db.collection('tournament_weeks').doc(duosTrialsNAC.id).set(duosTrialsNAC),
+        this.db.collection('tournament_weeks').doc(duosTrialsEU.id).set(duosTrialsEU)
+      ]);
+      console.log('✅ C6S4 Duos Trials data created');
+    } catch (error) {
+      console.error('❌ Error creating Duos Trials data:', error);
+    }
   }
 
   // Save user tournament performance

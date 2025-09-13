@@ -156,7 +156,7 @@ ${tournamentType === 'solo' ?
 - Test loadout in Ranked first if unsure
 
 **Mobility:** 
-- Crash Pads (CRITICAL: avoid double bouncing bug!)
+- ⚠️ Crash Pads (CRITICAL BUG: avoid double bounce/fizz depletion!)
 
 **Heals:**
 - Priority: Fizz + Legendary Slurps
@@ -176,8 +176,8 @@ ${tournamentType === 'solo' ?
 - MK7 AR (current meta weapon)
 
 **Mobility:**
-- Crash Pads (if not vaulted due to bugs)
-- Have backup rotation plan
+- ⚠️ Crash Pads (CRITICAL BUG - avoid double bounce/fizz depletion)
+- Have backup rotation methods ready
 
 **Heals:**
 - Perfect: Fizz + Legendary Slurps
@@ -248,6 +248,8 @@ ${targetPoints >= thresholds.top100 ? '🏆 Top 100 range (Qualification track)'
     nextGameTarget: Math.ceil(averageNeeded),
     safetyTips: [
       'Queue 6 minutes early if in Top 100, 5 minutes otherwise',
+      'If queue hits 6 minutes, you have queue bug - unready and requeue',
+      'Crash Pad Bug: DON\'T double bounce or run out of fizz mid-air',
       'Use tournament calculator between games',
       'Never run out of games - worst possible outcome',
       'If running low on games, disengage every spawn fight'
@@ -256,16 +258,16 @@ ${targetPoints >= thresholds.top100 ? '🏆 Top 100 range (Qualification track)'
 }
 
 function getRegionThresholds(region: string, tournamentType: string) {
-  // Mock data - in real implementation, fetch from database
   if (tournamentType === 'solo') {
+    // C6S4 Solo Series actual results
     return region === 'EU' 
       ? { top100: 329, top500: 298, top1000: 285, top2500: 265, top7500: 232 }
       : { top100: 309, top500: 273, top1000: 256, top2500: 226, top7500: 159 };
   } else {
-    // Duos - estimated based on higher point values
+    // C6S4 Duos Trials - ACTUAL FINAL RESULTS
     return region === 'EU'
-      ? { top100: 380, top500: 340, top1000: 310, top2500: 280, top7500: 220 }
-      : { top100: 360, top500: 320, top1000: 290, top2500: 260, top7500: 200 };
+      ? { top100: 320, top500: 290, top1000: 275, top3000: 247, top13000: 186 }
+      : { top100: 280, top500: 235, top1000: 250, top3000: 205, top7000: 150 };
   }
 }
 

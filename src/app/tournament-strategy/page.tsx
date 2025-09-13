@@ -36,16 +36,49 @@ Most players who aim for consistent placements will do better than those who try
       category: 'safety',
       mode: 'both',
       difficulty: 'beginner',
-      content: `⚠️ CRITICAL: There's a crash pad bug causing fall damage deaths. Many players are dying from this bug.
+      content: `⚠️ CRITICAL: Crash pad bug is still in the game and causing tournament-ending deaths. We aren't sure exactly what causes it, but all clips we have seen are when you double bounce or run out of fizz during the pad.
 
-The bug happens when you double bounce or run out of fizz during the pad.`,
+The crash pad might get vaulted today, but if it's still in the game, follow these rules to avoid the bug that has cost many players their tournaments.
+
+ALL DEATHS appear to be due to one of these two situations: double bouncing with crash pads OR running out of fizz mid-air during pad usage.`,
       tips: [
         'DON\'T double bounce with 2 crash pads',
         'NO bunny hopping when landing from pad if going downhill',
-        'DON\'T run out of fizz in the air',
-        'Fizz just BEFORE you pad, not during'
+        'DON\'T run out of fizz in the air - this is deadly',
+        'Fizz just BEFORE you pad, not during the pad usage',
+        'Be extra careful with crash pad rotations in tournaments',
+        'Consider alternative rotation methods if unsure'
       ],
       effectiveness: { placement: 10, consistency: 10, skillRequired: 3 }
+    },
+    {
+      id: 'duos-trials-results',
+      title: 'C6S4 Duos Trials - Final Results & Analysis',
+      category: 'results',
+      mode: 'duos',
+      difficulty: 'intermediate',
+      content: `Final results from the first C6S4 Duos Trial are now in. These are the ACTUAL thresholds that players achieved.
+
+**NAC Results:**
+- Top 1000: 250 points (Example: 3 Top 5s + 6 elims, 2 Top 10s + 4 elims, 2 Top 20s + 2 elims)
+- Top 3000: 205 points  
+- Top 7000: 150 points
+
+**EU Results (Higher competition):**
+- Top 1000: 275 points (Example: 1 Win + 8 elims, 2 Top 5s + 6 elims, 2 Top 10s + 4 elims, 2 Top 20s + 2 elims)
+- Top 3000: 247 points
+- Top 13000: 186 points
+
+Queue bug was still happening - if you ever get to 6 minutes, you definitely have queue bug and should unready/ready again.`,
+      tips: [
+        'Use 6 minute queue time if you\'re Top 100, 5 minutes for everyone else',
+        'If queue hits 6 minutes, you have queue bug - unready and requeue',
+        'EU is more competitive than NAC by about 25 points',
+        'Division targeting: Top 1K for Div 2, Top 3K for Div 3, Top 7K/13K for Div 4',
+        'Save games for clutch moments - many players saved games and pushed at the end',
+        'Max placement strategy recommended if you\'re near division cutoffs'
+      ],
+      effectiveness: { placement: 8, consistency: 9, skillRequired: 6 }
     },
     {
       id: 'duos-division-strategy',
@@ -141,20 +174,36 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
             </div>
             
             <div className="bg-white/5 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-primary-text mb-3">C6S4 Duos Trials</h3>
+              <h3 className="text-lg font-semibold text-primary-text mb-3">C6S4 Duos Trials - Final Results</h3>
               <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
+                <div className="flex justify-between">
                   <span className="text-secondary-text">Win Points:</span>
                   <span className="text-accent">65 points</span>
-                      </div>
-                        <div className="flex justify-between">
+                </div>
+                <div className="flex justify-between">
                   <span className="text-secondary-text">Elim Points:</span>
                   <span className="text-accent">1 point</span>
-                        </div>
-                        <div className="flex justify-between">
+                </div>
+                <div className="flex justify-between">
                   <span className="text-secondary-text">Region Lock:</span>
                   <span className="text-red-400">Yes (unlike Solos)</span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <div className="text-xs text-yellow-400 font-semibold mb-2">NAC Final Thresholds:</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <span>Top 1K: <span className="text-accent">250 pts</span></span>
+                    <span>Top 3K: <span className="text-accent">205 pts</span></span>
+                    <span>Top 7K: <span className="text-accent">150 pts</span></span>
                   </div>
+                </div>
+                <div className="mt-2">
+                  <div className="text-xs text-blue-400 font-semibold mb-2">EU Final Thresholds:</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <span>Top 1K: <span className="text-accent">275 pts</span></span>
+                    <span>Top 3K: <span className="text-accent">247 pts</span></span>
+                    <span>Top 13K: <span className="text-accent">186 pts</span></span>
+                  </div>
+                </div>
               </div>
             </div>
             </div>
