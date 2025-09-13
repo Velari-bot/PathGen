@@ -174,10 +174,6 @@ export default function PricingPage() {
 
           {/* Pro Tier */}
           <div className="glass-card p-8 text-center relative border-2 border-white/30 bg-gradient-to-br from-white/5 to-white/10">
-            {/* Popular Badge */}
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-500 text-dark-charcoal px-6 py-2 rounded-full font-bold text-sm shadow-lg">
-              ⭐ MOST POPULAR
-            </div>
             
             <h3 className="text-3xl font-bold text-primary-text mb-4">Pro Plan</h3>
             <div className="mb-8">

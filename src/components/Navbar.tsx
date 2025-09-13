@@ -108,7 +108,7 @@ export default function Navbar() {
                 <Link href="/ai" className="text-secondary-text hover:text-white transition-colors duration-300">
                   <span className="flex items-center">
                     AI Coach
-                    <span className="ml-1.5 bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
+                    <span className="ml-1.5 bg-white text-black text-xs font-bold px-1.5 py-0.5 rounded-full">
                       FREE
                     </span>
                   </span>
@@ -181,7 +181,7 @@ export default function Navbar() {
                   </MobilePremiumLink>
                   <Link href="/ai" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base flex items-center justify-between">
                     <span>AI Coach</span>
-                    <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    <span className="bg-white text-black text-xs font-bold px-2 py-1 rounded-full">
                       FREE
                     </span>
                   </Link>
