@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const { 
       userId, 
-      tournamentType, // 'solo' | 'duos'
+      tournamentType, // 'solo' | 'duos' | 'duos_division_cups'
       region, // 'NAC' | 'EU'
       currentPoints = 0,
       gamesRemaining = 10,
@@ -57,7 +57,7 @@ async function generateTournamentCoaching({
   userStats
 }: {
   userId: string;
-  tournamentType: 'solo' | 'duos';
+  tournamentType: 'solo' | 'duos' | 'duos_division_cups';
   region: 'NAC' | 'EU';
   currentPoints: number;
   gamesRemaining: number;
@@ -218,10 +218,28 @@ ${avgEliminations < 2 ?
   // Regional context
   const regionalContext = `🌍 **${region} TOURNAMENT CONTEXT**
 
+${tournamentType === 'duos_division_cups' ? `
+**Current DIVISION CUPS thresholds (${region}):**
+- Div 1: ${(thresholds as any).div1} points (Day 1 qual)
+- Div 2: ${(thresholds as any).div2} points
+- Div 3: ${(thresholds as any).div3} points
+- Div 4: ${(thresholds as any).div4} points (Hardest)
+- Div 5: ${(thresholds as any).div5} points (Most accessible)
+
+${region === 'EU' ? 
+  'EU is consistently 15-60 points higher per division than NAC.' :
+  'NAC generally 15-60 points lower than EU but still competitive.'
+}
+
+**Division Difficulty Analysis:**
+- Div 4 requires most aggressive play (400+ EU / 350+ NAC)
+- Div 1 is cumulative format (conservative Day 1, aggressive Day 2)
+- Div 5 most forgiving for learning the format
+` : `
 **Current ${tournamentType.toUpperCase()} thresholds:**
-- Top 100: ${thresholds.top100} points
-- Top 500: ${thresholds.top500} points  
-- Top 1000: ${thresholds.top1000} points
+- Top 100: ${(thresholds as any).top100} points
+- Top 500: ${(thresholds as any).top500} points  
+- Top 1000: ${(thresholds as any).top1000} points
 
 ${region === 'EU' ? 
   'EU typically has higher point requirements due to larger player base and increased competition.' :
@@ -229,11 +247,11 @@ ${region === 'EU' ?
 }
 
 **Your Target (${targetPoints} pts) puts you in:**
-${targetPoints >= thresholds.top100 ? '🏆 Top 100 range (Qualification track)' :
-  targetPoints >= thresholds.top500 ? '🥇 Top 500 range (Excellent placement)' :
-  targetPoints >= thresholds.top1000 ? '🥈 Top 1000 range (Strong showing)' :
+${targetPoints >= (thresholds as any).top100 ? '🏆 Top 100 range (Qualification track)' :
+  targetPoints >= (thresholds as any).top500 ? '🥇 Top 500 range (Excellent placement)' :
+  targetPoints >= (thresholds as any).top1000 ? '🥈 Top 1000 range (Strong showing)' :
   '🥉 Solid placement range'
-}`;
+}`}`;
 
   return {
     strategy,
@@ -251,6 +269,10 @@ ${targetPoints >= thresholds.top100 ? '🏆 Top 100 range (Qualification track)'
       'If queue hits 6 minutes, you have queue bug - unready and requeue',
       'Launch Pads are safer than crash pads (which are vaulted)',
       'Start 1 minute late in Division Cups to avoid early keying',
+      'Division Cups: 2min queue for Div 2-4, 6min for Div 1 & 5',
+      'EU is 15-60 points harder per division than NAC',
+      'Div 4 hardest (400+ points), Div 5 most accessible (300 points)',
+      'Storm changes may happen but usually get reverted quickly',
       'Use tournament calculator between games',
       'Never run out of games - worst possible outcome',
       'If running low on games, disengage every spawn fight'
@@ -264,6 +286,11 @@ function getRegionThresholds(region: string, tournamentType: string) {
     return region === 'EU' 
       ? { top100: 329, top500: 298, top1000: 285, top2500: 265, top7500: 232 }
       : { top100: 309, top500: 273, top1000: 256, top2500: 226, top7500: 159 };
+  } else if (tournamentType === 'duos_division_cups') {
+    // C6S4 Division Cups #1 - LIVE RESULTS
+    return region === 'EU'
+      ? { div1: 280, div2: 335, div3: 345, div4: 410, div5: 335 }
+      : { div1: 270, div2: 320, div3: 335, div4: 350, div5: 295 };
   } else {
     // C6S4 Duos Trials - ACTUAL FINAL RESULTS
     return region === 'EU'

@@ -137,6 +137,42 @@ Queue bug was still happening - if you ever get to 6 minutes, you definitely hav
       effectiveness: { placement: 9, consistency: 8, skillRequired: 7 }
     },
     {
+      id: 'division-cups-cup1-analysis',
+      title: 'Division Cups #1 - LIVE Analysis & Strategies',
+      category: 'results',
+      mode: 'duos',
+      difficulty: 'advanced',
+      content: `🔥 **DIVISION CUPS #1 RESULTS ANALYSIS**
+
+**Key Insights from First Cup:**
+- EU consistently 15-60 points higher than NAC per division
+- Div 4 had highest qualification requirements (410 EU / 350 NAC)
+- Storm changes caused brief chaos but were reverted for comp
+- No significant queue bugs reported
+
+**Division Point Patterns:**
+- Div 1: Cumulative format, 280 EU / 270 NAC for Day 1 qual
+- Div 2-3: Similar difficulty (335-345 EU / 320-335 NAC) 
+- Div 4: Hardest single division (410 EU / 350 NAC)
+- Div 5: Most accessible (335 EU / 295 NAC)
+
+**Strategy Adjustments Based on Results:**
+- Div 4 players: Expect 400+ points needed, aggressive early games
+- Div 1: Conservative Day 1, save energy for cumulative Day 2
+- Div 2-3: Standard placement with 6-8 elim games for safety
+- Div 5: Focus on consistency, avoid high-risk plays`,
+      tips: [
+        'EU is 15-60 points harder per division - adjust expectations',
+        'Div 4 requires most aggressive playstyle (400+ points)',
+        'Storm changes can happen - but usually reverted quickly',
+        'No region lock means you can division shop strategically',
+        'Day 1 Div 1 qual around 270-280, plan Day 2 accordingly',
+        'Div 5 most forgiving - perfect for learning division format',
+        'Queue times: 2min safe most divs, 6min for Div 1 & 5'
+      ],
+      effectiveness: { placement: 9, consistency: 9, skillRequired: 8 }
+    },
+    {
       id: 'duos-division-strategy',
       title: 'Duos Division Targeting',
       category: 'general',
@@ -172,7 +208,7 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
       showFooter={false}
     >
       <div className="min-h-screen bg-gradient-dark flex flex-col">
-        <Navbar />
+      <Navbar />
       
       <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
@@ -242,14 +278,14 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
                     <div>Top 3K: <span className="text-accent">204 pts</span></div>
                     <div>Top 7K: <span className="text-accent">140 pts</span></div>
                   </div>
-                  <div>
+            <div>
                     <div className="text-blue-400 font-medium">EU:</div>
                     <div>Top 1K: <span className="text-accent">275 pts</span></div>
                     <div>Top 3K: <span className="text-accent">247 pts</span></div>
                     <div>Top 13K: <span className="text-accent">186 pts</span></div>
                   </div>
                 </div>
-              </div>
+          </div>
 
               {/* Console Cash Cup */}
               <div className="mb-4 pt-3 border-t border-white/10">
@@ -262,7 +298,7 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
                     <div>Top 1K: <span className="text-accent">210 pts</span></div>
                     <div>Top 2.5K: <span className="text-accent">176 pts</span></div>
                   </div>
-                  <div>
+                <div>
                     <div className="text-blue-400 font-medium">EU:</div>
                     <div>Top 100: <span className="text-accent">278 pts</span></div>
                     <div>Top 500: <span className="text-accent">250 pts</span></div>
@@ -275,7 +311,32 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
 
               {/* Division Cups Info */}
               <div className="pt-3 border-t border-white/10">
-                <h4 className="text-sm font-semibold text-purple-400 mb-2">⚔️ Duo Division Cups (NEW)</h4>
+                <h4 className="text-sm font-semibold text-purple-400 mb-2">⚔️ Duo Division Cups (LIVE DATA)</h4>
+                
+                {/* Cup #1 Results */}
+                <div className="mb-3">
+                  <h5 className="text-xs font-semibold text-yellow-400 mb-1">🏆 Cup #1 Final Results</h5>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <div className="text-yellow-400 font-medium mb-1">NAC:</div>
+                      <div>Div 1: <span className="text-accent">~270 pts</span></div>
+                      <div>Div 2: <span className="text-accent">320 pts</span></div>
+                      <div>Div 3: <span className="text-accent">335 pts</span></div>
+                      <div>Div 4: <span className="text-accent">350 pts</span></div>
+                      <div>Div 5: <span className="text-accent">295 pts</span></div>
+                    </div>
+                    <div>
+                      <div className="text-blue-400 font-medium mb-1">EU:</div>
+                      <div>Div 1: <span className="text-accent">280 pts</span></div>
+                      <div>Div 2: <span className="text-accent">335 pts</span></div>
+                      <div>Div 3: <span className="text-accent">345 pts</span></div>
+                      <div>Div 4: <span className="text-accent">410 pts</span></div>
+                      <div>Div 5: <span className="text-accent">335 pts</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rules Summary */}
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
                     <span className="text-secondary-text">Win Points:</span>
@@ -284,20 +345,20 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
                   <div className="flex justify-between">
                     <span className="text-secondary-text">Elim Points:</span>
                     <span className="text-accent">Div 1: 3pts | Div 2-5: 2pts</span>
-                  </div>
+                    </div>
                   <div className="flex justify-between">
                     <span className="text-secondary-text">Region Lock:</span>
                     <span className="text-green-400">None (can play any region)</span>
-                  </div>
+                    </div>
                   <div className="flex justify-between">
-                    <span className="text-secondary-text">Crash Pads:</span>
-                    <span className="text-red-400">VAULTED (use Launch Pads)</span>
+                    <span className="text-secondary-text">Storm Changes:</span>
+                    <span className="text-green-400">Reverted for comp (normal zones)</span>
                   </div>
                 </div>
               </div>
-            </div>
-            </div>
-          </div>
+                    </div>
+                </div>
+              </div>
 
         {/* Strategy Cards */}
               <div className="space-y-6">
