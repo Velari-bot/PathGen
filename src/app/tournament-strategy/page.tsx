@@ -31,25 +31,33 @@ Most players who aim for consistent placements will do better than those who try
       effectiveness: { placement: 9, consistency: 9, skillRequired: 5 }
     },
     {
-      id: 'crash-pad-safety',
-      title: 'Crash Pad Bug Prevention (CRITICAL)',
+      id: 'crash-pad-vaulted-update',
+      title: 'Crash Pads VAULTED - Launch Pad Meta',
       category: 'safety',
-      mode: 'both',
+      mode: 'duos',
       difficulty: 'beginner',
-      content: `⚠️ CRITICAL: Crash pad bug is still in the game and causing tournament-ending deaths. We aren't sure exactly what causes it, but all clips we have seen are when you double bounce or run out of fizz during the pad.
+      content: `✅ UPDATE: Crash pads have been VAULTED due to the game-ending bug! This is actually good news - no more risk of crash pad deaths.
 
-The crash pad might get vaulted today, but if it's still in the game, follow these rules to avoid the bug that has cost many players their tournaments.
+**NEW MOBILITY META:**
+- Launch Pads are now the primary mobility item
+- Much safer than crash pads (no bug risk)
+- Best used in zones 6-8 for optimal rotations
+- Both players should prioritize Fizz now that crash pads are gone
 
-ALL DEATHS appear to be due to one of these two situations: double bouncing with crash pads OR running out of fizz mid-air during pad usage.`,
+**Division Cup Specific:**
+- Launch Pads for 1 player minimum
+- Fizz is CRITICAL for both players
+- Legendary Slurps are essential heals
+- Plan rotations around Launch Pad timing`,
       tips: [
-        'DON\'T double bounce with 2 crash pads',
-        'NO bunny hopping when landing from pad if going downhill',
-        'DON\'T run out of fizz in the air - this is deadly',
-        'Fizz just BEFORE you pad, not during the pad usage',
-        'Be extra careful with crash pad rotations in tournaments',
-        'Consider alternative rotation methods if unsure'
+        'Launch Pads are now primary mobility (crash pads vaulted)',
+        'Use Launch Pads in zones 6-8 for best value',
+        'Fizz is critical for both players now',
+        'Legendary Slurps + Fizz = perfect heal combo',
+        'Plan your rotations around Launch Pad availability',
+        'Much safer mobility meta without crash pad bug risk'
       ],
-      effectiveness: { placement: 10, consistency: 10, skillRequired: 3 }
+      effectiveness: { placement: 9, consistency: 10, skillRequired: 4 }
     },
     {
       id: 'duos-trials-results',
@@ -79,6 +87,43 @@ Queue bug was still happening - if you ever get to 6 minutes, you definitely hav
         'Max placement strategy recommended if you\'re near division cutoffs'
       ],
       effectiveness: { placement: 8, consistency: 9, skillRequired: 6 }
+    },
+    {
+      id: 'division-cups-strategy',
+      title: 'C6S4 Duo Division Cups - Complete Guide',
+      category: 'general',
+      mode: 'duos',
+      difficulty: 'intermediate',
+      content: `🏆 **DIVISION CUPS - NEW FORMAT**
+
+**Key Rules:**
+- NO region lock (can play any region you didn't play trials for)
+- NO points-based matchmaking except lowest division
+- Div 1: Must play both days with same teammate (like Trios)
+- Divs 2-5: Two separate tournaments, can change teammates
+
+**Division Difficulty Comparison (vs Trio Divs):**
+- Div 1 = Top half of Trio Div 1
+- Div 2 = Bottom Trio Div 1 + Top half Trio Div 2  
+- Div 3 = Bottom half of Trio Div 2
+- Div 4 = Top 7K of Trio Div 3
+- Div 5 = Everyone else in Trio Div 3
+
+**Point System:**
+- Win: 65 points (all divisions)
+- Eliminations: Div 1 = 3pts, Div 2-5 = 2pts
+- Points start at Top 25`,
+      tips: [
+        'Start 1 minute late (avoid early keying)',
+        'Choose high-rated drop spots from division data',
+        '99% of time: play placement over keying',
+        'Look for 200-300 damage in early zones, then focus endgame',
+        'Most games won\'t have surge until zones 4-8',
+        'Use Launch Pads in zones 6-8 for optimal rotations',
+        'Fizz + Legendary Slurps priority for both players',
+        'Can drop divisions and return to higher any time'
+      ],
+      effectiveness: { placement: 9, consistency: 8, skillRequired: 7 }
     },
     {
       id: 'duos-division-strategy',
@@ -174,34 +219,68 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
             </div>
             
             <div className="bg-white/5 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-primary-text mb-3">C6S4 Duos Trials - Final Results</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-secondary-text">Win Points:</span>
-                  <span className="text-accent">65 points</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-secondary-text">Elim Points:</span>
-                  <span className="text-accent">1 point</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-secondary-text">Region Lock:</span>
-                  <span className="text-red-400">Yes (unlike Solos)</span>
-                </div>
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  <div className="text-xs text-yellow-400 font-semibold mb-2">NAC Final Thresholds:</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <span>Top 1K: <span className="text-accent">250 pts</span></span>
-                    <span>Top 3K: <span className="text-accent">205 pts</span></span>
-                    <span>Top 7K: <span className="text-accent">150 pts</span></span>
+              <h3 className="text-lg font-semibold text-primary-text mb-3">C6S4 Duos Competitions</h3>
+              
+              {/* Trials Results */}
+              <div className="mb-4">
+                <h4 className="text-sm font-semibold text-yellow-400 mb-2">🏆 Duos Trials (Final Results)</h4>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <div className="text-yellow-400 font-medium">NAC:</div>
+                    <div>Top 1K: <span className="text-accent">243 pts</span></div>
+                    <div>Top 3K: <span className="text-accent">204 pts</span></div>
+                    <div>Top 7K: <span className="text-accent">140 pts</span></div>
+                  </div>
+                  <div>
+                    <div className="text-blue-400 font-medium">EU:</div>
+                    <div>Top 1K: <span className="text-accent">275 pts</span></div>
+                    <div>Top 3K: <span className="text-accent">247 pts</span></div>
+                    <div>Top 13K: <span className="text-accent">186 pts</span></div>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <div className="text-xs text-blue-400 font-semibold mb-2">EU Final Thresholds:</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <span>Top 1K: <span className="text-accent">275 pts</span></span>
-                    <span>Top 3K: <span className="text-accent">247 pts</span></span>
-                    <span>Top 13K: <span className="text-accent">186 pts</span></span>
+              </div>
+
+              {/* Console Cash Cup */}
+              <div className="mb-4 pt-3 border-t border-white/10">
+                <h4 className="text-sm font-semibold text-green-400 mb-2">🎮 Console Cash Cup #4 (Final)</h4>
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <div className="text-yellow-400 font-medium">NAC:</div>
+                    <div>Top 100: <span className="text-accent">267 pts</span></div>
+                    <div>Top 500: <span className="text-accent">231 pts</span></div>
+                    <div>Top 1K: <span className="text-accent">210 pts</span></div>
+                    <div>Top 2.5K: <span className="text-accent">176 pts</span></div>
+                  </div>
+                  <div>
+                    <div className="text-blue-400 font-medium">EU:</div>
+                    <div>Top 100: <span className="text-accent">278 pts</span></div>
+                    <div>Top 500: <span className="text-accent">250 pts</span></div>
+                    <div>Top 1K: <span className="text-accent">233 pts</span></div>
+                    <div>Top 2.5K: <span className="text-accent">206 pts</span></div>
+                    <div>Top 7.5K: <span className="text-accent">164 pts</span></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Division Cups Info */}
+              <div className="pt-3 border-t border-white/10">
+                <h4 className="text-sm font-semibold text-purple-400 mb-2">⚔️ Duo Division Cups (NEW)</h4>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-secondary-text">Win Points:</span>
+                    <span className="text-accent">65 points</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary-text">Elim Points:</span>
+                    <span className="text-accent">Div 1: 3pts | Div 2-5: 2pts</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary-text">Region Lock:</span>
+                    <span className="text-green-400">None (can play any region)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-secondary-text">Crash Pads:</span>
+                    <span className="text-red-400">VAULTED (use Launch Pads)</span>
                   </div>
                 </div>
               </div>
