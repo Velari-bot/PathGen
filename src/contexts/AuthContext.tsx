@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Firestore } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { trackSignup } from '@/components/TwitterPixel';
 
 interface User extends FirebaseUser {
   epicId?: string;
@@ -269,6 +270,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.warn('⚠️ Could not track signup event:', error);
       }
+
+      // Track signup for Twitter/X advertising
+      try {
+        trackSignup(email);
+        console.log('🐦 Signup tracked for Twitter/X campaigns');
+      } catch (error) {
+        console.warn('⚠️ Could not track Twitter signup event:', error);
+      }
       
       // Send email verification
       try {
@@ -439,6 +448,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log('✅ Google signup tracked for link tracking system');
         } catch (error) {
           console.warn('⚠️ Could not track Google signup event:', error);
+        }
+
+        // Track signup for Twitter/X advertising
+        try {
+          trackSignup(user.email || undefined);
+          console.log('🐦 Google signup tracked for Twitter/X campaigns');
+        } catch (error) {
+          console.warn('⚠️ Could not track Twitter Google signup event:', error);
         }
         
         // Also create initial usage document

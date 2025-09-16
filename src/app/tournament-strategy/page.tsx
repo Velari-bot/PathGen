@@ -1,13 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PremiumOnly from '@/components/PremiumOnly';
+import { trackPageView, trackTournamentView } from '@/components/TwitterPixel';
 
 export default function TournamentStrategyPage() {
   const [selectedMode, setSelectedMode] = useState<'solo' | 'duos' | 'both'>('both');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // Track page view for Twitter/X advertising
+  useEffect(() => {
+    try {
+      trackPageView('Tournament Strategy');
+      trackTournamentView('strategy_guide');
+    } catch (error) {
+      console.warn('⚠️ Could not track tournament strategy page view:', error);
+    }
+  }, []);
 
   const strategies = [
     {

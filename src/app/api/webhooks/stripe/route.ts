@@ -6,6 +6,25 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16',
 });
 
+// Helper function for Twitter tracking in server environment
+const trackTwitterServerEvent = async (eventId: string, parameters: any = {}) => {
+  try {
+    // In server environment, we would typically use Twitter's Server Events API
+    // For now, we'll log the event and it can be picked up by client-side tracking
+    console.log(`🐦 Twitter Server Event: ${eventId}`, parameters);
+    
+    // Store event for client-side tracking when user next visits
+    await db.collection('twitter_events').add({
+      eventId,
+      parameters,
+      timestamp: new Date(),
+      processed: false
+    });
+  } catch (error) {
+    console.warn('⚠️ Could not track Twitter server event:', error);
+  }
+};
+
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
@@ -165,6 +184,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
       } catch (error) {
         console.error('❌ Failed to track paid subscription:', error);
+      }
+    }
+
+    // Track subscription for Twitter/X advertising
+    if (session.mode === 'subscription' && session.amount_total) {
+      try {
+        const customerEmail = session.customer_details?.email || null;
+        const amount = (session.amount_total || 0) / 100; // Convert cents to dollars
+        
+        await trackTwitterServerEvent('tw-qh99w-qh99x', {
+          value: amount,
+          currency: session.currency || 'USD',
+          content_type: 'subscription',
+          content_name: 'PathGen Pro Subscription',
+          content_price: amount,
+          email_address: customerEmail,
+          conversion_id: `subscription_${session.id}`
+        });
+        
+        console.log(`🐦 Subscription tracked for Twitter/X campaigns: $${amount}`);
+      } catch (error) {
+        console.warn('⚠️ Could not track subscription for Twitter/X:', error);
       }
     }
     

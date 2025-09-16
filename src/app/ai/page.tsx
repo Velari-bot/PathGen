@@ -16,6 +16,7 @@ import Footer from '@/components/Footer';
 import { CreditDisplay } from '@/components/CreditDisplay';
 import { getModelRecommendation } from '@/lib/ai-model-selector';
 import { zoneGuides, mechanics, strategies, metaAnalysis, tipsAndTricks, tournamentInfo, competitiveLoadouts, advancedMechanics, dataAnalytics, lootSystems, boonCombos, mythicCounters, mobilityStrategy, rankingIntelligence, trainingSystems } from '@/lib/ai-docs';
+import { trackPageView, trackAIInteraction } from '@/components/TwitterPixel';
 
 
 
@@ -86,6 +87,13 @@ export default function AIPage() {
       loadFortniteStats();
       initializeChat();
       loadEpicAccount();
+      
+      // Track AI page view for Twitter/X advertising
+      try {
+        trackPageView('AI Coach');
+      } catch (error) {
+        console.warn('⚠️ Could not track AI page view:', error);
+      }
     }
   }, [user]);
 
@@ -572,6 +580,13 @@ ${trainingSystems}`;
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoadingResponse(false);
+      
+      // Track AI interaction for Twitter/X advertising
+      try {
+        trackAIInteraction('chat_message');
+      } catch (error) {
+        console.warn('⚠️ Could not track AI interaction:', error);
+      }
     }
   };
 

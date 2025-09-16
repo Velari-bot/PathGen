@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext'
 import ReferralTracker from '@/components/ReferralTracker'
 import SimpleTracker from '@/components/SimpleTracker'
+import TwitterPixel from '@/components/TwitterPixel'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -72,6 +73,7 @@ function RootLayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <SubscriptionProvider>
+        <TwitterPixel />
         <ReferralTracker />
         <SimpleTracker />
         {children}
