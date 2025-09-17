@@ -13,12 +13,23 @@ export async function GET(request: NextRequest) {
     }
     
     // Get recent video analyses for this user
-    const analysesSnapshot = await db
-      .collection('video_analyses')
-      .where('userEmail', '==', userEmail)
-      .orderBy('timestamp', 'desc')
-      .limit(10)
-      .get()
+    let analysesSnapshot
+    try {
+      analysesSnapshot = await db
+        .collection('video_analyses')
+        .where('userEmail', '==', userEmail)
+        .orderBy('timestamp', 'desc')
+        .limit(10)
+        .get()
+    } catch (indexError) {
+      // Fallback: Get without orderBy if index doesn't exist
+      console.warn('Firestore index missing for video_analyses, falling back to simple query:', indexError)
+      analysesSnapshot = await db
+        .collection('video_analyses')
+        .where('userEmail', '==', userEmail)
+        .limit(10)
+        .get()
+    }
     
     const analyses = analysesSnapshot.docs.map((doc: any) => {
       const data = doc.data()
@@ -31,7 +42,7 @@ export async function GET(request: NextRequest) {
         strengths: data.strengths || [],
         weaknesses: data.weaknesses || [],
         recommendations: data.recommendations || [],
-        timestamp: data.timestamp?.toDate?.() || data.timestamp,
+        timestamp: data.timestamp?.toDate?.() || data.timestamp || new Date(),
         processingTime: data.processingTime || 0,
         confidence: data.confidence || 0
       }

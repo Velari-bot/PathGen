@@ -210,7 +210,7 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
       <div className="min-h-screen bg-gradient-dark flex flex-col">
       <Navbar />
       
-      <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pt-20 sm:pt-24">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gradient">
             🏆 Tournament Strategy Guide

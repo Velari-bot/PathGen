@@ -138,9 +138,27 @@ export default function VideoAnalysisPage() {
     }
   }
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (date: Date | string | any) => {
     const now = new Date()
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    
+    // Convert date to Date object if it isn't already
+    let dateObj: Date
+    if (date instanceof Date) {
+      dateObj = date
+    } else if (typeof date === 'string') {
+      dateObj = new Date(date)
+    } else if (date && typeof date.toDate === 'function') {
+      // Firestore Timestamp
+      dateObj = date.toDate()
+    } else if (date && date.seconds) {
+      // Firestore Timestamp-like object
+      dateObj = new Date(date.seconds * 1000)
+    } else {
+      // Fallback to current time if date is invalid
+      dateObj = now
+    }
+    
+    const diffInMinutes = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60))
     
     if (diffInMinutes < 1) return 'Just now'
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`
@@ -158,7 +176,7 @@ export default function VideoAnalysisPage() {
       <div className="min-h-screen bg-gradient-dark flex flex-col">
         <Navbar />
         
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 py-8 pt-20 sm:pt-24">
           {/* Hero Section */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">

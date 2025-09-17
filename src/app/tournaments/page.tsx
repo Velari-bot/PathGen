@@ -211,13 +211,13 @@ export default function TournamentsPage() {
     >
       <div className="min-h-screen bg-gradient-dark flex flex-col">
         <Navbar />
-      
-      <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+      <div className="flex-1 relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 pt-20 sm:pt-24">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gradient">
-            🏆 Tournament Hub
-          </h1>
+              🏆 Tournament Hub
+            </h1>
           <p className="text-xl text-secondary-text max-w-3xl mx-auto">
             Track tournaments, analyze performance, and get AI-powered strategies for competitive Fortnite
           </p>
@@ -262,8 +262,8 @@ export default function TournamentsPage() {
                 {region}
               </button>
             ))}
-          </div>
-          
+            </div>
+            
           <div className="glass-card p-2 flex space-x-2">
             {['solo', 'duos'].map((mode) => (
               <button
@@ -279,7 +279,7 @@ export default function TournamentsPage() {
               </button>
             ))}
           </div>
-        </div>
+          </div>
 
         {/* Content based on active tab */}
         {activeTab === 'overview' && (
@@ -306,8 +306,8 @@ export default function TournamentsPage() {
                             </span>
                           )}
                         </p>
-                      </div>
-                    </div>
+              </div>
+            </div>
 
                     {/* Point Thresholds */}
                     <div className="grid grid-cols-5 gap-4 text-center">
@@ -318,24 +318,24 @@ export default function TournamentsPage() {
                           </div>
                           <div className="text-lg font-bold text-primary-text">
                             {points || 'TBD'}
-                          </div>
+                </div>
                           {tournament.estimates && (
                             <div className="text-xs text-accent">
                               Est: {tournament.estimates[rank as keyof typeof tournament.estimates]}
-                            </div>
+                </div>
                           )}
-                        </div>
+              </div>
                       ))}
-                    </div>
+            </div>
 
                     {tournament.finalResults && (
                       <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded">
                         <p className="text-green-400 text-sm">
                           ✅ Tournament completed • Final qualification estimate: {selectedRegion === 'NAC' ? '1,200' : '1,300'} points for Series Final
                         </p>
-                      </div>
+                </div>
                     )}
-                  </div>
+                </div>
                 ))}
               </div>
             </div>
@@ -386,8 +386,8 @@ export default function TournamentsPage() {
                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-primary-text"
                     placeholder="300"
                   />
-                </div>
               </div>
+            </div>
 
               {/* Results */}
               <div className="bg-white/5 rounded-lg p-4 mb-6">
@@ -412,7 +412,7 @@ export default function TournamentsPage() {
                     <p className="text-green-400 text-sm">
                       ✅ Achievable with consistent placement strategy
                     </p>
-                  </div>
+                </div>
                 )}
               </div>
 
@@ -425,17 +425,17 @@ export default function TournamentsPage() {
                       <div>
                         <h4 className="font-semibold text-primary-text">{scenario.name}</h4>
                         <p className="text-sm text-secondary-text">{scenario.description}</p>
-                      </div>
+            </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-accent">
                           {scenario.totalPoints} pts
-                        </div>
+                </div>
                         <div className="text-xs text-secondary-text">
                           {scenario.difficulty} • {scenario.success} success
-                        </div>
-                      </div>
-                    </div>
-                    
+                </div>
+              </div>
+            </div>
+
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       {scenario.games.map((game, gameIndex) => (
                         <div key={gameIndex} className="bg-white/5 rounded p-2 text-center">
@@ -444,8 +444,8 @@ export default function TournamentsPage() {
                           <div className="text-accent">{game.points} pts</div>
                         </div>
                       ))}
-                    </div>
-                  </div>
+                </div>
+                </div>
                 ))}
               </div>
             </div>
@@ -478,8 +478,8 @@ export default function TournamentsPage() {
                     {/* Add form for entering tournament results */}
                     <p className="text-secondary-text">
                       Performance tracking form will be implemented here
-                    </p>
-                  </div>
+                </p>
+              </div>
 
                   {/* Performance History */}
                   <div className="space-y-4">
@@ -493,7 +493,7 @@ export default function TournamentsPage() {
                     ) : (
                       <div>Performance history will be displayed here</div>
                     )}
-                  </div>
+              </div>
                 </div>
               )}
             </div>
