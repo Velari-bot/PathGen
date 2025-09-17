@@ -119,6 +119,9 @@ export default function Navbar() {
                 <PremiumLink href="/tournament-strategy" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Strategies
                 </PremiumLink>
+                <PremiumLink href="/video-analysis" className="text-secondary-text hover:text-white transition-colors duration-300">
+                  Video Analysis
+                </PremiumLink>
                 <Link href="/pricing" className="text-secondary-text hover:text-white transition-colors duration-300">
                   Pricing
                 </Link>
@@ -190,6 +193,9 @@ export default function Navbar() {
                   </MobilePremiumLink>
                   <MobilePremiumLink href="/tournament-strategy" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Strategies
+                  </MobilePremiumLink>
+                  <MobilePremiumLink href="/video-analysis" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
+                    Video Analysis
                   </MobilePremiumLink>
                   <Link href="/pricing" className="block px-3 py-3 text-secondary-text hover:text-white transition-colors duration-300 touch-friendly text-base">
                     Pricing
