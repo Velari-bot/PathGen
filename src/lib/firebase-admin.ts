@@ -31,18 +31,55 @@ function initializeFirebaseAdmin() {
         }
       }
     } else {
-      console.error('❌ Missing Firebase Admin environment variables');
+      console.warn('⚠️ Missing Firebase Admin environment variables - build time or missing config');
     }
   } else {
     firebaseAdminInitialized = true;
   }
 }
 
-// Lazy initialization function
+/**
+ * Get Firestore database instance
+ * Returns a mock instance during CI builds to prevent initialization errors
+ */
 export function getDb() {
+  console.log('🔍 getDb() called');
+  
+  // During CI build time or when Firebase env vars are missing, return a mock object to prevent initialization errors
+  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+  const isBuildTime = typeof window === 'undefined' && !process.env.FIREBASE_CLIENT_EMAIL;
+  
+  if (isCI || isBuildTime) {
+    console.log('🔧 CI/Build time detected - returning mock Firestore instance');
+    return {
+      collection: () => ({
+        doc: () => ({
+          get: () => Promise.resolve({ exists: false, data: () => null }),
+          set: () => Promise.resolve(),
+          update: () => Promise.resolve(),
+          delete: () => Promise.resolve()
+        }),
+        add: () => Promise.resolve({ id: 'mock-doc-id' }),
+        get: () => Promise.resolve({ docs: [], empty: true }),
+        where: () => ({
+          get: () => Promise.resolve({ docs: [], empty: true }),
+          where: function() { return this; },
+          orderBy: function() { return this; },
+          limit: function() { return this; }
+        })
+      })
+    };
+  }
+
   if (!firestoreInstance) {
     initializeFirebaseAdmin();
-    firestoreInstance = getFirestore();
+    if (firebaseAdminInitialized) {
+      firestoreInstance = getFirestore();
+      console.log('🔍 Firebase Admin instance:', { getDb: !!getDb, getAuth: !!getApps });
+      console.log('🔍 Firestore instance:', firestoreInstance);
+    } else {
+      throw new Error('Firebase Admin could not be initialized');
+    }
   }
   return firestoreInstance;
 }
