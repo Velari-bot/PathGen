@@ -123,7 +123,7 @@ export class TournamentService {
       id: 'c6s4-duos-division-cups',
       name: 'C6S4 Duos Division Cups',
       season: 'C6S4',
-      mode: 'duos',
+      mode: 'duo',
       region: 'EU', // We'll create separate entries for each region
       startDate: new Date('2024-01-15'),
       endDate: new Date('2024-01-30'),

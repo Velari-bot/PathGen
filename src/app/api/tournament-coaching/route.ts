@@ -113,9 +113,9 @@ ${tournamentType === 'duos_division_cups' ?
 - Elimination points REDUCED: Div 2-4 = 1pt, Div 5 = 0pts
 - Max placement is MORE important than ever
 - Defend yourself when keyed, but avoid unnecessary fights
-- Focus on endgames - surge only active ~15% Div 1, ~3% other divs` : ''}`
-    
-You need ${pointsNeeded} points in ${gamesRemaining} games (${averageNeeded.toFixed(1)} avg/game).
+- Focus on endgames - surge only active ~15% Div 1, ~3% other divs
+
+` : ''}You need ${pointsNeeded} points in ${gamesRemaining} games (${averageNeeded.toFixed(1)} avg/game).
 
 **Recommended Approach:**
 ${tournamentType === 'solo' ?
@@ -144,9 +144,7 @@ ${tournamentType === 'duos_division_cups' ?
 - Defend when keyed but avoid W-keying
 - Queue bug still exists: 2min requeue for Div 2-4, 6min for Div 1+5
 
-` : ''}`
-    
-You need ${pointsNeeded} points in ${gamesRemaining} games (${averageNeeded.toFixed(1)} avg/game).
+` : ''}You need ${pointsNeeded} points in ${gamesRemaining} games (${averageNeeded.toFixed(1)} avg/game).
 
 **Recommended Approach:**
 ${tournamentType === 'solo' ?

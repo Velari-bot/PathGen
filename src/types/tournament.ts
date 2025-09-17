@@ -33,32 +33,59 @@ export interface TournamentWeek {
   region: string;
   isCompleted: boolean;
   
-  // Live point thresholds
+  // Live point thresholds (flexible for different formats)
   pointThresholds: {
-    top100: number;
-    top500: number;
-    top1000: number;
-    top2500: number;
-    top7500: number;
+    // Standard format (Solo Series, Trials)
+    top100?: number;
+    top500?: number;
+    top1000?: number;
+    top2500?: number;
+    top7500?: number;
+    top3000?: number;
+    top13000?: number;
+    // Division format (Division Cups)
+    div1?: number;
+    div2?: number;
+    div3?: number;
+    div4?: number;
+    div5?: number;
     updatedAt: Date;
   };
   
-  // Pre-round estimates
+  // Pre-round estimates (flexible for different formats)
   estimates: {
-    top100: number;
-    top500: number;
-    top1000: number;
-    top2500: number;
-    top7500: number;
+    // Standard format
+    top100?: number;
+    top500?: number;
+    top1000?: number;
+    top2500?: number;
+    top7500?: number;
+    top3000?: number;
+    top13000?: number;
+    // Division format
+    div1?: number;
+    div2?: number;
+    div3?: number;
+    div4?: number;
+    div5?: number;
   };
   
-  // Final results
+  // Final results (flexible for different formats)
   finalResults?: {
-    top100: number;
-    top500: number;
-    top1000: number;
-    top2500: number;
-    top7500: number;
+    // Standard format
+    top100?: number;
+    top500?: number;
+    top1000?: number;
+    top2500?: number;
+    top7500?: number;
+    top3000?: number;
+    top13000?: number;
+    // Division format
+    div1?: number;
+    div2?: number;
+    div3?: number;
+    div4?: number;
+    div5?: number;
   };
 }
 
