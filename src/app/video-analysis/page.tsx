@@ -13,9 +13,11 @@ interface VideoAnalysis {
   platform: 'youtube' | 'tiktok'
   title: string
   summary: string
-  strengths: string[]
-  weaknesses: string[]
-  recommendations: string[]
+  keyTalkingPoints: string[]
+  coachingTips: string[]
+  strategicInsights: string[]
+  technicalAdvice: string[]
+  transcript?: string
   timestamp: Date
   processingTime: number
 }
@@ -274,43 +276,75 @@ export default function VideoAnalysisPage() {
                     </div>
                   </div>
 
-                  {/* Strengths */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-green-400 mb-3">✅ Strengths</h3>
-                    <div className="space-y-2">
-                      {analysis.strengths.map((strength, index) => (
-                        <div key={index} className="flex items-start">
-                          <span className="text-green-400 mr-3 mt-1">+</span>
-                          <p className="text-gray-300">{strength}</p>
-                        </div>
-                      ))}
+                  {/* Key Talking Points */}
+                  {analysis.keyTalkingPoints.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-yellow-400 mb-3">💡 Key Talking Points</h3>
+                      <div className="space-y-2">
+                        {analysis.keyTalkingPoints.map((point, index) => (
+                          <div key={index} className="flex items-start">
+                            <span className="text-yellow-400 mr-3 mt-1">•</span>
+                            <p className="text-gray-300">{point}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Weaknesses */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-red-400 mb-3">⚠️ Areas for Improvement</h3>
-                    <div className="space-y-2">
-                      {analysis.weaknesses.map((weakness, index) => (
-                        <div key={index} className="flex items-start">
-                          <span className="text-red-400 mr-3 mt-1">-</span>
-                          <p className="text-gray-300">{weakness}</p>
-                        </div>
-                      ))}
+                  {/* Coaching Tips */}
+                  {analysis.coachingTips.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-400 mb-3">🎓 Coaching Tips</h3>
+                      <div className="space-y-2">
+                        {analysis.coachingTips.map((tip, index) => (
+                          <div key={index} className="flex items-start">
+                            <span className="text-green-400 mr-3 mt-1">✓</span>
+                            <p className="text-gray-300">{tip}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Recommendations */}
-                  <div>
-                    <h3 className="text-lg font-semibold text-blue-400 mb-3">🎯 Next Steps</h3>
-                    <div className="space-y-3">
-                      {analysis.recommendations.map((rec, index) => (
-                        <div key={index} className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-                          <p className="text-gray-300">{rec}</p>
-                        </div>
-                      ))}
+                  {/* Strategic Insights */}
+                  {analysis.strategicInsights.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-400 mb-3">🧠 Strategic Insights</h3>
+                      <div className="space-y-2">
+                        {analysis.strategicInsights.map((insight, index) => (
+                          <div key={index} className="flex items-start">
+                            <span className="text-blue-400 mr-3 mt-1">→</span>
+                            <p className="text-gray-300">{insight}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Technical Advice */}
+                  {analysis.technicalAdvice.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-purple-400 mb-3">⚙️ Technical Advice</h3>
+                      <div className="space-y-2">
+                        {analysis.technicalAdvice.map((advice, index) => (
+                          <div key={index} className="flex items-start">
+                            <span className="text-purple-400 mr-3 mt-1">⚡</span>
+                            <p className="text-gray-300">{advice}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transcript Display */}
+                  {analysis.transcript && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-400 mb-3">📜 Full Transcript</h3>
+                      <div className="bg-gray-800/50 rounded-lg p-4 max-h-60 overflow-y-auto">
+                        <p className="text-gray-300 text-sm leading-relaxed">{analysis.transcript}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
