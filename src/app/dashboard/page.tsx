@@ -1095,6 +1095,18 @@ export default function DashboardPage() {
                     <span className="text-gray-300">Osirion Pull (Premium)</span>
                     <span className="text-white font-medium">50 credits</span>
                   </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300">Video Analysis (≤5min)</span>
+                    <span className="text-white font-medium">150 credits</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300">Video Analysis (6-12min)</span>
+                    <span className="text-white font-medium">170 credits</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-300">Video Analysis (13+min)</span>
+                    <span className="text-white font-medium">300 credits</span>
+                  </div>
                 </div>
               </div>
             )}

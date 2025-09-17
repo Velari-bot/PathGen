@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/firebase-admin'
 // @ts-ignore
 import { YoutubeTranscript } from 'youtube-transcript'
+import { creditService } from '@/lib/credit-backend-service'
 
 interface VideoInfo {
   title: string
@@ -10,23 +11,25 @@ interface VideoInfo {
   thumbnailUrl?: string
 }
 
-interface FortniteAnalysis {
-  isFortnite: boolean
-  confidence: number
-  keywords: string[]
-  summary: string
-  keyTalkingPoints: string[]
-  coachingTips: string[]
-  strategicInsights: string[]
-  technicalAdvice: string[]
-  transcript?: string
-}
 
 // Extract video ID from YouTube URL
 function extractYouTubeVideoId(url: string): string | null {
   const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
   const match = url.match(regex)
   return match ? match[1] : null
+}
+
+// Calculate credits based on video duration
+function calculateVideoCredits(durationInSeconds: number): number {
+  const minutes = Math.ceil(durationInSeconds / 60)
+  
+  if (minutes <= 5) {
+    return 150
+  } else if (minutes <= 12) {
+    return 170
+  } else {
+    return 300
+  }
 }
 
 // Real transcript extraction using youtube-transcript
@@ -55,10 +58,18 @@ async function extractTranscript(videoUrl: string, platform: 'youtube' | 'tiktok
         .replace(/\s+/g, ' ') // Clean up multiple spaces
         .trim()
 
-      // Extract title from video (you could enhance this with YouTube API)
-      const title = `YouTube Video: ${videoId}`
+      // Calculate video duration from transcript timing
       const duration = transcriptData.length > 0 ? 
         Math.round(transcriptData[transcriptData.length - 1].offset / 1000) : 0
+
+      // Try to get video title (fallback to video ID if not available)
+      let title = `YouTube Video: ${videoId}`
+      try {
+        // You could integrate YouTube Data API here for actual titles
+        title = `Fortnite Video Analysis (${Math.ceil(duration / 60)}min)`
+      } catch (error) {
+        console.warn('Could not fetch video title, using fallback')
+      }
 
       console.log(`✅ Transcript extracted: ${fullTranscript.length} characters`)
 
@@ -89,7 +100,7 @@ async function extractTranscript(videoUrl: string, platform: 'youtube' | 'tiktok
 }
 
 // Fortnite keyword detection and semantic analysis
-function analyzeFortniteContent(transcript: string): FortniteAnalysis {
+function analyzeFortniteContent(transcript: string): { isFortnite: boolean; confidence: number; keywords: string[] } {
   const fortniteKeywords = [
     'fortnite', 'victory royale', 'elimination', 'storm', 'zone', 'build', 'edit', 'pump', 
     'shotgun', 'assault rifle', 'ar', 'shields', 'big pot', 'mini shield', 'launch pad',
@@ -112,122 +123,171 @@ function analyzeFortniteContent(transcript: string): FortniteAnalysis {
   const confidence = Math.min(100, (foundKeywords.length * 10) + (keywordDensity * 1000) + (hasGameplayContext ? 20 : 0))
   const isFortnite = confidence > 25
   
-  if (!isFortnite) {
-    return {
-      isFortnite: false,
-      confidence,
-      keywords: foundKeywords,
-      summary: '',
-      keyTalkingPoints: [],
-      coachingTips: [],
-      strategicInsights: [],
-      technicalAdvice: []
-    }
-  }
-  
-  // Generate AI analysis based on transcript content
-  const analysis = generateGameplayAnalysis(transcript, foundKeywords)
-  
   return {
-    isFortnite: true,
+    isFortnite,
     confidence,
-    keywords: foundKeywords,
-    ...analysis
+    keywords: foundKeywords
   }
 }
 
-function generateGameplayAnalysis(transcript: string, keywords: string[]): {
+// Enhanced AI analysis that connects to main PathGen AI system
+async function generateComprehensiveAnalysis(
+  transcript: string, 
+  keywords: string[], 
+  userEmail: string,
+  videoDuration: number
+): Promise<{
   summary: string
   keyTalkingPoints: string[]
   coachingTips: string[]
   strategicInsights: string[]
   technicalAdvice: string[]
+  personalizedAdvice: string[]
+}> {
+  
+  // Get user's Fortnite stats and preferences for personalized analysis
+  let userContext = ""
+  try {
+    const userDoc = await db.collection('users').doc(userEmail).get()
+    if (userDoc.exists) {
+      const userData = userDoc.data()
+      const fortniteStats = userData?.fortniteStats
+      if (fortniteStats) {
+        userContext = `User stats: ${fortniteStats.kills || 0} avg kills, ${fortniteStats.wins || 0} wins, ${fortniteStats.matches || 0} matches played. `
+      }
+    }
+  } catch (error) {
+    console.warn('Could not fetch user context:', error)
+  }
+
+  // Create comprehensive AI prompt for analysis
+  const analysisPrompt = `You are PathGen AI, an expert Fortnite coach. Analyze this video transcript and provide detailed improvement advice.
+
+${userContext}
+
+Video Duration: ${Math.ceil(videoDuration / 60)} minutes
+Video Transcript: "${transcript}"
+
+Please provide:
+
+1. SUMMARY (2-3 sentences about what this video covers)
+
+2. KEY TALKING POINTS (5 main topics discussed in the video)
+
+3. COACHING TIPS (6 actionable tips from the video that any player can apply)
+
+4. STRATEGIC INSIGHTS (5 strategic concepts like rotations, positioning, game sense)
+
+5. TECHNICAL ADVICE (5 mechanical skills like building, editing, aiming techniques)
+
+6. PERSONALIZED ADVICE (4 specific recommendations based on the user's stats and the video content - how they can apply these concepts to improve their gameplay)
+
+Format as JSON with these exact keys: summary, keyTalkingPoints, coachingTips, strategicInsights, technicalAdvice, personalizedAdvice
+
+Make advice specific, actionable, and directly applicable to competitive Fortnite play.`
+
+  try {
+    // Call your main AI system (using the same routing as the main AI coach)
+    const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai-chat-smart`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'user-email': userEmail
+      },
+      body: JSON.stringify({
+        message: analysisPrompt,
+        forceModel: '4o-mini', // Use efficient model for analysis
+        context: 'video_analysis'
+      })
+    })
+
+    if (aiResponse.ok) {
+      const aiResult = await aiResponse.json()
+      try {
+        const analysis = JSON.parse(aiResult.response)
+        return {
+          summary: analysis.summary || "AI analysis of Fortnite gameplay video",
+          keyTalkingPoints: analysis.keyTalkingPoints || [],
+          coachingTips: analysis.coachingTips || [],
+          strategicInsights: analysis.strategicInsights || [],
+          technicalAdvice: analysis.technicalAdvice || [],
+          personalizedAdvice: analysis.personalizedAdvice || []
+        }
+      } catch (parseError) {
+        console.warn('AI response was not valid JSON, falling back to text parsing')
+        return parseAITextResponse(aiResult.response)
+      }
+    } else {
+      throw new Error('AI analysis failed')
+    }
+  } catch (error) {
+    console.error('AI analysis error:', error)
+    return generateFallbackAnalysis(transcript, keywords)
+  }
+}
+
+// Fallback analysis if AI fails
+function generateFallbackAnalysis(transcript: string, keywords: string[]): {
+  summary: string
+  keyTalkingPoints: string[]
+  coachingTips: string[]
+  strategicInsights: string[]
+  technicalAdvice: string[]
+  personalizedAdvice: string[]
 } {
-  const transcriptLower = transcript.toLowerCase()
-  
-  // Extract key talking points from the spoken content
-  const keyTalkingPoints: string[] = []
-  const coachingTips: string[] = []
-  const strategicInsights: string[] = []
-  const technicalAdvice: string[] = []
-  
-  // Split transcript into sentences for analysis
-  const sentences = transcript.split(/[.!?]+/).filter(s => s.trim().length > 10)
-  
-  sentences.forEach(sentence => {
-    const sentenceLower = sentence.toLowerCase().trim()
-    
-    // Extract key talking points (main topics discussed)
-    if (sentenceLower.includes('tip') || sentenceLower.includes('trick') || 
-        sentenceLower.includes('important') || sentenceLower.includes('key')) {
-      keyTalkingPoints.push(sentence.trim())
-    }
-    
-    // Extract coaching tips (instructional content)
-    if (sentenceLower.includes('practice') || sentenceLower.includes('work on') || 
-        sentenceLower.includes('focus on') || sentenceLower.includes('remember') ||
-        sentenceLower.includes('make sure') || sentenceLower.includes('always') ||
-        sentenceLower.includes('never') || sentenceLower.includes('should')) {
-      coachingTips.push(sentence.trim())
-    }
-    
-    // Extract strategic insights (game strategy)
-    if (sentenceLower.includes('rotate') || sentenceLower.includes('position') || 
-        sentenceLower.includes('third party') || sentenceLower.includes('endgame') ||
-        sentenceLower.includes('storm') || sentenceLower.includes('zone') ||
-        sentenceLower.includes('height') || sentenceLower.includes('timing')) {
-      strategicInsights.push(sentence.trim())
-    }
-    
-    // Extract technical advice (mechanics and settings)
-    if (sentenceLower.includes('build') || sentenceLower.includes('edit') || 
-        sentenceLower.includes('aim') || sentenceLower.includes('settings') ||
-        sentenceLower.includes('keybind') || sentenceLower.includes('mechanic') ||
-        sentenceLower.includes('technique') || sentenceLower.includes('combo')) {
-      technicalAdvice.push(sentence.trim())
-    }
-  })
-  
-  // Remove duplicates and limit to most relevant points
-  const uniqueKeyPoints = Array.from(new Set(keyTalkingPoints)).slice(0, 5)
-  const uniqueCoachingTips = Array.from(new Set(coachingTips)).slice(0, 6)
-  const uniqueStrategicInsights = Array.from(new Set(strategicInsights)).slice(0, 5)
-  const uniqueTechnicalAdvice = Array.from(new Set(technicalAdvice)).slice(0, 5)
-  
-  // Generate summary based on content analysis
-  let summary = "Video transcript analysis reveals "
-  
-  if (uniqueCoachingTips.length > 3) {
-    summary += "comprehensive coaching content with detailed gameplay instruction. "
-  } else if (uniqueStrategicInsights.length > 2) {
-    summary += "strategic gameplay discussion with positioning and rotation advice. "
-  } else if (uniqueTechnicalAdvice.length > 2) {
-    summary += "technical gameplay mechanics and building technique guidance. "
-  } else {
-    summary += "general Fortnite gameplay commentary and tips. "
+  return {
+    summary: "Video contains Fortnite gameplay content with various strategic elements.",
+    keyTalkingPoints: ["Building techniques", "Weapon usage", "Positioning strategies", "Game awareness", "Combat mechanics"],
+    coachingTips: [
+      "Practice building in Creative mode daily",
+      "Work on crosshair placement and aim",
+      "Learn common edit patterns",
+      "Study zone rotations and timing",
+      "Focus on consistent placement over eliminations",
+      "Watch your positioning in fights"
+    ],
+    strategicInsights: [
+      "Early rotations avoid storm pressure",
+      "High ground advantage is crucial in fights",
+      "Third-party opportunities require good timing",
+      "Resource management affects late game performance",
+      "Zone awareness prevents getting caught"
+    ],
+    technicalAdvice: [
+      "Master 90-degree turns for height",
+      "Practice wall-ramp-floor combinations",
+      "Learn pyramid edits for protection",
+      "Work on flick shots and tracking",
+      "Optimize keybinds for faster building"
+    ],
+    personalizedAdvice: [
+      "Focus on the techniques shown that match your current skill level",
+      "Practice the specific building patterns demonstrated",
+      "Apply the strategic concepts to your ranked games",
+      "Work on areas where the video highlighted weaknesses"
+    ]
   }
+}
+
+// Parse AI text response if JSON parsing fails
+function parseAITextResponse(response: string): {
+  summary: string
+  keyTalkingPoints: string[]
+  coachingTips: string[]
+  strategicInsights: string[]
+  technicalAdvice: string[]
+  personalizedAdvice: string[]
+} {
+  // Simple text parsing as fallback
+  const lines = response.split('\n').filter(line => line.trim())
   
-  // Add fallback content if extraction yielded little
-  if (uniqueKeyPoints.length === 0) {
-    uniqueKeyPoints.push("Focus on consistent gameplay improvement through practice")
-  }
-  if (uniqueCoachingTips.length === 0) {
-    uniqueCoachingTips.push("Practice building mechanics in Creative mode daily")
-    uniqueCoachingTips.push("Work on aim training for better combat performance")
-  }
-  if (uniqueStrategicInsights.length === 0) {
-    uniqueStrategicInsights.push("Rotate early to avoid storm pressure and third parties")
-  }
-  if (uniqueTechnicalAdvice.length === 0) {
-    uniqueTechnicalAdvice.push("Master basic building patterns like 90s and ramp rushes")
-  }
-  
-  return { 
-    summary, 
-    keyTalkingPoints: uniqueKeyPoints,
-    coachingTips: uniqueCoachingTips, 
-    strategicInsights: uniqueStrategicInsights, 
-    technicalAdvice: uniqueTechnicalAdvice 
+  return {
+    summary: lines[0] || "Video analysis completed",
+    keyTalkingPoints: lines.slice(1, 6),
+    coachingTips: lines.slice(6, 12),
+    strategicInsights: lines.slice(12, 17),
+    technicalAdvice: lines.slice(17, 22),
+    personalizedAdvice: lines.slice(22, 26)
   }
 }
 
@@ -259,7 +319,7 @@ export async function POST(request: NextRequest) {
     
     const startTime = Date.now()
     
-    // Extract transcript from video
+    // Extract transcript from video (need duration for credit calculation)
     console.log(`🎥 Extracting transcript from ${platform} video: ${videoUrl}`)
     const videoInfo = await extractTranscript(videoUrl, platform)
     
@@ -270,17 +330,67 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Calculate required credits based on video duration
+    const requiredCredits = calculateVideoCredits(videoInfo.duration)
+    console.log(`💳 Video analysis will cost ${requiredCredits} credits for ${Math.ceil(videoInfo.duration / 60)}min video`)
+    
+    // Check user's credit balance
+    try {
+      const userDoc = await creditService.getUserCredits(userEmail)
+      const currentCredits = userDoc?.credits || 0
+      if (currentCredits < requiredCredits) {
+        return NextResponse.json({
+          error: `Insufficient credits. Need ${requiredCredits} credits, you have ${currentCredits}.`,
+          requiredCredits,
+          userCredits: currentCredits,
+          videoDuration: Math.ceil(videoInfo.duration / 60)
+        }, { status: 402 }) // Payment required
+      }
+    } catch (error) {
+      console.error('Failed to check credit balance:', error)
+      return NextResponse.json(
+        { error: 'Failed to verify credit balance' },
+        { status: 500 }
+      )
+    }
+    
     // Analyze for Fortnite content
     console.log('🎮 Analyzing video content for Fortnite gameplay...')
-    const analysis = analyzeFortniteContent(videoInfo.transcript)
+    const fortniteCheck = analyzeFortniteContent(videoInfo.transcript)
     
-    if (!analysis.isFortnite) {
+    if (!fortniteCheck.isFortnite) {
       return NextResponse.json({
         isFortnite: false,
-        confidence: analysis.confidence,
+        confidence: fortniteCheck.confidence,
         error: 'Video does not appear to contain Fortnite gameplay'
       })
     }
+    
+    // Deduct credits before processing
+    try {
+      await creditService.deductCredits(userEmail, requiredCredits, 'video_analysis', {
+        videoUrl,
+        platform,
+        duration: videoInfo.duration,
+        title: videoInfo.title
+      })
+      console.log(`💳 Deducted ${requiredCredits} credits from ${userEmail}`)
+    } catch (error) {
+      console.error('Failed to deduct credits:', error)
+      return NextResponse.json(
+        { error: 'Failed to process payment' },
+        { status: 500 }
+      )
+    }
+    
+    // Generate comprehensive AI analysis using main PathGen AI system
+    console.log('🧠 Generating comprehensive AI analysis...')
+    const analysis = await generateComprehensiveAnalysis(
+      videoInfo.transcript, 
+      fortniteCheck.keywords, 
+      userEmail,
+      videoInfo.duration
+    )
     
     const processingTime = Math.round((Date.now() - startTime) / 1000)
     
@@ -295,13 +405,15 @@ export async function POST(request: NextRequest) {
       coachingTips: analysis.coachingTips,
       strategicInsights: analysis.strategicInsights,
       technicalAdvice: analysis.technicalAdvice,
+      personalizedAdvice: analysis.personalizedAdvice,
       timestamp: new Date(),
       processingTime,
       userEmail,
-      confidence: analysis.confidence,
-      keywords: analysis.keywords,
+      confidence: fortniteCheck.confidence,
+      keywords: fortniteCheck.keywords,
       transcript: videoInfo.transcript,
-      duration: videoInfo.duration
+      duration: videoInfo.duration,
+      creditsUsed: requiredCredits
     }
     
     // Save to Firestore
@@ -316,8 +428,9 @@ export async function POST(request: NextRequest) {
     // Return successful analysis
     return NextResponse.json({
       isFortnite: true,
-      confidence: analysis.confidence,
-      analysis: analysisRecord
+      confidence: fortniteCheck.confidence,
+      analysis: analysisRecord,
+      creditsUsed: requiredCredits
     })
     
   } catch (error) {

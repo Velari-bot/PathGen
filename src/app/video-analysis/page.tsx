@@ -17,9 +17,12 @@ interface VideoAnalysis {
   coachingTips: string[]
   strategicInsights: string[]
   technicalAdvice: string[]
+  personalizedAdvice: string[]
   transcript?: string
   timestamp: Date
   processingTime: number
+  duration: number
+  creditsUsed: number
 }
 
 interface AnalysisResult {
@@ -112,6 +115,10 @@ export default function VideoAnalysisPage() {
       const result: AnalysisResult = await response.json()
 
       if (!response.ok) {
+        if (response.status === 402) {
+          // Payment required - insufficient credits
+          throw new Error(`Insufficient credits. Need ${(result as any).requiredCredits} credits for this ${(result as any).videoDuration}min video, you have ${(result as any).userCredits} credits.`)
+        }
         throw new Error(result.error || 'Analysis failed')
       }
 
@@ -245,6 +252,15 @@ export default function VideoAnalysisPage() {
                   <p><strong>Supported platforms:</strong> YouTube, TikTok</p>
                   <p><strong>Requirements:</strong> Video must contain Fortnite gameplay</p>
                   <p><strong>Analysis time:</strong> 30-60 seconds depending on video length</p>
+                  <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-blue-400 font-semibold mb-2">💳 Credit Pricing:</p>
+                    <ul className="space-y-1 text-blue-300">
+                      <li>• ≤5 minutes: <strong>150 credits</strong></li>
+                      <li>• 6-12 minutes: <strong>170 credits</strong></li>
+                      <li>• 13+ minutes: <strong>300 credits</strong></li>
+                    </ul>
+                    <p className="text-blue-300 text-xs mt-2">Credits are automatically calculated based on video duration</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -266,6 +282,9 @@ export default function VideoAnalysisPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-2">🎬 Video</h3>
                     <p className="text-gray-300">{analysis.title}</p>
+                    <p className="text-sm text-green-400 mt-1">
+                      💳 {analysis.creditsUsed} credits used ({Math.ceil(analysis.duration / 60)} minutes)
+                    </p>
                   </div>
 
                   {/* Summary */}
@@ -332,6 +351,23 @@ export default function VideoAnalysisPage() {
                             <p className="text-gray-300">{advice}</p>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Personalized Advice */}
+                  {analysis.personalizedAdvice && analysis.personalizedAdvice.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-orange-400 mb-3">🎯 Personalized For You</h3>
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                        <div className="space-y-2">
+                          {analysis.personalizedAdvice.map((advice, index) => (
+                            <div key={index} className="flex items-start">
+                              <span className="text-orange-400 mr-3 mt-1">🎯</span>
+                              <p className="text-gray-300">{advice}</p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
