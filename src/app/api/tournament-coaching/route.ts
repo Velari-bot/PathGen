@@ -287,14 +287,14 @@ ${targetPoints >= (thresholds as any).top100 ? '🏆 Top 100 range (Qualificatio
       'Queue 6 minutes early if in Top 100, 5 minutes otherwise',
       'If queue hits 6 minutes, you have queue bug - unready and requeue',
       'Launch Pads are safer than crash pads (which are vaulted)',
-      'Start 1 minute late in Division Cups to avoid early keying',
-      'Division Cups: 2min queue for Div 2-4, 6min for Div 1 & 5',
-      'EU is 15-60 points harder per division than NAC',
-      'Div 4 hardest (400+ points), Div 5 most accessible (300 points)',
-      'Storm changes may happen but usually get reverted quickly',
-      'Use tournament calculator between games',
-      'Never run out of games - worst possible outcome',
-      'If running low on games, disengage every spawn fight'
+      'NAC Day 2 qualification chances: Need 325+ to have a chance, 350+ to be safe (Div 2-4)',
+      'Div 1: Around 250+ keeps you in good position for cumulative qual',
+      'Div 5: Need 297+ to have a chance, 310+ to be safe (0 elim points)',
+      'Queue timing: 4min early for Div 2-4 (requeue after 2min), 6min for Div 1 & 5',
+      'Use tourney-calc-pro to calculate final game requirements',
+      'With reduced elim points: defend when keyed but avoid initiating',
+      'Max placement strategy is now even more critical',
+      'Never run out of games - worst possible outcome'
     ]
   };
 }

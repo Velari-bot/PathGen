@@ -215,7 +215,7 @@ export class TournamentService {
       }
     };
 
-    // NAC Division Cups Day 2 (NEW - Updated elim points)
+    // NAC Division Cups Day 2 (NEW - Updated elim points with complete data)
     const nacDivCupsDay2: TournamentWeek = {
       id: 'c6s4-duos-div-cups-nac-day2',
       seriesId: 'c6s4-duos-division-cups',
@@ -225,26 +225,26 @@ export class TournamentService {
       region: 'NAC',
       isCompleted: true,
       pointThresholds: {
-        div1: 270,  // Top 50 Day 1 only (cumulative TBD)
-        div2: 335,  // Top 50 (1 pt per elim)
-        div3: 335,  // Top 100 (1 pt per elim)  
-        div4: 340,  // Top 200 (1 pt per elim)
-        div5: 302,  // Top 300 (0 pts per elim)
+        div1: 540,  // Top 50 Cumulative estimate
+        div2: 335,  // Top 50 final (1 pt per elim)
+        div3: 335,  // Top 100 final (1 pt per elim)  
+        div4: 340,  // Top 200 final (1 pt per elim)
+        div5: 302,  // Top 300 final (0 pts per elim)
         updatedAt: new Date()
       },
       estimates: {
-        div1: 270,
-        div2: 320,
-        div3: 335,
-        div4: 340,
-        div5: 300
+        div1: 540,  // Cumulative estimate
+        div2: 295,  // Day 2 estimate (1 pt per elim)
+        div3: 295,  // Day 2 estimate (1 pt per elim)
+        div4: 290,  // Day 2 estimate (1 pt per elim)
+        div5: 225   // Day 2 estimate (0 pts per elim)
       },
       finalResults: {
-        div1: 270, // Day 1 only
-        div2: 335,
-        div3: 335,
-        div4: 340,
-        div5: 302
+        div1: 270, // Day 1 only (cumulative pending)
+        div2: 335, // Final Day 2 result
+        div3: 335, // Final Day 2 result
+        div4: 340, // Final Day 2 result
+        div5: 302  // Final Day 2 result
       }
     };
 

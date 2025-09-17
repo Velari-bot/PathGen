@@ -220,7 +220,13 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
 - Even MORE placement focused than Day 1
 - Defend yourself when keyed, but avoid initiating fights
 - Look for Top 5s and Top 10s consistently
-- Tag damage early/mid game, then watch player count`,
+- Tag damage early/mid game, then watch player count
+
+**NAC Day 2 Qualification Guidance:**
+- Div 2-4 (295pts): 4 Top 5s w/ 4 elims + 3 Top 10s w/ 2 elims + 3 spare games
+- Div 5 (225pts): 3 Top 5s + 3 Top 10s + 4 spare games (NO elim points)
+- Need 325+ to have any chance, 350+ to be safe (Div 2-4)
+- Div 5: Need 297+ to have chance, 310+ to be safe`,
       tips: [
         'Elimination points are now almost worthless - focus 100% placement',
         'Defend when keyed but never initiate unnecessary fights',
