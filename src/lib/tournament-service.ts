@@ -118,11 +118,147 @@ export class TournamentService {
       }
     };
 
+    // Create C6S4 Duos Division Cups
+    const duosDivisionCups: TournamentSeries = {
+      id: 'c6s4-duos-division-cups',
+      name: 'C6S4 Duos Division Cups',
+      season: 'C6S4',
+      mode: 'duos',
+      region: 'EU', // We'll create separate entries for each region
+      startDate: new Date('2024-01-15'),
+      endDate: new Date('2024-01-30'),
+      isActive: true,
+      totalWeeks: 2, // Day 1 and Day 2
+      qualifyingThreshold: 600, // Cumulative for Div 1
+      pointSystem: {
+        winPoints: 65,
+        eliminationPoints: 3, // Div 1 has 3 points, others vary by day/division
+        placementPoints: {
+          '1': 65,
+          '2': 60,
+          '3': 56,
+          '4': 52,
+          '5': 48,
+          '6-10': 40,
+          '11-15': 30,
+          '16-25': 25,
+          '26-50': 15,
+          '51-75': 10,
+          '76-100': 5
+        }
+      }
+    };
+
+    // EU Division Cups Day 1
+    const euDivCupsDay1: TournamentWeek = {
+      id: 'c6s4-duos-div-cups-eu-day1',
+      seriesId: 'c6s4-duos-division-cups',
+      weekNumber: 1,
+      name: 'C6S4 DUOS DIV CUPS #1 - EU',
+      date: new Date('2024-01-15'),
+      region: 'EU',
+      isCompleted: true,
+      pointThresholds: {
+        div1: 280,  // Top 50 Day 1
+        div2: 335,  // Top 50
+        div3: 345,  // Top 100  
+        div4: 410,  // Top 200
+        div5: 335,  // Top 300
+        updatedAt: new Date()
+      },
+      estimates: {
+        div1: 270,
+        div2: 320,
+        div3: 335,
+        div4: 350,
+        div5: 295
+      },
+      finalResults: {
+        div1: 280,
+        div2: 335,
+        div3: 345,
+        div4: 410,
+        div5: 335
+      }
+    };
+
+    // EU Division Cups Day 2 (NEW - Updated elim points)
+    const euDivCupsDay2: TournamentWeek = {
+      id: 'c6s4-duos-div-cups-eu-day2',
+      seriesId: 'c6s4-duos-division-cups',
+      weekNumber: 2,
+      name: 'C6S4 DUOS DIV CUPS #2 - EU (Updated Elim Points)',
+      date: new Date('2024-01-16'),
+      region: 'EU',
+      isCompleted: true,
+      pointThresholds: {
+        div1: 534,  // Top 50 Cumulative
+        div2: 294,  // Top 50 (1 pt per elim)
+        div3: 300,  // Top 100 (1 pt per elim)
+        div4: 349,  // Top 200 (1 pt per elim)
+        div5: 246,  // Top 300 (0 pts per elim)
+        updatedAt: new Date()
+      },
+      estimates: {
+        div1: 540,
+        div2: 290,
+        div3: 300,
+        div4: 350,
+        div5: 255
+      },
+      finalResults: {
+        div1: 534,
+        div2: 294,
+        div3: 300,
+        div4: 349,
+        div5: 246
+      }
+    };
+
+    // NAC Division Cups Day 2 (NEW - Updated elim points)
+    const nacDivCupsDay2: TournamentWeek = {
+      id: 'c6s4-duos-div-cups-nac-day2',
+      seriesId: 'c6s4-duos-division-cups',
+      weekNumber: 2,
+      name: 'C6S4 DUOS DIV CUPS #2 - NAC (Updated Elim Points)',
+      date: new Date('2024-01-16'),
+      region: 'NAC',
+      isCompleted: true,
+      pointThresholds: {
+        div1: 270,  // Top 50 Day 1 only (cumulative TBD)
+        div2: 335,  // Top 50 (1 pt per elim)
+        div3: 335,  // Top 100 (1 pt per elim)  
+        div4: 340,  // Top 200 (1 pt per elim)
+        div5: 302,  // Top 300 (0 pts per elim)
+        updatedAt: new Date()
+      },
+      estimates: {
+        div1: 270,
+        div2: 320,
+        div3: 335,
+        div4: 340,
+        div5: 300
+      },
+      finalResults: {
+        div1: 270, // Day 1 only
+        div2: 335,
+        div3: 335,
+        div4: 340,
+        div5: 302
+      }
+    };
+
     try {
       // Save to Firestore
       await this.db.collection('tournament_series').doc(soloSeries.id).set(soloSeries);
       await this.db.collection('tournament_weeks').doc(nacWeek1.id).set(nacWeek1);
       await this.db.collection('tournament_weeks').doc(euWeek1.id).set(euWeek1);
+      
+      // Save Duos Division Cups data
+      await this.db.collection('tournament_series').doc(duosDivisionCups.id).set(duosDivisionCups);
+      await this.db.collection('tournament_weeks').doc(euDivCupsDay1.id).set(euDivCupsDay1);
+      await this.db.collection('tournament_weeks').doc(euDivCupsDay2.id).set(euDivCupsDay2);
+      await this.db.collection('tournament_weeks').doc(nacDivCupsDay2.id).set(nacDivCupsDay2);
       
       console.log('✅ Tournament data initialized successfully');
     } catch (error) {

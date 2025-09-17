@@ -67,10 +67,12 @@ async function generateTournamentCoaching({
   const pointsNeeded = targetPoints - currentPoints;
   const averageNeeded = gamesRemaining > 0 ? pointsNeeded / gamesRemaining : 0;
 
-  // Tournament-specific point values
+  // Tournament-specific point values (updated for Division Cups Day 2)
   const pointValues = tournamentType === 'solo' 
     ? { win: 60, elimination: 2, top10: 40, top25: 30 }
-    : { win: 65, elimination: 1, top5: 50, top10: 40, top25: 25 };
+    : tournamentType === 'duos_division_cups'
+    ? { win: 65, elimination: 1, top5: 50, top10: 40, top25: 25 } // Day 2: Div 2-4 = 1pt, Div 5 = 0pts
+    : { win: 65, elimination: 2, top5: 50, top10: 40, top25: 25 };
 
   // Get tournament thresholds
   const thresholds = getRegionThresholds(region, tournamentType);
@@ -106,6 +108,13 @@ ${tournamentType === 'solo' ?
     // Medium points - balanced strategy
     strategy = `⚖️ **BALANCED STRATEGY**
     
+${tournamentType === 'duos_division_cups' ? 
+`🆕 **DIVISION CUPS DAY 2 UPDATE:**
+- Elimination points REDUCED: Div 2-4 = 1pt, Div 5 = 0pts
+- Max placement is MORE important than ever
+- Defend yourself when keyed, but avoid unnecessary fights
+- Focus on endgames - surge only active ~15% Div 1, ~3% other divs` : ''}`
+    
 You need ${pointsNeeded} points in ${gamesRemaining} games (${averageNeeded.toFixed(1)} avg/game).
 
 **Recommended Approach:**
@@ -126,6 +135,16 @@ ${tournamentType === 'solo' ?
   } else {
     // Low points needed - placement strategy
     strategy = `🛡️ **PLACEMENT STRATEGY**
+    
+${tournamentType === 'duos_division_cups' ? 
+`🎯 **DIVISION CUPS DAY 2 META:**
+- Elim points nerfed: Div 2-4 (1pt), Div 5 (0pts)  
+- Play MAX PLACEMENT strategy
+- Avg top 5s/top 10s will qualify easily
+- Defend when keyed but avoid W-keying
+- Queue bug still exists: 2min requeue for Div 2-4, 6min for Div 1+5
+
+` : ''}`
     
 You need ${pointsNeeded} points in ${gamesRemaining} games (${averageNeeded.toFixed(1)} avg/game).
 
@@ -287,10 +306,10 @@ function getRegionThresholds(region: string, tournamentType: string) {
       ? { top100: 329, top500: 298, top1000: 285, top2500: 265, top7500: 232 }
       : { top100: 309, top500: 273, top1000: 256, top2500: 226, top7500: 159 };
   } else if (tournamentType === 'duos_division_cups') {
-    // C6S4 Division Cups #1 - LIVE RESULTS
+    // C6S4 Division Cups Day 2 - FINAL RESULTS (Updated Elim Points)
     return region === 'EU'
-      ? { div1: 280, div2: 335, div3: 345, div4: 410, div5: 335 }
-      : { div1: 270, div2: 320, div3: 335, div4: 350, div5: 295 };
+      ? { div1: 534, div2: 294, div3: 300, div4: 349, div5: 246 } // Day 2 results
+      : { div1: 270, div2: 335, div3: 335, div4: 340, div5: 302 }; // NAC Day 2 results
   } else {
     // C6S4 Duos Trials - ACTUAL FINAL RESULTS
     return region === 'EU'

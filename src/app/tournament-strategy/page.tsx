@@ -191,6 +191,47 @@ Point System: Win = 65 points, Elim = 1 point. Most points from placement.`,
         'Follow points estimates and use tourney calc between games'
       ],
       effectiveness: { placement: 8, consistency: 8, skillRequired: 7 }
+    },
+    {
+      id: 'division-cups-day2-meta',
+      title: '🆕 Division Cups Day 2 - Elimination Point NERF',
+      category: 'meta',
+      mode: 'duos',
+      difficulty: 'intermediate',
+      content: `🚨 **MAJOR DAY 2 CHANGES - ELIM POINTS NERFED**
+
+**Updated Point System (Day 2):**
+- EU/NAC Div 2-4: 2pts → 1pt per elim
+- EU/NAC Div 5: 2pts → 0pts per elim  
+- Other regions Div 2: 2pts → 1pt per elim
+- Other regions Div 3: 2pts → 0pts per elim
+
+**What We Learned from Day 1:**
+- Surge active ~15% of Div 1 games, ~3% in Divs 2-5
+- Divs 2,3,5 (and NAC Div 4) = MAX PLACEMENT META
+- EU Div 4 qual was 404 points (very achievable without keying)
+- Many teams qualified with loads of Top 5s in dead games
+
+**Day 2 Final Results:**
+- EU: Div 1 (534), Div 2 (294), Div 3 (300), Div 4 (349), Div 5 (246)
+- NAC: Div 1 (270), Div 2 (335), Div 3 (335), Div 4 (340), Div 5 (302)
+
+**Strategy Adaptation for Reduced Elim Points:**
+- Even MORE placement focused than Day 1
+- Defend yourself when keyed, but avoid initiating fights
+- Look for Top 5s and Top 10s consistently
+- Tag damage early/mid game, then watch player count`,
+      tips: [
+        'Elimination points are now almost worthless - focus 100% placement',
+        'Defend when keyed but never initiate unnecessary fights',
+        'Queue bug still exists: 2min requeue Div 2-4, 6min Div 1+5', 
+        'Tag 200-300 damage early zones, then pure placement',
+        'Most qual scores achievable with consistent Top 5s/10s',
+        'Dropspot data from Day 1 available - use less contested spots',
+        'Dead games are more common - take advantage with placement',
+        'Div 5 has 0 elim points - 100% placement only strategy'
+      ],
+      effectiveness: { placement: 10, consistency: 10, skillRequired: 5 }
     }
   ];
 
