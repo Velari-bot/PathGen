@@ -1,27 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApps, initializeApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
-
-// Initialize Firebase Admin if not already initialized
-function initializeFirebaseAdmin() {
-  if (getApps().length === 0) {
-    if (process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
-      try {
-        initializeApp({
-          credential: cert({
-            projectId: process.env.FIREBASE_PROJECT_ID || 'pathgen-a771b',
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-          }),
-        });
-      } catch (error: any) {
-        if (error.code !== 'app/duplicate-app') {
-          console.error('❌ Firebase Admin initialization error:', error);
-        }
-      }
-    }
-  }
-}
+import { getDb } from '@/lib/firebase-admin-api';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,8 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    initializeFirebaseAdmin();
-    const db = getFirestore();
+    const db = getDb();
 
     if (action === 'check') {
       // Check current subscription status across all collections

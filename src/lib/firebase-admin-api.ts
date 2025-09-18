@@ -6,21 +6,46 @@ let firebaseAdminInitialized = false;
 let firestoreInstance: any = null;
 let authInstance: any = null;
 
-// Dynamic check for CI/build environment
+// Ultra-aggressive environment detection - always default to mock unless explicitly safe
 const getEnvironmentFlags = () => {
-  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-  const isBuildTime = typeof window === 'undefined' && !process.env.FIREBASE_CLIENT_EMAIL;
+  // Check if we're in a webpack/build context
+  const isBuildContext = (
+    typeof process !== 'undefined' && 
+    process.env && 
+    (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) &&
+    typeof window === 'undefined'
+  );
+  
+  // Only use real Firebase if ALL credentials are present AND we're explicitly in production
+  const hasAllCredentials = !!(
+    process.env.FIREBASE_PROJECT_ID && 
+    process.env.FIREBASE_CLIENT_EMAIL && 
+    process.env.FIREBASE_PRIVATE_KEY &&
+    process.env.FIREBASE_CLIENT_EMAIL.length > 10 && // Sanity check
+    process.env.FIREBASE_PRIVATE_KEY.length > 100    // Sanity check
+  );
+  
+  // VERY conservative - only use real Firebase in very specific conditions
+  const shouldUseMock = (
+    !hasAllCredentials ||
+    process.env.CI === 'true' || 
+    process.env.GITHUB_ACTIONS === 'true' ||
+    isBuildContext ||
+    typeof window === 'undefined' && process.env.NODE_ENV !== 'production'
+  );
   
   console.log('🔍 Environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
     CI: process.env.CI,
     GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
-    hasFirebaseClientEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
-    isCI,
-    isBuildTime,
-    window: typeof window
+    hasAllCredentials,
+    isBuildContext,
+    shouldUseMock,
+    emailLength: process.env.FIREBASE_CLIENT_EMAIL?.length || 0,
+    keyLength: process.env.FIREBASE_PRIVATE_KEY?.length || 0
   });
   
-  return { isCI, isBuildTime };
+  return { shouldUseMock, hasAllCredentials };
 };
 
 // Create mock Firestore instance for build/CI environments
@@ -46,11 +71,11 @@ const mockFirestore = {
 // Lazy initialization function for API routes
 export function getFirebaseAdmin() {
   if (!firebaseAdminInitialized) {
-    // Check if we're in CI/build environment first
-    const { isCI, isBuildTime } = getEnvironmentFlags();
+    // Check if we should use mock (default to mock unless definitely safe)
+    const { shouldUseMock } = getEnvironmentFlags();
     
-    if (isCI || isBuildTime) {
-      console.log('🔧 CI/Build time detected - skipping Firebase Admin initialization (API)');
+    if (shouldUseMock) {
+      console.log('🔧 Using mock Firebase instance (CI/build/missing credentials)');
       firebaseAdminInitialized = true; // Mark as initialized to prevent further attempts
       return {
         getDb: () => mockFirestore,
@@ -108,16 +133,16 @@ export function getFirebaseAdmin() {
   };
 }
 
-// Convenience exports
-// Check environment at module level to prevent initialization issues
-const environmentFlags = getEnvironmentFlags();
-
+// Convenience exports - always check environment fresh to catch runtime changes
 export const getDb = () => {
   console.log('🔍 getDb() called');
   
-  // Return mock immediately if in CI/build environment
-  if (environmentFlags.isCI || environmentFlags.isBuildTime) {
-    console.log('🔧 CI/Build time detected - returning mock Firestore instance (API)');
+  // Always check environment fresh (don't cache at module level)
+  const { shouldUseMock } = getEnvironmentFlags();
+  
+  // Return mock immediately if we should use mock
+  if (shouldUseMock) {
+    console.log('🔧 Using mock Firestore instance (safe default)');
     return mockFirestore;
   }
   

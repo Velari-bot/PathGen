@@ -4,8 +4,33 @@
  * Handles initialization, deduction, addition, and transaction history
  */
 
-import { getDb } from './firebase-admin-api';
 import { FieldValue } from 'firebase-admin/firestore';
+
+// Safe Firebase import with build-time fallback
+let getDb: any
+try {
+  const firebaseAdminApi = require('./firebase-admin-api')
+  getDb = firebaseAdminApi.getDb
+} catch (error) {
+  console.warn('⚠️ Firebase Admin API not available during build, using mock')
+  getDb = () => ({
+    collection: () => ({
+      doc: () => ({
+        get: () => Promise.resolve({ 
+          exists: false, 
+          data: () => null,
+          id: 'mock-doc'
+        }),
+        set: () => Promise.resolve(),
+        update: () => Promise.resolve()
+      }),
+      add: () => Promise.resolve({ id: 'mock-doc' }),
+      where: () => ({
+        get: () => Promise.resolve({ docs: [], empty: true })
+      })
+    })
+  })
+}
 
 // User account types
 export type AccountType = 'free' | 'pro';

@@ -4,11 +4,21 @@ import { getFirestore } from 'firebase-admin/firestore';
 let firebaseAdminInitialized = false;
 let firestoreInstance: any = null;
 
-// Dynamic check for CI/build environment (check at runtime, not module load)
+// Conservative environment detection - default to mock unless absolutely safe
 const getEnvironmentFlags = () => {
-  const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
-  const isBuildTime = typeof window === 'undefined' && !process.env.FIREBASE_CLIENT_EMAIL;
-  return { isCI, isBuildTime };
+  // Only use real Firebase if ALL credentials are present AND we're not in CI
+  const hasAllCredentials = !!(
+    process.env.FIREBASE_PROJECT_ID && 
+    process.env.FIREBASE_CLIENT_EMAIL && 
+    process.env.FIREBASE_PRIVATE_KEY
+  );
+  
+  const shouldUseMock = !hasAllCredentials || 
+    process.env.CI === 'true' || 
+    process.env.GITHUB_ACTIONS === 'true' ||
+    (typeof window === 'undefined' && !hasAllCredentials);
+    
+  return { shouldUseMock, hasAllCredentials };
 };
 
 // Create mock Firestore instance for build/CI environments
@@ -37,11 +47,11 @@ function initializeFirebaseAdmin() {
     return;
   }
 
-  // Check if we're in CI/build environment first
-  const { isCI, isBuildTime } = getEnvironmentFlags();
+  // Check if we should use mock (conservative approach)
+  const { shouldUseMock } = getEnvironmentFlags();
   
-  if (isCI || isBuildTime) {
-    console.log('🔧 CI/Build time detected - skipping Firebase Admin initialization');
+  if (shouldUseMock) {
+    console.log('🔧 Using mock Firebase - CI/build/missing credentials detected');
     firebaseAdminInitialized = true; // Mark as initialized to prevent further attempts
     return;
   }
@@ -84,10 +94,10 @@ function initializeFirebaseAdmin() {
 export function getDb() {
   console.log('🔍 getDb() called');
   
-  // Return mock instance immediately for CI/build environments
-  const { isCI, isBuildTime } = getEnvironmentFlags();
-  if (isCI || isBuildTime) {
-    console.log('🔧 CI/Build time detected - returning mock Firestore instance');
+  // Check if we should use mock (always check fresh)
+  const { shouldUseMock } = getEnvironmentFlags();
+  if (shouldUseMock) {
+    console.log('🔧 Using mock Firestore instance (safe default)');
     return mockFirestore;
   }
 

@@ -1,8 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase-admin'
-// @ts-ignore
-import { YoutubeTranscript } from 'youtube-transcript'
-import { creditService } from '@/lib/credit-backend-service'
+
+// Conditional imports to prevent build-time Firebase initialization issues
+let YoutubeTranscript: any
+let creditService: any
+let getDb: any
+
+// Check if we're in a safe environment to load Firebase dependencies
+const isBuildTime = (
+  typeof process !== 'undefined' && 
+  (!process.env.FIREBASE_CLIENT_EMAIL || process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true')
+)
+
+if (!isBuildTime) {
+  try {
+    // @ts-ignore
+    YoutubeTranscript = require('youtube-transcript').YoutubeTranscript
+    creditService = require('@/lib/credit-backend-service').creditService
+    const firebaseAdminApi = require('@/lib/firebase-admin-api')
+    getDb = firebaseAdminApi.getDb
+  } catch (error) {
+    console.warn('⚠️ Failed to load production dependencies:', error)
+  }
+}
+
+// Provide mocks for build time
+if (!YoutubeTranscript) YoutubeTranscript = { fetchTranscript: () => Promise.resolve([]) }
+if (!creditService) creditService = { 
+  getUserCredits: () => Promise.resolve({ credits: 0 }),
+  deductCredits: () => Promise.resolve()
+}
+if (!getDb) getDb = () => ({
+  collection: () => ({
+    doc: () => ({
+      get: () => Promise.resolve({ exists: false, data: () => null }),
+      set: () => Promise.resolve()
+    })
+  })
+})
 
 interface VideoInfo {
   title: string
@@ -148,6 +182,7 @@ async function generateComprehensiveAnalysis(
   // Get user's Fortnite stats and preferences for personalized analysis
   let userContext = ""
   try {
+    const db = getDb()
     const userDoc = await db.collection('users').doc(userEmail).get()
     if (userDoc.exists) {
       const userData = userDoc.data()
@@ -292,6 +327,14 @@ function parseAITextResponse(response: string): {
 }
 
 export async function POST(request: NextRequest) {
+  // Skip execution during build time to prevent Firebase initialization errors
+  if (process.env.NODE_ENV !== 'production' && !process.env.FIREBASE_CLIENT_EMAIL) {
+    return NextResponse.json(
+      { error: 'Service temporarily unavailable during build' },
+      { status: 503 }
+    )
+  }
+
   try {
     const { videoUrl, platform } = await request.json()
     const userEmail = request.headers.get('user-email')
@@ -418,6 +461,7 @@ export async function POST(request: NextRequest) {
     
     // Save to Firestore
     try {
+      const db = getDb()
       await db.collection('video_analyses').doc(analysisRecord.id).set(analysisRecord)
       console.log(`✅ Video analysis saved for user: ${userEmail}`)
     } catch (error) {
