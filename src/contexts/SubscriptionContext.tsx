@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useAuth } from './AuthContext';
-import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, limit, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '@/lib/firebase';
 import { 
@@ -28,6 +28,7 @@ interface SubscriptionContextType {
   hasFeatureAccess: (feature: string, requiredTier: SubscriptionTier) => boolean;
   isFeatureAvailable: (feature: string) => boolean;
   getRemainingUsage: (feature: string) => { used: number; limit: number; remaining: number };
+  refreshSubscription: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -71,6 +72,17 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
           const data = doc.data();
           const userSubscription = data.subscription;
           const userUsage = data.usage;
+
+          // Debug: Log what we're getting from the subscription
+          console.log('🔍 SubscriptionContext: Received user data update', {
+            userSubscription,
+            tier: userSubscription?.tier,
+            status: userSubscription?.status,
+            plan: userSubscription?.plan,
+            accountType: data.accountType,
+            subscriptionTier: data.subscriptionTier,
+            subscriptionStatus: data.subscriptionStatus
+          });
 
           setSubscription(userSubscription || null);
           setUsage(userUsage || null);
@@ -253,6 +265,38 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     return { used, limit, remaining };
   }, [usage, limits]);
 
+  // Force refresh subscription data from Firestore
+  const refreshSubscription = useCallback(async () => {
+    if (!user || !db) return;
+    
+    console.log('🔄 Forcing subscription refresh for user:', user.uid);
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const userSubscription = data.subscription;
+        
+        console.log('🔍 Force refresh result:', {
+          userSubscription,
+          tier: userSubscription?.tier,
+          status: userSubscription?.status,
+          accountType: data.accountType,
+          subscriptionTier: data.subscriptionTier
+        });
+        
+        setSubscription(userSubscription || null);
+        
+        if (userSubscription?.tier) {
+          setLimits(PLAN_LIMITS[userSubscription.tier as SubscriptionTier]);
+        } else {
+          setLimits(PLAN_LIMITS.free);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing subscription:', error);
+    }
+  }, [user, db]);
+
   const value: SubscriptionContextType = {
     subscription,
     loading,
@@ -266,7 +310,8 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     getCurrentUsage,
     hasFeatureAccess,
     isFeatureAvailable,
-    getRemainingUsage
+    getRemainingUsage,
+    refreshSubscription
   };
 
   return (

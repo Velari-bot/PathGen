@@ -24,7 +24,7 @@ export default function PremiumOnly({
   showFooter = true
 }: PremiumOnlyProps) {
   const { user, loading } = useAuth();
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { subscription, loading: subscriptionLoading, refreshSubscription } = useSubscription();
 
   // Show loading while checking auth/subscription status
   if (loading || subscriptionLoading) {
@@ -38,12 +38,28 @@ export default function PremiumOnly({
     );
   }
 
-  // Check if user has pro subscription
-  const hasPro = subscription?.tier === 'pro' || subscription?.status === 'pro';
+  // Debug: Log the subscription data we're checking
+  console.log('🔍 PremiumOnly: Checking subscription access', {
+    user: !!user,
+    subscription,
+    tier: subscription?.tier,
+    status: subscription?.status
+  });
+
+  // Check if user has pro subscription with multiple fallbacks
+  const hasPro = subscription?.tier === 'pro' || 
+                 subscription?.status === 'pro';
 
   // If user has pro access, show the content
   if (user && hasPro) {
+    console.log('✅ PremiumOnly: User has Pro access, showing content');
     return <>{children}</>;
+  }
+
+  // If we have a user but no subscription data yet, try refreshing
+  if (user && !subscription && refreshSubscription) {
+    console.log('🔄 PremiumOnly: No subscription data found, refreshing...');
+    refreshSubscription();
   }
 
   // Premium upgrade prompt for non-pro users

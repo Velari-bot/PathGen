@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -18,6 +19,7 @@ import PremiumOnly from '@/components/PremiumOnly';
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
+  const { refreshSubscription } = useSubscription();
   const router = useRouter();
   const { deductCreditsAfterAction } = useCreditTracking();
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
@@ -351,6 +353,12 @@ export default function DashboardPage() {
               
               // Wait a moment for changes to propagate
               await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // Force refresh subscription context
+              if (refreshSubscription) {
+                await refreshSubscription();
+                console.log('✅ Subscription context refreshed after payment');
+              }
               
               // Reload subscription data
               await checkSubscription();
