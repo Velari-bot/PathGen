@@ -7,6 +7,8 @@ import { useCreditTracking } from '@/hooks/useCreditTracking';
 import { UsageTrackingRequest } from '@/types/subscription';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import EmailVerificationGuard from '@/components/EmailVerificationGuard';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
 import { EpicConnectButton } from '@/components/EpicConnectButton';
@@ -49,7 +51,7 @@ export default function AIPage() {
           userTier: 'pro' // You'd get this from subscription context
         }
       );
-      setModelPreview(`Will use: ${getModelIcon(recommendation.model)} ${recommendation.model} - ${recommendation.reasoning}`);
+      setModelPreview(`Will use: ${getModelIcon(recommendation.model)} ${getModelDisplayName(recommendation.model)} - ${recommendation.reasoning}`);
     } else {
       setModelPreview('');
     }
@@ -61,6 +63,15 @@ export default function AIPage() {
       case '4-turbo-mini': return '🧠';
       case '5-mini': return '🚀';
       default: return '🤖';
+    }
+  };
+
+  const getModelDisplayName = (model: string) => {
+    switch (model) {
+      case '4o-mini': return 'PathGen 4o-mini';
+      case '4-turbo-mini': return 'PathGen 4-turbo-mini';
+      case '5-mini': return 'PathGen 5-mini';
+      default: return `PathGen ${model}`;
     }
   };
 
@@ -1318,39 +1329,23 @@ ${trainingSystems}`;
 
   return (
     <EmailVerificationGuard>
-      <div className="min-h-screen bg-white dark:bg-black font-['Inter',_sans-serif]">
-        {/* Minimal Top Navbar */}
-        <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-[#4f8cff] rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
-              <span className="text-xl font-semibold text-black dark:text-white">PathGen</span>
-            </Link>
-            <Link 
-              href="/pricing" 
-              className="px-4 py-2 bg-[#4f8cff] hover:bg-[#3d7bff] text-white rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
-            >
-              Upgrade to Pro
-            </Link>
-          </div>
-        </div>
+      <div className="min-h-screen bg-black font-['Inter',_sans-serif]">
+        <Navbar />
 
         {/* Main Chat Container */}
-        <div className="max-w-4xl mx-auto h-[calc(100vh-80px)] flex flex-col">
+        <div className="max-w-4xl mx-auto pt-20 pb-8 min-h-[calc(100vh-160px)] flex flex-col">
           {/* Chat Messages Area */}
           <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
             {/* Welcome Message */}
             <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <div className="bg-gray-100 dark:bg-[#1a1a1a] text-gray-900 dark:text-white px-6 py-4 rounded-2xl max-w-md shadow-sm">
+              <div className="bg-[#1a1a1a] text-white px-6 py-4 rounded-2xl max-w-md shadow-sm">
                 <p className="text-sm leading-relaxed">Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?</p>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">PathGen AI</span>
+                  <span className="text-xs text-gray-400">PathGen AI</span>
                   <div className="flex items-center space-x-2">
                     <button 
                       onClick={() => navigator.clipboard.writeText("Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?")}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="text-gray-400 hover:text-gray-300 transition-colors"
                       title="Copy message"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1373,19 +1368,19 @@ ${trainingSystems}`;
                   className={`px-6 py-4 rounded-2xl max-w-md lg:max-w-lg shadow-sm ${
                     message.role === 'user'
                       ? 'bg-[#4f8cff] text-white'
-                      : 'bg-gray-100 dark:bg-[#1a1a1a] text-gray-900 dark:text-white'
+                      : 'bg-[#1a1a1a] text-white'
                   }`}
                 >
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{parseBoldText(message.content)}</p>
                   <div className="flex items-center justify-between mt-3">
-                    <span className={`text-xs ${message.role === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <span className={`text-xs ${message.role === 'user' ? 'text-white/70' : 'text-gray-400'}`}>
                       {message.timestamp.toLocaleTimeString()}
                     </span>
                     {message.role === 'assistant' && (
                       <div className="flex items-center space-x-2">
                         <button 
                           onClick={() => navigator.clipboard.writeText(message.content)}
-                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          className="text-gray-400 hover:text-gray-300 transition-colors"
                           title="Copy message"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1394,7 +1389,7 @@ ${trainingSystems}`;
                         </button>
                         <button 
                           onClick={() => {/* Regenerate logic */}}
-                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          className="text-gray-400 hover:text-gray-300 transition-colors"
                           title="Regenerate response"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1411,14 +1406,14 @@ ${trainingSystems}`;
             {/* Typing Indicator */}
             {isLoadingResponse && (
               <div className="flex justify-start animate-in fade-in duration-300">
-                <div className="bg-gray-100 dark:bg-[#1a1a1a] text-gray-900 dark:text-white px-6 py-4 rounded-2xl shadow-sm">
+                <div className="bg-[#1a1a1a] text-white px-6 py-4 rounded-2xl shadow-sm">
                   <div className="flex items-center space-x-2">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                       <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
+                    <span className="text-sm text-gray-400">AI is thinking...</span>
                   </div>
                 </div>
               </div>
@@ -1429,11 +1424,11 @@ ${trainingSystems}`;
           </div>
 
           {/* Sticky Input Bar */}
-          <div className="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-md">
+          <div className="border-t border-gray-800 bg-black/80 backdrop-blur-md">
             <div className="px-6 py-4">
               {/* Model Preview */}
               {modelPreview && (
-                <div className="mb-3 text-xs text-gray-500 dark:text-gray-400 px-4">
+                <div className="mb-3 text-xs text-gray-400 px-4">
                   {modelPreview}
                 </div>
               )}
@@ -1446,13 +1441,13 @@ ${trainingSystems}`;
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask me anything about Fortnite..."
-                  className="w-full px-6 py-4 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4f8cff] focus:border-transparent transition-all duration-200"
+                  className="w-full px-6 py-4 rounded-full border border-gray-700 bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4f8cff] focus:border-transparent transition-all duration-200"
                   disabled={isLoadingResponse}
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!inputMessage.trim() || isLoadingResponse || !canAfford(1)}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-[#4f8cff] hover:bg-[#3d7bff] disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-[#4f8cff] hover:bg-[#3d7bff] disabled:bg-gray-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
                 >
                   {isLoadingResponse ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1477,7 +1472,7 @@ ${trainingSystems}`;
                   <button
                     key={index}
                     onClick={() => setInputMessage(suggestion.query)}
-                    className="px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 rounded-full text-sm transition-all duration-200 hover:scale-105"
+                    className="px-4 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-gray-300 rounded-full text-sm transition-all duration-200 hover:scale-105"
                   >
                     {suggestion.text}
                   </button>
@@ -1486,9 +1481,9 @@ ${trainingSystems}`;
 
               {/* Credit Status */}
               <div className="mt-4 text-center">
-                <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] rounded-full">
+                <div className="inline-flex items-center space-x-2 px-4 py-2 bg-[#1a1a1a] rounded-full">
                   <span className="text-yellow-500">💎</span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-gray-400">
                     {canAfford(1) ? 'Ready to chat • 1 credit per message' : 'Need credits to continue'}
                   </span>
                   {!canAfford(1) && (
@@ -1506,7 +1501,7 @@ ${trainingSystems}`;
         <div className="fixed top-20 left-4 z-40">
           <button 
             onClick={() => {/* Toggle sidebar */}}
-            className="w-10 h-10 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm"
+            className="w-10 h-10 bg-[#1a1a1a] border border-gray-700 rounded-lg flex items-center justify-center text-gray-400 hover:text-white transition-colors shadow-sm"
             title="Chat History"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1514,6 +1509,8 @@ ${trainingSystems}`;
             </svg>
           </button>
         </div>
+
+        <Footer />
       </div>
     </EmailVerificationGuard>
   );
