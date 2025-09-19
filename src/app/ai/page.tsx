@@ -6,13 +6,12 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useCreditTracking } from '@/hooks/useCreditTracking';
 import { UsageTrackingRequest } from '@/types/subscription';
 import { useRouter } from 'next/navigation';
-import Navbar from '@/components/Navbar';
+import Link from 'next/link';
 import EmailVerificationGuard from '@/components/EmailVerificationGuard';
 import FortniteStatsDisplay from '@/components/FortniteStatsDisplay';
 import { EpicConnectButton } from '@/components/EpicConnectButton';
 import { FirebaseService, FortniteStats, Message } from '@/lib/firebase-service';
 import { UsageTracker } from '@/lib/usage-tracker';
-import Footer from '@/components/Footer';
 import { CreditDisplay } from '@/components/CreditDisplay';
 import { getModelRecommendation } from '@/lib/ai-model-selector';
 import { zoneGuides, mechanics, strategies, metaAnalysis, tipsAndTricks, tournamentInfo, competitiveLoadouts, advancedMechanics, dataAnalytics, lootSystems, boonCombos, mythicCounters, mobilityStrategy, rankingIntelligence, trainingSystems } from '@/lib/ai-docs';
@@ -1319,358 +1318,203 @@ ${trainingSystems}`;
 
   return (
     <EmailVerificationGuard>
-      <div className="min-h-screen bg-black mobile-container">
-        <Navbar />
-      
-
-      
-      <div className="container mx-auto px-4 sm:px-6 pt-20 sm:pt-24 pb-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">PathGen AI</h1>
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 px-4">
-              Your AI Fortnite Coach & Strategy Assistant
-            </p>
-          </div>
-
-          {/* Fortnite Account Section */}
-          <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
-            <h2 className="text-2xl font-bold text-white mb-4">Fortnite Account</h2>
-            
-            {epicAccount ? (
-              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-green-400 font-semibold">Account Connected</h3>
-                  <span className="px-3 py-1 bg-green-500 text-white text-xs rounded-full">Connected</span>
-                </div>
-                <div className="text-sm text-white/80 space-y-1">
-                  <p><span className="text-white/60">Username:</span> {epicAccount.displayName}</p>
-                  <p><span className="text-white/60">Platform:</span> {epicAccount.platform || 'Epic'}</p>
-                  <p><span className="text-white/60">Connected:</span> {new Date(epicAccount.linkedAt || '').toLocaleDateString()}</p>
-                </div>
-                <button
-                  onClick={() => setEpicAccount(null)}
-                  className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors"
-                >
-                  Disconnect Account
-                </button>
+      <div className="min-h-screen bg-white dark:bg-black font-['Inter',_sans-serif]">
+        {/* Minimal Top Navbar */}
+        <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-[#4f8cff] rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">P</span>
               </div>
-            ) : (
-              <div className="text-center space-y-4">
-                <p className="text-white/60">Connect your Epic Games account to access personalized Fortnite coaching and stats.</p>
-                {epicError && (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                    <p className="text-red-400 text-sm">{epicError}</p>
+              <span className="text-xl font-semibold text-black dark:text-white">PathGen</span>
+            </Link>
+            <Link 
+              href="/pricing" 
+              className="px-4 py-2 bg-[#4f8cff] hover:bg-[#3d7bff] text-white rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-lg"
+            >
+              Upgrade to Pro
+            </Link>
+          </div>
+        </div>
+
+        {/* Main Chat Container */}
+        <div className="max-w-4xl mx-auto h-[calc(100vh-80px)] flex flex-col">
+          {/* Chat Messages Area */}
+          <div className="flex-1 overflow-y-auto px-6 py-8 space-y-6">
+            {/* Welcome Message */}
+            <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="bg-gray-100 dark:bg-[#1a1a1a] text-gray-900 dark:text-white px-6 py-4 rounded-2xl max-w-md shadow-sm">
+                <p className="text-sm leading-relaxed">Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?</p>
+                <div className="flex items-center justify-between mt-3">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">PathGen AI</span>
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => navigator.clipboard.writeText("Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?")}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      title="Copy message"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
                   </div>
-                )}
-                <EpicConnectButton 
-                  onAccountLinked={handleEpicAccountLinked}
-                  onError={handleEpicAccountError}
-                />
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Messages */}
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div
+                  className={`px-6 py-4 rounded-2xl max-w-md lg:max-w-lg shadow-sm ${
+                    message.role === 'user'
+                      ? 'bg-[#4f8cff] text-white'
+                      : 'bg-gray-100 dark:bg-[#1a1a1a] text-gray-900 dark:text-white'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{parseBoldText(message.content)}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className={`text-xs ${message.role === 'user' ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {message.timestamp.toLocaleTimeString()}
+                    </span>
+                    {message.role === 'assistant' && (
+                      <div className="flex items-center space-x-2">
+                        <button 
+                          onClick={() => navigator.clipboard.writeText(message.content)}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          title="Copy message"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                        <button 
+                          onClick={() => {/* Regenerate logic */}}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                          title="Regenerate response"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Typing Indicator */}
+            {isLoadingResponse && (
+              <div className="flex justify-start animate-in fade-in duration-300">
+                <div className="bg-gray-100 dark:bg-[#1a1a1a] text-gray-900 dark:text-white px-6 py-4 rounded-2xl shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">AI is thinking...</span>
+                  </div>
+                </div>
               </div>
             )}
+
+            {/* Scroll target */}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Player Stats Section */}
-          {isLoadingStats ? (
-            <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
-              <div className="flex items-center justify-center">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
-                <span className="text-white">Loading your Fortnite stats...</span>
-              </div>
-            </div>
-          ) : fortniteStats ? (
-            <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-white">📊 Your Performance Stats</h2>
-                <button
-                  onClick={refreshStats}
-                  disabled={isLoadingStats}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
-                >
-                  {isLoadingStats ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Refreshing...
-                    </>
-                  ) : (
-                    <>
-                      🔄 Refresh Stats
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-white font-bold text-xl">🎮</span>
-                  </div>
-                  <p className="text-[#BFBFBF] text-sm mb-1">Total Matches</p>
-                  <p className="text-white font-bold text-2xl">{fortniteStats.overall.matches}</p>
+          {/* Sticky Input Bar */}
+          <div className="border-t border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-md">
+            <div className="px-6 py-4">
+              {/* Model Preview */}
+              {modelPreview && (
+                <div className="mb-3 text-xs text-gray-500 dark:text-gray-400 px-4">
+                  {modelPreview}
                 </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-white font-bold text-xl">🏆</span>
-                  </div>
-                  <p className="text-[#BFBFBF] text-sm mb-1">Wins</p>
-                  <p className="text-white font-bold text-2xl">{fortniteStats.overall.top1}</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-white font-bold text-xl">⚔️</span>
-                  </div>
-                  <p className="text-[#BFBFBF] text-sm mb-1">K/D Ratio</p>
-                  <p className="text-white font-bold text-2xl">{fortniteStats.overall.kd?.toFixed(2) || '0.00'}</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-white font-bold text-xl">🎯</span>
-                  </div>
-                  <p className="text-[#BFBFBF] text-sm mb-1">Top 10 Rate</p>
-                  <p className="text-white font-bold text-2xl">{((fortniteStats.overall.top10 / Math.max(fortniteStats.overall.matches, 1)) * 100).toFixed(1)}%</p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-white font-bold text-2xl">📊</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">No Stats Available</h3>
-                <p className="text-[#BFBFBF] mb-4">
-                  Connect your Epic account to see your Fortnite performance stats and get personalized AI coaching!
-                </p>
-                {epicAccount ? (
-                  <button
-                    onClick={refreshStats}
-                    disabled={isLoadingStats}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 mx-auto"
-                  >
-                    {isLoadingStats ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Pulling Stats...
-                      </>
-                    ) : (
-                      <>
-                        🔄 Pull Stats from Osirion
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    Epic account not connected. Please connect your Epic account first.
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Credits Section */}
-          <div className="bg-[#1A1A1A] rounded-lg p-6 mb-6 border border-[#2A2A2A]">
-            <h2 className="text-2xl font-bold text-white mb-4">💎 Your Credits</h2>
-            <CreditDisplay compact={true} />
-            <div className="mt-4 text-sm text-gray-400">
-              <p>• AI Chat messages cost 1 credit each</p>
-              <p>• Credits are deducted when you send a message</p>
-              <p>• Pro users get 4,000 credits, Free users get 250 credits</p>
-            </div>
-          </div>
-
-          {/* Chat Controls */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={loadChatHistory}
-                className="px-4 py-2 bg-[#2A2A2A] text-[#BFBFBF] rounded-lg hover:bg-[#1A1A1A] transition-colors"
-              >
-                Show Chat Log
-              </button>
-              <span className="text-[#BFBFBF]">
-                {messages.length > 0 ? `${messages.length} messages` : 'No messages'}
-              </span>
-
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-green-400 text-xs">API Online</span>
-              </div>
-              <button 
-                onClick={clearCurrentChat}
-                className="px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-500 transition-colors"
-                title="Clear current chat"
-              >
-                Clear Chat
-              </button>
-            </div>
-            
-            {/* Credit Display */}
-            <div className="flex items-center space-x-4">
-              <div className="bg-[#2A2A2A] rounded-lg px-3 py-2 border border-[#3A3A3A]">
-                <div className="flex items-center space-x-2">
-                  <span className="text-yellow-400 text-lg">💎</span>
-                  <span className="text-white text-sm font-medium">
-                    {canAfford(1) ? 'Ready to Chat' : 'Need Credits'}
-                  </span>
-                </div>
-              </div>
+              )}
               
-              <button 
-                onClick={() => {
-                  setMessages([]);
-                  setCurrentChatId(null);
-                  initializeChat();
-                }}
-                className="px-4 py-2 bg-white text-black border border-white rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                + New Chat
-              </button>
-            </div>
-          </div>
-
-            {/* Chat Panel */}
-          <div className="bg-[#1A1A1A] rounded-lg p-6 border border-[#2A2A2A]">
-            <h2 className="text-2xl font-bold text-white mb-4">PathGen AI Coach</h2>
-              
-              {/* Messages */}
-              <div className="h-96 overflow-y-auto mb-4 space-y-3">
-              {/* Always show welcome message */}
-              <div className="flex justify-start">
-                <div className="bg-[#2A2A2A] text-white px-4 py-2 rounded-lg max-w-md">
-                  <p className="text-sm">Hello! I'm your PathGen AI assistant. I can help you optimize your Fortnite gameplay, analyze strategies, and provide personalized coaching. What would you like to know?</p>
-                  <p className="text-xs text-[#BFBFBF] mt-1">Welcome</p>
-                </div>
-                  </div>
-
-              {/* Show messages if any exist */}
-              {messages.length > 0 && messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.role === 'user'
-                        ? 'bg-white text-black'
-                        : 'bg-[#2A2A2A] text-white'
-                        }`}
-                      >
-                        <p className="text-sm whitespace-pre-wrap">{parseBoldText(message.content)}</p>
-                    <p className="text-xs text-[#BFBFBF] mt-1">
-                          {message.timestamp.toLocaleTimeString()}
-                        </p>
-                      </div>
-                    </div>
-              ))}
-              
-                {isLoadingResponse && (
-                  <div className="flex justify-start">
-                  <div className="bg-[#2A2A2A] text-white px-4 py-2 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        <span className="text-sm">AI is thinking...</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Scroll target for auto-scroll */}
-                <div ref={messagesEndRef} />
-              </div>
-
-              {/* Input */}
-            <div className="flex space-x-2 mb-4">
+              {/* Input Form */}
+              <div className="relative">
                 <input
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={handleKeyPress}
-                placeholder="Type your question..."
-                className="flex-1 px-4 py-3 bg-[#2A2A2A] text-white rounded-lg border border-[#2A2A2A] focus:outline-none focus:border-blue-500 placeholder-[#BFBFBF]"
+                  placeholder="Ask me anything about Fortnite..."
+                  className="w-full px-6 py-4 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a1a1a] text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4f8cff] focus:border-transparent transition-all duration-200"
                   disabled={isLoadingResponse}
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isLoadingResponse}
-                className="px-6 py-3 bg-[#BFBFBF] hover:bg-[#6A7C8D] disabled:bg-[#2A2A2A] text-[#1A1A1A] hover:text-white disabled:text-[#BFBFBF] rounded-lg transition-colors"
+                  disabled={!inputMessage.trim() || isLoadingResponse || !canAfford(1)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-[#4f8cff] hover:bg-[#3d7bff] disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 disabled:hover:scale-100 disabled:cursor-not-allowed"
                 >
-                  Send
-              </button>
-            </div>
+                  {isLoadingResponse ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  )}
+                </button>
+              </div>
 
-            {/* Quick Suggestions */}
-            <div>
-              <h3 className="text-white font-semibold mb-3">Quick Suggestions</h3>
-              <div className="flex flex-wrap gap-2">
-                <button 
-                  onClick={() => setInputMessage('drop locations and POI analysis')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🗺️ POI Drop Analysis
-                </button>
-                <button 
-                  onClick={() => setInputMessage('comprehensive analysis')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  📊 Performance Analysis
-                </button>
-                <button 
-                  onClick={() => setInputMessage('building tips and techniques')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🏗️ Building Tips
-                </button>
-                <button 
-                  onClick={() => setInputMessage('aim and weapon strategies')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🎯 Aim & Weapons
-                </button>
-                <button 
-                  onClick={() => setInputMessage('current tournament information and strategies')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🏆 Current Tournaments
-                </button>
-                <button 
-                  onClick={() => setInputMessage('C6S4 duos solos tournaments and PlayStation Cup details')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🎮 C6S4 Tournaments
-                </button>
-                <button 
-                  onClick={() => setInputMessage('PlayStation Cup live estimates and NAC targeting strategy')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  📈 PS Cup Live
-                </button>
-                <button 
-                  onClick={() => setInputMessage('latest game updates and mechanics changes')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🔄 Game Updates
-                </button>
-                <button 
-                  onClick={() => setInputMessage('Reload Quick Cups tournament details and strategies')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🏆 Reload Cups
-                </button>
-                <button 
-                  onClick={() => setInputMessage('game sense and positioning')}
-                  className="px-4 py-2 bg-[#2A2A2A] text-white rounded-full hover:bg-[#1A1A1A] transition-colors border border-[#2A2A2A]"
-                >
-                  🧠 Game Sense
-                </button>
+              {/* Quick Suggestions */}
+              <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                {[
+                  { text: "🗺️ POI Analysis", query: "drop locations and POI analysis" },
+                  { text: "📊 My Stats", query: "comprehensive analysis" },
+                  { text: "🏗️ Building", query: "building tips and techniques" },
+                  { text: "🎯 Aim Training", query: "aim and weapon strategies" },
+                  { text: "🏆 Tournaments", query: "current tournament information" },
+                  { text: "🔄 Updates", query: "latest game updates" }
+                ].map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setInputMessage(suggestion.query)}
+                    className="px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#2a2a2a] text-gray-700 dark:text-gray-300 rounded-full text-sm transition-all duration-200 hover:scale-105"
+                  >
+                    {suggestion.text}
+                  </button>
+                ))}
+              </div>
+
+              {/* Credit Status */}
+              <div className="mt-4 text-center">
+                <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-[#1a1a1a] rounded-full">
+                  <span className="text-yellow-500">💎</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {canAfford(1) ? 'Ready to chat • 1 credit per message' : 'Need credits to continue'}
+                  </span>
+                  {!canAfford(1) && (
+                    <Link href="/pricing" className="text-[#4f8cff] hover:text-[#3d7bff] text-sm font-medium">
+                      Get Credits
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Optional Collapsible Sidebar for Saved Chats (Hidden by Default) */}
+        <div className="fixed top-20 left-4 z-40">
+          <button 
+            onClick={() => {/* Toggle sidebar */}}
+            className="w-10 h-10 bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-gray-700 rounded-lg flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors shadow-sm"
+            title="Chat History"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </button>
+        </div>
       </div>
-      
-      <Footer />
-    </div>
-  </EmailVerificationGuard>
+    </EmailVerificationGuard>
   );
 }
